@@ -1,8 +1,17 @@
-export type PersonKey = 'MA' | 'HE' | 'JO' | 'LE' | 'SO' | 'FE' | 'TI' | 'LO' | 'NU'
+/** Konto-ID (z. B. 'MA', 'tablet') oder SYSTEM für Einträge aus Vereinsflieger. */
+export type UserId = string
 
-export interface Person {
-  key: PersonKey
+/** Admin und Werkstattleiter haben vorerst dieselben Rechte. Ohne Login gibt es kein Konto. */
+export type Role = 'admin' | 'wl' | 'user'
+
+export interface User {
+  id: UserId
   name: string
+  role: Role
+  /** Geteiltes Gerät wie das Werkstatt-Tablet, keine Person. */
+  device?: boolean
+  /** Entfernte Konten bleiben für den Verlauf erhalten, tauchen aber in keiner Auswahl mehr auf. */
+  removed?: boolean
   bg: string
   fg: string
 }
@@ -10,7 +19,7 @@ export interface Person {
 /** at: ISO-Datum (YYYY-MM-DD) oder Datum mit Uhrzeit (YYYY-MM-DDTHH:mm) */
 export interface HistoryEntry {
   text: string
-  who: string
+  who: UserId
   at: string
 }
 
@@ -22,17 +31,25 @@ export interface Aircraft {
   hasDetails: boolean
   serial?: string
   sponsor?: string
-  /** Werkstattzeitraum */
+  /** Werkstattzeitraum, jeweils ein Samstag */
   start: string
   end: string
 }
 
+export interface Season {
+  label: string
+  /** Erster und letzter Werkstatt-Samstag */
+  start: string
+  end: string
+}
+
+/** Welche Flugzeuge an einem Tag in der Werkstatt sind, ergibt sich aus den Zeiträumen der Flugzeuge. */
 export interface ScheduleDay {
-  leader?: PersonKey | null
-  planes?: string
+  leader?: UserId | null
   closed?: boolean
   reason?: string
   comment?: string
+  history?: HistoryEntry[]
 }
 
 export type Level = 'ein' | 'erf' | 'wl'
@@ -53,11 +70,11 @@ export interface Task {
   duration: string
   checklist: ChecklistItem[]
   deadline?: string
-  doc?: string
+  docId?: string
   defectId?: string
-  doneBy?: string
+  doneBy?: UserId
   doneAt?: string
-  signedBy?: string
+  signedBy?: UserId
   signedAt?: string
   history: HistoryEntry[]
 }
@@ -72,12 +89,12 @@ export interface Defect {
   source: 'vf' | 'befund'
   photos: number
   reportedAt: string
-  reportedBy: string
+  reportedBy: UserId
   priority: Priority
-  owner: string
+  owner: UserId | null
   status: 'open' | 'done'
   doneAt?: string
-  doneBy?: string
+  doneBy?: UserId
   taskId?: string
   history: HistoryEntry[]
 }
@@ -121,7 +138,7 @@ export interface Order {
   name: string
   forWhat: string
   state: 'list' | 'ordered' | 'delivered'
-  reportedBy: string
+  reportedBy: UserId
   reportedAt: string
   delivery?: string
   comment: string
@@ -129,6 +146,8 @@ export interface Order {
 }
 
 export interface AppState {
+  users: User[]
+  season: Season
   aircraft: Aircraft[]
   schedule: Record<string, ScheduleDay>
   tasks: Task[]

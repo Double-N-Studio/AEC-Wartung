@@ -2,7 +2,7 @@
 import { LEVEL_KEYS } from '../utils/levels'
 import LevelBadge from '../components/LevelBadge.vue'
 import PersonAvatar from '../components/PersonAvatar.vue'
-import { LEADERS, PEOPLE } from '../mock/people'
+import { leaders } from '../store'
 
 const FAQ = [
   { q: 'Wann ist Werkstatt und wie mache ich mit?', a: 'Gearbeitet wird samstags von 9 bis 17 Uhr. Im Zeitplan siehst du, welches Flugzeug gerade dran ist und wer an dem Tag die Werkstattleitung hat. Komm einfach vorbei. Die Werkstattleitung teilt dich vor Ort einer Aufgabe zu.' },
@@ -12,7 +12,7 @@ const FAQ = [
   { q: 'Etwas ist leer – was mache ich?', a: 'In der „Inventur“ direkt in der Liste den Bestand auf 0 bzw. „Leer“ oder „Fast leer“ setzen und auf „Auf Bestellliste“ tippen. Dann wird es nachbestellt.' },
   { q: 'Ich habe einen Schaden entdeckt – was nun?', a: 'Sag der Werkstattleitung Bescheid. Sie erfasst den Befund mit Foto im Reiter „Mängel/Befunde“ des Flugzeugs.' },
   { q: 'Wo finde ich Wartungshandbücher und Wägeberichte?', a: 'Beim jeweiligen Flugzeug im Reiter „Dokumente“.' },
-  { q: 'Warum kann ich zu Hause nichts bearbeiten?', a: 'Ohne Login kannst du alles ansehen, aber nichts ändern. Bearbeiten geht am Werkstatt-Tablet oder mit einem Werkstattleiter-Zugang.' },
+  { q: 'Warum kann ich zu Hause nichts bearbeiten?', a: 'Ohne Login kannst du alles ansehen, aber nichts ändern. Bearbeiten geht am Werkstatt-Tablet oder mit einem eigenen Zugang. Abzeichnen und Werkstatttage planen kann nur die Werkstattleitung.' },
 ]
 const LEVEL_TEXT = {
   ein: 'Ohne Vorkenntnisse machbar, z. B. reinigen und polieren.',
@@ -44,9 +44,9 @@ const LEVEL_TEXT = {
         </section>
         <section class="card box" aria-labelledby="contact-h">
           <h2 id="contact-h" class="box-title">Werkstattleitung</h2>
-          <div v-for="k in LEADERS" :key="k" class="person">
-            <PersonAvatar :person="k" :size="36" />
-            <div><strong>{{ PEOPLE[k].name }}</strong><span class="muted">Werkstattleiter</span></div>
+          <div v-for="u in leaders()" :key="u.id" class="person">
+            <PersonAvatar :person="u.id" :size="36" />
+            <div><strong>{{ u.name }}</strong><span class="muted">Werkstattleiter</span></div>
           </div>
         </section>
       </aside>

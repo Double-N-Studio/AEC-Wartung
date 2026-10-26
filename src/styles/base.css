@@ -23,6 +23,9 @@
   --warn-border: #F2C68A;
   --today: #C2410C;
   --amber: #D97706;
+  --red: #B42318;
+  --red-ink: #A12C23;
+  --red-soft: #FDE2E1;
   --gray-soft: #EEF1F4;
   --shadow-pop: 0 8px 24px rgba(23, 32, 43, 0.14);
   --shadow-modal: 0 24px 64px rgba(23, 32, 43, 0.28);
@@ -58,6 +61,16 @@ h1, h2, h3, p { margin: 0; }
 .btn-primary { border-color: var(--accent); background: var(--accent); color: #fff; }
 .btn-primary:hover { background: #1957AE; }
 .btn-ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.btn-danger { border-color: var(--red); background: var(--red); color: #fff; }
+.btn-danger:hover { background: var(--red-ink); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+/* Textlink-Button, z. B. „Verknüpfung lösen“ */
+.link-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 0; border: 0; background: transparent;
+  font-size: 13px; font-weight: 600; color: var(--accent-ink);
+}
+.link-btn:hover { text-decoration: underline; }
+.link-btn.danger { color: var(--red-ink); }
 .btn-sm { height: 36px; padding: 0 12px; font-size: 13px; border-radius: 9px; }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;

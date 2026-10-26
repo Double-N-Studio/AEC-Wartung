@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { state } from '../../store'
+import { can, state, userName } from '../../store'
 import type { Level, Task, TaskStatus } from '../../types'
 import { LEVEL_KEYS, LEVELS } from '../../utils/levels'
 import { fmtDay, fmtWhen } from '../../utils/date'
@@ -9,7 +9,7 @@ import AppIcon from '../../components/AppIcon.vue'
 import LevelBadge from '../../components/LevelBadge.vue'
 import LevelBars from '../../components/LevelBars.vue'
 import TaskModal from './TaskModal.vue'
-import NewTaskModal from './NewTaskModal.vue'
+import TaskFormModal from './TaskFormModal.vue'
 
 const route = useRoute()
 const aircraftId = computed(() => String(route.params.id))
@@ -41,7 +41,8 @@ const closeTask = () => {
   if (route.query.paket) router.replace({ query: {} })
 }
 const openTask = computed(() => state.tasks.find((t) => t.id === openId.value) ?? null)
-const creating = ref(false)
+// Formular für neue ('new') oder bestehende Karte; die Detailansicht ist solange ausgeblendet.
+const form = ref<Task | 'new' | null>(null)
 </script>
 
 <template>
@@ -61,7 +62,7 @@ const creating = ref(false)
         <span class="dot" :style="{ background: col.dot }" />
         <h2>{{ col.title }}</h2>
         <span class="count">{{ column(col.status).length }}</span>
-        <button v-if="col.status === 'offen'" type="button" class="add" aria-label="Kanban-Karte anlegen" @click="creating = true">
+        <button v-if="col.status === 'offen' && can('edit')" type="button" class="add" aria-label="Kanban-Karte anlegen" @click="form = 'new'">
           <AppIcon name="plus" :stroke="2.2" />
         </button>
       </div>
@@ -84,8 +85,8 @@ const creating = ref(false)
             <span v-if="t.deadline" class="deadline"><AppIcon name="calendar" :size="14" />Frist {{ fmtDay(t.deadline) }}</span>
           </span>
           <span v-if="t.status === 'erledigt'" class="task-done">
-            <span>Erledigt: <b>{{ t.doneBy }}</b> · {{ fmtWhen(t.doneAt!) }}</span>
-            <span v-if="t.signedBy" class="signed"><AppIcon name="shield" :size="14" />Abgezeichnet: <b>{{ t.signedBy }}</b> · {{ fmtWhen(t.signedAt!) }}</span>
+            <span>Erledigt: <b>{{ userName(t.doneBy) }}</b> · {{ fmtWhen(t.doneAt!) }}</span>
+            <span v-if="t.signedBy" class="signed"><AppIcon name="shield" :size="14" />Abgezeichnet: <b>{{ userName(t.signedBy) }}</b> · {{ fmtWhen(t.signedAt!) }}</span>
             <span v-else class="unsigned"><AppIcon name="clock" :size="14" />Abzeichnung offen</span>
           </span>
         </button>
@@ -94,8 +95,8 @@ const creating = ref(false)
     </section>
   </div>
 
-  <TaskModal v-if="openTask" :task="openTask" @close="closeTask" />
-  <NewTaskModal v-if="creating" :aircraft-id="aircraftId" @close="creating = false" />
+  <TaskModal v-if="openTask && !form" :task="openTask" @close="closeTask" @edit="form = openTask" />
+  <TaskFormModal v-if="form" :aircraft-id="aircraftId" :task="form === 'new' ? undefined : form" @close="form = null" />
 </template>
 
 <style scoped>

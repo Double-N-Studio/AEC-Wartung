@@ -1,11 +1,12 @@
 import type { Aircraft, AppState, Task } from '../types'
 import { addDays, TODAY } from '../utils/date'
-import { PEOPLE } from './people'
+import { initialUsers, SYSTEM, TABLET } from './people'
 
 const ASG = 'asg32'
 
-const created = { text: 'Angelegt', who: 'Heinrich', at: '2027-01-09' }
-const WHB = 'Wartungshandbuch'
+const created = { text: 'Angelegt', who: 'HE', at: '2027-01-09' }
+// Dokument-ID des Wartungshandbuchs
+const WHB = 'd2'
 
 function pkg(
   id: string, level: Task['level'], title: string, duration: string, desc: string,
@@ -27,7 +28,7 @@ export function initialState(): AppState {
   const own = <T extends { aircraftId: string }>(list: T[]) => list.filter((x) => x.aircraftId === ASG)
   const pre = (id: string, ref?: string) => (ref ? `${id}-${ref}` : undefined)
   for (const a of s.aircraft.filter((x) => x.id !== ASG)) {
-    s.tasks.push(...own(s.tasks).map((t) => ({ ...structuredClone(t), id: `${a.id}-${t.id}`, aircraftId: a.id, defectId: pre(a.id, t.defectId) })))
+    s.tasks.push(...own(s.tasks).map((t) => ({ ...structuredClone(t), id: `${a.id}-${t.id}`, aircraftId: a.id, defectId: pre(a.id, t.defectId), docId: pre(a.id, t.docId) })))
     s.defects.push(...own(s.defects).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id, taskId: pre(a.id, d.taskId) })))
     s.deadlines.push(...own(s.deadlines).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id })))
     s.documents.push(...own(s.documents).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id })))
@@ -45,7 +46,7 @@ export function initialState(): AppState {
   return s
 }
 
-const HELPERS = ['Tim', 'Lena', 'Jonas', 'Sophie', 'Felix', 'Nuno', 'Lorenz']
+const HELPERS = ['JO', 'LE']
 
 function resetTask(t: Task) {
   t.status = 'offen'
@@ -86,7 +87,7 @@ function completeAll(s: AppState, a: Aircraft, tasks: Task[]) {
     const day = days[Math.floor((i * days.length) / tasks.length)]
     const leader = s.schedule[day]?.leader
     const at = `${day}T${String(10 + (i % 7)).padStart(2, '0')}:${i % 2 ? '45' : '15'}`
-    finishAt(t, HELPERS[i % HELPERS.length], at, leader ? PEOPLE[leader].name : i % 2 ? 'Heinrich' : 'Matze')
+    finishAt(t, HELPERS[i % HELPERS.length], at, leader ?? (i % 2 ? 'HE' : 'MA'))
     const defect = s.defects.find((d) => d.id === t.defectId)
     if (defect) {
       defect.status = 'done'
@@ -103,33 +104,37 @@ const tick = (t: Task, n: number) => t.checklist.slice(0, n).forEach((c) => { c.
 function applyAsg(t: Task) {
   const day1 = '2027-01-09'
   const doneDay1: Record<string, [string, string]> = {
-    an1: ['Tim, Jonas', '10:05'], fl1: ['Felix, Lena', '11:50'], ru1: ['Sophie', '12:40'], hl1: ['Lena', '13:05'],
-    fl2: ['Jonas', '14:20'], ru2: ['Felix', '15:35'], hl2: ['Jonas', '16:10'],
+    an1: ['LE', '10:05'], fl1: ['JO', '11:50'], ru1: ['LE', '12:40'], hl1: ['LE', '13:05'],
+    fl2: ['JO', '14:20'], ru2: ['JO', '15:35'], hl2: ['JO', '16:10'],
   }
-  if (doneDay1[t.id]) finishAt(t, doneDay1[t.id][0], `${day1}T${doneDay1[t.id][1]}`, 'Heinrich')
-  else if (t.id === 'an2') finishAt(t, 'Tim', `${TODAY}T09:20`, 'Matze')
-  else if (t.id === 'ru3') { startAt(t, 'Heinrich', day1); tick(t, 1) }
-  else if (t.id === 'ru4') { startAt(t, 'Jonas', day1); tick(t, 1) }
-  else if (t.id === 'ru8') { startAt(t, 'Felix', day1); tick(t, 1) }
-  else if (t.id === 'hl3') startAt(t, 'Sophie', `${TODAY}T09:40`)
-  else if (t.id === 'fl3') { startAt(t, 'Lorenz', `${TODAY}T09:50`); tick(t, 1) }
+  if (doneDay1[t.id]) finishAt(t, doneDay1[t.id][0], `${day1}T${doneDay1[t.id][1]}`, 'HE')
+  else if (t.id === 'an2') finishAt(t, 'LE', `${TODAY}T09:20`, 'MA')
+  else if (t.id === 'ru3') { startAt(t, 'HE', day1); tick(t, 1) }
+  else if (t.id === 'ru4') { startAt(t, 'JO', day1); tick(t, 1) }
+  else if (t.id === 'ru8') { startAt(t, 'JO', day1); tick(t, 1) }
+  else if (t.id === 'hl3') startAt(t, 'LE', `${TODAY}T09:40`)
+  else if (t.id === 'fl3') { startAt(t, 'LO', `${TODAY}T09:50`); tick(t, 1) }
 }
 
 /** LS8: erster Werkstatttag ist heute. */
 function applyLs8(t: Task) {
   const id = t.id.replace('ls8-', '')
   resetTask(t)
-  if (id === 'an1') finishAt(t, 'Tim, Lena', `${TODAY}T10:10`, 'Matze')
-  else if (id === 'hl1') finishAt(t, 'Lorenz', `${TODAY}T10:55`)
-  else if (id === 'ru1') { startAt(t, 'Lena', `${TODAY}T10:30`); tick(t, 2) }
-  else if (id === 'fl1') startAt(t, 'Nuno', `${TODAY}T10:40`)
-  else if (id === 'an4') startAt(t, 'Sophie', `${TODAY}T11:05`)
-  else if (id === 'fl2') startAt(t, 'Felix', `${TODAY}T11:20`)
+  if (id === 'an1') finishAt(t, 'LE', `${TODAY}T10:10`, 'MA')
+  else if (id === 'hl1') finishAt(t, 'LO', `${TODAY}T10:55`)
+  else if (id === 'ru1') { startAt(t, 'LE', `${TODAY}T10:30`); tick(t, 2) }
+  else if (id === 'fl1') startAt(t, 'NU', `${TODAY}T10:40`)
+  else if (id === 'an4') startAt(t, 'LE', `${TODAY}T11:05`)
+  else if (id === 'fl2') startAt(t, 'JO', `${TODAY}T11:20`)
 }
 
 function baseState(): AppState {
   return {
     counter: 100,
+
+    users: initialUsers(),
+
+    season: { label: '2026/27', start: '2026-11-07', end: '2027-03-27' },
 
     aircraft: [
       { id: 'ask21', type: 'ASK21', reg: 'D-5071', hasDetails: true, sponsor: 'Matze', start: '2026-11-07', end: '2026-12-05' },
@@ -141,21 +146,25 @@ function baseState(): AppState {
     ],
 
     schedule: {
-      '2026-12-05': { leader: 'MA', planes: 'Discus-2b · ASK21' },
-      '2026-12-12': { leader: 'HE', planes: 'Discus-2b · ASK23' },
-      '2026-12-19': { leader: 'MA', planes: 'Discus-2b' },
+      '2026-11-07': { leader: 'MA' },
+      '2026-11-14': { leader: 'HE' },
+      '2026-11-21': { leader: 'MA' },
+      '2026-11-28': { leader: 'LO' },
+      '2026-12-05': { leader: 'MA' },
+      '2026-12-12': { leader: 'HE' },
+      '2026-12-19': { leader: 'MA' },
       '2026-12-26': { closed: true, reason: 'Weihnachten' },
       '2027-01-02': { closed: true, reason: 'Neujahr' },
-      '2027-01-09': { leader: 'HE', planes: 'Discus-2b · ASG32' },
-      '2027-01-16': { leader: 'MA', planes: 'ASG32 · LS8' },
-      '2027-01-23': { leader: 'LO', planes: 'ASG32 · LS8', comment: 'Lorenz übernimmt Werkstattleitung. Einfache Aufgaben in Kanban abarbeiten bitte.\n\n– Matze' },
-      '2027-01-30': { leader: 'HE', planes: 'ASG32 · LS8' },
-      '2027-02-06': { leader: 'MA', planes: 'LS8 · Arcus-T' },
-      '2027-02-13': { leader: null, planes: 'LS8 · Arcus-T' },
-      '2027-02-20': { leader: 'HE', planes: 'Arcus-T' },
-      '2027-02-27': { leader: 'MA', planes: 'Arcus-T' },
-      '2027-03-06': { leader: 'HE', planes: 'Arcus-T' },
-      '2027-03-13': { leader: 'MA', planes: 'Arcus-T' },
+      '2027-01-09': { leader: 'HE' },
+      '2027-01-16': { leader: 'MA' },
+      '2027-01-23': { leader: 'LO', comment: 'Lorenz übernimmt Werkstattleitung. Einfache Aufgaben in Kanban abarbeiten bitte.\n\n– Matze', history: [{ text: 'Kommentar geändert', who: 'MA', at: '2027-01-14T19:30' }] },
+      '2027-01-30': { leader: 'HE' },
+      '2027-02-06': { leader: 'MA' },
+      '2027-02-13': { leader: null },
+      '2027-02-20': { leader: 'HE' },
+      '2027-02-27': { leader: 'MA' },
+      '2027-03-06': { leader: 'HE' },
+      '2027-03-13': { leader: 'MA' },
     },
 
     tasks: [
@@ -166,12 +175,12 @@ function baseState(): AppState {
         'Lack und Beschädigungen prüfen',
         'Querruder-Sandwichschale auf Druckstellen prüfen (druckempfindlich, bei Druckstellen das Wartungshandbuch konsultieren)',
         'Lagerung auf Korrosion und Verklemmen prüfen: an jedem Hebel mit 25 kg nach hinten ziehen und dabei einfahren',
-      ], { doc: WHB }),
+      ], { docId: WHB }),
       pkg('fl4', 'erf', 'Flügel: Polieren', '~3 h', 'Mit Rotationsmaschine und feiner Schleifpolitur polieren.'),
       pkg('fl5', 'erf', 'Flügel: Bänder prüfen', '~1,5 h', 'Gewebe-, Abdicht- und Zackenbänder prüfen und bei Bedarf erneuern.', [
         'Gewebe- und Abdichtbänder prüfen, ggf. erneuern (Wartungshandbuch 4.2.2.1)',
         'Zackenband auf der Flügelunterseite prüfen, ggf. erneuern',
-      ], { doc: WHB }),
+      ], { docId: WHB }),
       pkg('fl6', 'ein', 'Flügel: Wachsen', '~2 h', 'Wachs mit Watte auftragen, nach der Ablüftzeit mit Mikrofasertuch abpolieren.'),
       pkg('fl7', 'erf', 'Flügel: Buchsen fetten', '~0,5 h', 'Hauptbolzenbuchsen, Querkraftbolzen und die Kugeln der Ruderanschlüsse fetten.'),
       pkg('fl8', 'ein', 'Flügel: Wassersäcke prüfen', '~0,5 h', 'Wassersäcke auf Dichtigkeit prüfen.'),
@@ -186,7 +195,7 @@ function baseState(): AppState {
         'Lack und Beschädigungen prüfen',
         'Haubennotabwurf und Rögerhaken prüfen (Wartungshandbuch 4.9)',
         'Spaltabklebungen an Höhen- und Seitenruder prüfen, ggf. erneuern (4.2.3 und 4.2.4)',
-      ], { doc: WHB }),
+      ], { docId: WHB }),
       pkg('ru4', 'erf', 'Rumpf: Fahrwerk', '~2 h', 'Fahrwerk reinigen, schmieren und prüfen. Zum Klackern beim Schieben siehe Mangel.', [
         'Fahrwerkskasten reinigen, alle Gelenke mit Maschinenöl schmieren',
         'Verknievorspannung prüfen: 12–15 kg',
@@ -207,7 +216,7 @@ function baseState(): AppState {
       // Höhenleitwerk
       pkg('hl1', 'ein', 'Höhenleitwerk: Putzen', '~0,5 h', 'Mit Spüliwasser putzen.'),
       pkg('hl2', 'erf', 'Höhenleitwerk: Entfetten und Klebereste entfernen', '~0,5 h', 'Klebereste und Fett in den Buchsen entfernen, nur Waschbenzin verwenden. Danach die Buchsen neu fetten.'),
-      pkg('hl3', 'erf', 'Höhenleitwerk: Bänder prüfen', '~1 h', 'Spaltabklebungen prüfen, ggf. erneuern (Wartungshandbuch 4.2.3 und 4.2.4).', [], { doc: WHB }),
+      pkg('hl3', 'erf', 'Höhenleitwerk: Bänder prüfen', '~1 h', 'Spaltabklebungen prüfen, ggf. erneuern (Wartungshandbuch 4.2.3 und 4.2.4).', [], { docId: WHB }),
       pkg('hl4', 'erf', 'Höhenleitwerk: Polieren und Wachsen', '~1,5 h', 'Mit Rotationsmaschine und feiner Schleifpolitur polieren, danach wachsen.'),
       // Anhänger
       pkg('an1', 'ein', 'Anhänger: Aussaugen und Auswischen', '~1 h', 'Anhänger und Teppich aussaugen, danach auswischen.'),
@@ -222,39 +231,39 @@ function baseState(): AppState {
     ],
 
     defects: [
-      { id: 'm1', aircraftId: ASG, title: 'Lack-Riss Höhenleitwerk links', source: 'befund', photos: 2, reportedAt: '2027-01-09', reportedBy: 'Heinrich', priority: 'Normal', owner: 'Heinrich', status: 'open',
+      { id: 'm1', aircraftId: ASG, title: 'Lack-Riss Höhenleitwerk links', source: 'befund', photos: 2, reportedAt: '2027-01-09', reportedBy: 'HE', priority: 'Normal', owner: 'HE', status: 'open',
         desc: 'Haarriss im Lack an der Nasenleiste, ca. 4 cm lang. Beim Polieren entdeckt.',
-        history: [{ text: 'Befund mit 2 Fotos erfasst.', who: 'Heinrich', at: '2027-01-09' }] },
-      { id: 'm2', aircraftId: ASG, title: 'Hauben-Fenster hinten', source: 'vf', photos: 0, reportedAt: '2026-06-04', reportedBy: 'Lorenz', priority: 'Normal', owner: 'Matze', status: 'open',
+        history: [{ text: 'Befund mit 2 Fotos erfasst.', who: 'HE', at: '2027-01-09' }] },
+      { id: 'm2', aircraftId: ASG, title: 'Hauben-Fenster hinten', source: 'vf', photos: 0, reportedAt: '2026-06-04', reportedBy: 'LO', priority: 'Normal', owner: 'MA', status: 'open',
         desc: 'Die Schiene des hinteren Haubenfensters ist unten gebrochen. Fenster nur mit Vorsicht benutzen.',
-        history: [{ text: 'Ersatz ist bestellt, Einbau in der Winterwartung.', who: 'Matze', at: '2027-01-09' }, { text: 'Ersatzschiene beim Hersteller angefragt.', who: 'Matze', at: '2026-06-12' }] },
-      { id: 'm3', aircraftId: ASG, title: 'Flarm: Fehlermeldung Antenne B', source: 'vf', photos: 0, reportedAt: '2026-05-11', reportedBy: 'Felix', priority: 'Normal', owner: 'Matze', status: 'open', taskId: 'ru8',
+        history: [{ text: 'Ersatz ist bestellt, Einbau in der Winterwartung.', who: 'MA', at: '2027-01-09' }, { text: 'Ersatzschiene beim Hersteller angefragt.', who: 'MA', at: '2026-06-12' }] },
+      { id: 'm3', aircraftId: ASG, title: 'Flarm: Fehlermeldung Antenne B', source: 'vf', photos: 0, reportedAt: '2026-05-11', reportedBy: 'JO', priority: 'Normal', owner: 'MA', status: 'open', taskId: 'ru8',
         desc: 'Flarm meldet einen Fehler an Antenne B. Antennenkabel und Antenne prüfen, ggf. ersetzen.',
-        history: [{ text: 'Aus Vereinsflieger übernommen.', who: 'System', at: '2026-05-11' }] },
-      { id: 'm4', aircraftId: ASG, title: 'Lager am Hauptfahrwerk schlägt', source: 'vf', photos: 0, reportedAt: '2026-09-21', reportedBy: 'Jonas', priority: 'Niedrig', owner: 'Jonas', status: 'open', taskId: 'ru4',
+        history: [{ text: 'Aus Vereinsflieger übernommen.', who: SYSTEM, at: '2026-05-11' }] },
+      { id: 'm4', aircraftId: ASG, title: 'Lager am Hauptfahrwerk schlägt', source: 'vf', photos: 0, reportedAt: '2026-09-21', reportedBy: 'JO', priority: 'Niedrig', owner: 'JO', status: 'open', taskId: 'ru4',
         desc: 'Beim Schieben klackt das Hauptfahrwerk einmal pro Umdrehung. Zu Beginn der Winterarbeit prüfen und ggf. das Lager reparieren oder Ersatzteile bestellen.',
-        history: [{ text: 'Wird zusammen mit dem Fahrwerk geprüft.', who: 'Heinrich', at: '2027-01-09' }] },
-      { id: 'm5', aircraftId: ASG, title: 'Mückenputzer: Rutschkupplung', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'Felix', priority: 'Niedrig', owner: 'noch niemand', status: 'open',
+        history: [{ text: 'Wird zusammen mit dem Fahrwerk geprüft.', who: 'HE', at: '2027-01-09' }] },
+      { id: 'm5', aircraftId: ASG, title: 'Mückenputzer: Rutschkupplung', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Niedrig', owner: null, status: 'open',
         desc: 'Die Rutschkupplung am Antrieb des linken Putzflügels ist verschlissen und rutscht beim Einfahren ab ca. 100 km/h.',
-        history: [{ text: 'Aus Vereinsflieger übernommen.', who: 'System', at: '2026-06-11' }] },
-      { id: 'm6', aircraftId: ASG, title: 'Mikrofon-Schwanenhals hinterer Sitz', source: 'befund', photos: 1, reportedAt: '2026-05-18', reportedBy: 'Lena', priority: 'Sehr niedrig', owner: 'Matze', status: 'open',
+        history: [{ text: 'Aus Vereinsflieger übernommen.', who: SYSTEM, at: '2026-06-11' }] },
+      { id: 'm6', aircraftId: ASG, title: 'Mikrofon-Schwanenhals hinterer Sitz', source: 'befund', photos: 1, reportedAt: '2026-05-18', reportedBy: 'LE', priority: 'Sehr niedrig', owner: 'MA', status: 'open',
         desc: 'Die Buchsen der Schwanenhals-Befestigung sind aus der Bordwand gebrochen. Provisorisch mit Einnietmuttern befestigt und eingeharzt – in der Winterwartung prüfen.',
-        history: [{ text: 'Einnietmuttern statt Nieten gesetzt und eingeharzt.', who: 'Matze', at: '2026-08-02' }] },
-      { id: 'm7', aircraftId: ASG, title: 'Kratzspuren Haube vorne rechts', source: 'befund', photos: 1, reportedAt: '2025-08-11', reportedBy: 'Sophie', priority: 'Normal', owner: 'Matze', status: 'done', doneAt: '2026-03-08', doneBy: 'Matze',
+        history: [{ text: 'Einnietmuttern statt Nieten gesetzt und eingeharzt.', who: 'MA', at: '2026-08-02' }] },
+      { id: 'm7', aircraftId: ASG, title: 'Kratzspuren Haube vorne rechts', source: 'befund', photos: 1, reportedAt: '2025-08-11', reportedBy: 'LE', priority: 'Normal', owner: 'MA', status: 'done', doneAt: '2026-03-08', doneBy: 'MA',
         desc: 'Rundliche Kratzspuren vorne rechts an der Haube, beim Rundgang gefunden.',
-        history: [{ text: 'Mit Schleifpaste rauspoliert.', who: 'Matze', at: '2026-03-08' }] },
-      { id: 'm8', aircraftId: ASG, title: 'LX 9000 Softwareupdate', source: 'vf', photos: 0, reportedAt: '2026-03-29', reportedBy: 'Tim', priority: 'Sehr niedrig', owner: 'Felix', status: 'done', doneAt: '2026-04-02', doneBy: 'Felix',
+        history: [{ text: 'Mit Schleifpaste rauspoliert.', who: 'MA', at: '2026-03-08' }] },
+      { id: 'm8', aircraftId: ASG, title: 'LX 9000 Softwareupdate', source: 'vf', photos: 0, reportedAt: '2026-03-29', reportedBy: 'LE', priority: 'Sehr niedrig', owner: 'JO', status: 'done', doneAt: '2026-04-02', doneBy: 'JO',
         desc: 'Neue Softwareversion beim Hersteller anfordern (Seriennummer angeben) und aufspielen.',
-        history: [{ text: 'Update aufgespielt.', who: 'Felix', at: '2026-04-02' }] },
-      { id: 'm9', aircraftId: ASG, title: 'Höhenmesser hinten: kleiner Zeiger falsch', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'Jonas', priority: 'Normal', owner: 'Matze', status: 'done', doneAt: '2026-12-20', doneBy: 'Matze',
+        history: [{ text: 'Update aufgespielt.', who: 'JO', at: '2026-04-02' }] },
+      { id: 'm9', aircraftId: ASG, title: 'Höhenmesser hinten: kleiner Zeiger falsch', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Normal', owner: 'MA', status: 'done', doneAt: '2026-12-20', doneBy: 'MA',
         desc: 'Am Boden zeigt der große Zeiger richtig an, der kleine steht auf 600 m.',
-        history: [{ text: 'Auf Gewährleistung repariert und wieder eingebaut.', who: 'Matze', at: '2026-12-20' }, { text: 'Zur Reparatur geschickt.', who: 'Matze', at: '2026-11-14' }] },
-      { id: 'm10', aircraftId: ASG, title: 'Fahrwerkswarnung ohne Funktion', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'Felix', priority: 'Niedrig', owner: 'Matze', status: 'done', doneAt: '2027-01-04', doneBy: 'Matze',
+        history: [{ text: 'Auf Gewährleistung repariert und wieder eingebaut.', who: 'MA', at: '2026-12-20' }, { text: 'Zur Reparatur geschickt.', who: 'MA', at: '2026-11-14' }] },
+      { id: 'm10', aircraftId: ASG, title: 'Fahrwerkswarnung ohne Funktion', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Niedrig', owner: 'MA', status: 'done', doneAt: '2027-01-04', doneBy: 'MA',
         desc: 'Die Fahrwerkswarnung funktioniert nicht, der Magnet für den Sensor fehlt.',
-        history: [{ text: 'Kein Mangel – so vom Hersteller vorgesehen.', who: 'Matze', at: '2027-01-04' }] },
-      { id: 'm11', aircraftId: ASG, title: 'Bordnetz: Spannungsabfall', source: 'vf', photos: 0, reportedAt: '2026-04-29', reportedBy: 'Tim', priority: 'Normal', owner: 'Heinrich', status: 'done', doneAt: '2026-05-16', doneBy: 'Heinrich',
+        history: [{ text: 'Kein Mangel – so vom Hersteller vorgesehen.', who: 'MA', at: '2027-01-04' }] },
+      { id: 'm11', aircraftId: ASG, title: 'Bordnetz: Spannungsabfall', source: 'vf', photos: 0, reportedAt: '2026-04-29', reportedBy: 'LE', priority: 'Normal', owner: 'HE', status: 'done', doneAt: '2026-05-16', doneBy: 'HE',
         desc: 'Das Bordnetz bricht zusammen, wenn die Mückenputzer bedient werden.',
-        history: [{ text: 'Prüfbericht liegt unter Dokumente. Mückenputzer nur mit Batterie 2 verwenden.', who: 'Heinrich', at: '2026-05-16' }] },
+        history: [{ text: 'Prüfbericht liegt unter Dokumente. Mückenputzer nur mit Batterie 2 verwenden.', who: 'HE', at: '2026-05-16' }] },
     ],
 
     deadlines: [
@@ -272,18 +281,18 @@ function baseState(): AppState {
     ],
 
     inventory: [
-      { id: 'v1', kind: 'vs', name: 'Waschbenzin', location: 'Gefahrstoffschrank, unten links', mode: 'count', qty: 0, unit: ['l', 'l'], history: [{ text: 'Gezählt: 0 l', who: 'Heinrich', at: '2027-01-16' }] },
-      { id: 'v2', kind: 'vs', name: 'Mehrzweckfett', location: 'Werkbank links, Schublade 2', mode: 'flag', qty: 0, unit: ['', ''], history: [{ text: 'Gezählt: leer', who: 'Matze', at: '2027-01-16' }] },
-      { id: 'v3', kind: 'vs', name: 'Mikrofasertücher', location: 'Regal A, Fach 1', mode: 'flag', qty: 0, unit: ['', ''], history: [{ text: 'Gezählt: leer', who: 'Matze', at: '2027-01-16' }] },
+      { id: 'v1', kind: 'vs', name: 'Waschbenzin', location: 'Gefahrstoffschrank, unten links', mode: 'count', qty: 0, unit: ['l', 'l'], history: [{ text: 'Gezählt: 0 l', who: 'HE', at: '2027-01-16' }] },
+      { id: 'v2', kind: 'vs', name: 'Mehrzweckfett', location: 'Werkbank links, Schublade 2', mode: 'flag', qty: 0, unit: ['', ''], history: [{ text: 'Gezählt: leer', who: 'MA', at: '2027-01-16' }] },
+      { id: 'v3', kind: 'vs', name: 'Mikrofasertücher', location: 'Regal A, Fach 1', mode: 'flag', qty: 0, unit: ['', ''], history: [{ text: 'Gezählt: leer', who: 'MA', at: '2027-01-16' }] },
       { id: 'v4', kind: 'vs', name: 'Politur', location: 'Regal A, Fach 2', mode: 'count', qty: 2, unit: ['Dose', 'Dosen'], history: [] },
       { id: 'v5', kind: 'vs', name: 'Aceton', location: 'Gefahrstoffschrank, oben', mode: 'count', qty: 4, unit: ['Flasche', 'Flaschen'], history: [] },
-      { id: 'v6', kind: 'vs', name: 'Lack', location: 'Gefahrstoffschrank, Mitte', mode: 'flag', qty: 1, unit: ['', ''], history: [{ text: 'Gezählt: fast leer', who: 'Matze', at: '2027-01-16' }] },
+      { id: 'v6', kind: 'vs', name: 'Lack', location: 'Gefahrstoffschrank, Mitte', mode: 'flag', qty: 1, unit: ['', ''], history: [{ text: 'Gezählt: fast leer', who: 'MA', at: '2027-01-16' }] },
       { id: 'v7', kind: 'vs', name: 'Härter', location: 'Gefahrstoffschrank, Mitte neben dem Lack', mode: 'flag', qty: 2, unit: ['', ''], history: [] },
       { id: 'v8', kind: 'vs', name: 'Politurfinish', location: 'Regal A, Fach 2', mode: 'flag', qty: 2, unit: ['', ''], history: [] },
       { id: 'v9', kind: 'vs', name: 'Polieraufsätze', location: 'Werkbank rechts, Schublade 1', mode: 'count', qty: 4, unit: ['Stk.', 'Stk.'], history: [] },
-      { id: 'e1', kind: 'et', name: 'Reifenschlauch 4.00-4', location: 'Ersatzteilschrank, Fach 3', mode: 'count', qty: 0, unit: ['Stk.', 'Stk.'], fits: 'ASK21, ASK23, LS8', history: [{ text: 'Gezählt: 0 Stk.', who: 'Nuno', at: '2027-01-16' }] },
-      { id: 'e2', kind: 'et', name: 'Bremsbeläge', location: 'Ersatzteilschrank, Fach 5', mode: 'count', qty: 0, unit: ['Satz', 'Satz'], fits: 'ASG32', history: [{ text: 'Gezählt: 0 Satz', who: 'Heinrich', at: '2027-01-09' }] },
-      { id: 'e3', kind: 'et', name: 'Dichtungssatz Wasserballast', location: 'Ersatzteilschrank, Fach 5', mode: 'count', qty: 0, unit: ['Satz', 'Satz'], fits: 'ASG32', history: [{ text: 'Gezählt: 0 Satz', who: 'Heinrich', at: '2027-01-09' }] },
+      { id: 'e1', kind: 'et', name: 'Reifenschlauch 4.00-4', location: 'Ersatzteilschrank, Fach 3', mode: 'count', qty: 0, unit: ['Stk.', 'Stk.'], fits: 'ASK21, ASK23, LS8', history: [{ text: 'Gezählt: 0 Stk.', who: 'NU', at: '2027-01-16' }] },
+      { id: 'e2', kind: 'et', name: 'Bremsbeläge', location: 'Ersatzteilschrank, Fach 5', mode: 'count', qty: 0, unit: ['Satz', 'Satz'], fits: 'ASG32', history: [{ text: 'Gezählt: 0 Satz', who: 'HE', at: '2027-01-09' }] },
+      { id: 'e3', kind: 'et', name: 'Dichtungssatz Wasserballast', location: 'Ersatzteilschrank, Fach 5', mode: 'count', qty: 0, unit: ['Satz', 'Satz'], fits: 'ASG32', history: [{ text: 'Gezählt: 0 Satz', who: 'HE', at: '2027-01-09' }] },
       { id: 'e4', kind: 'et', name: 'Ölfilter', location: 'Motorschrank', mode: 'count', qty: 2, unit: ['Stk.', 'Stk.'], fits: 'Arcus-T', history: [] },
       { id: 'e5', kind: 'et', name: 'Batterie 12 V', location: 'Ladeecke', mode: 'count', qty: 3, unit: ['Stk.', 'Stk.'], fits: 'alle Flugzeuge', history: [] },
       { id: 'e6', kind: 'et', name: 'Spornrad', location: 'Ersatzteilschrank, Fach 1', mode: 'count', qty: 1, unit: ['Stk.', 'Stk.'], fits: 'ASK21, ASK23', history: [] },
@@ -293,11 +302,11 @@ function baseState(): AppState {
     ],
 
     orders: [
-      { id: 'o1', itemId: 'v1', name: 'Waschbenzin', forWhat: 'Lager', state: 'list', reportedBy: 'Heinrich', reportedAt: '2027-01-16', comment: '2 Kanister à 5 l. Nur im Gefahrstoffschrank lagern.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'Heinrich', at: '2027-01-16' }] },
-      { id: 'o2', name: 'Schleifpapier P800', forWhat: 'Lager', state: 'list', reportedBy: 'Werkstatt-Tablet', reportedAt: '2027-01-16', comment: '50 Bogen, nass. Gerne gleich P1000 mitbestellen.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'Werkstatt-Tablet', at: '2027-01-16' }] },
-      { id: 'o3', itemId: 'e1', name: 'Reifenschlauch 4.00-4', forWhat: 'LS8', state: 'list', reportedBy: 'Nuno', reportedAt: '2027-01-16', comment: '1 Stück mit gewinkeltem Ventil.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'Nuno', at: '2027-01-16' }] },
-      { id: 'o4', itemId: 'e3', name: 'Dichtungssatz Wasserballast', forWhat: 'ASG32', state: 'ordered', reportedBy: 'Heinrich', reportedAt: '2027-01-09', delivery: '2027-01-20', comment: '1 Satz, bestellt am 12.01. von Heinrich.', history: [{ text: 'Bestellt', who: 'Heinrich', at: '2027-01-12' }, { text: 'Auf Bestellliste gesetzt', who: 'Heinrich', at: '2027-01-09' }] },
-      { id: 'o5', itemId: 'e2', name: 'Bremsbeläge', forWhat: 'ASG32', state: 'ordered', reportedBy: 'Heinrich', reportedAt: '2027-01-09', delivery: '2027-01-22', comment: '1 Satz, bestellt am 13.01. von Heinrich.', history: [{ text: 'Bestellt', who: 'Heinrich', at: '2027-01-13' }, { text: 'Auf Bestellliste gesetzt', who: 'Heinrich', at: '2027-01-09' }] },
+      { id: 'o1', itemId: 'v1', name: 'Waschbenzin', forWhat: 'Lager', state: 'list', reportedBy: 'HE', reportedAt: '2027-01-16', comment: '2 Kanister à 5 l. Nur im Gefahrstoffschrank lagern.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'HE', at: '2027-01-16' }] },
+      { id: 'o2', name: 'Schleifpapier P800', forWhat: 'Lager', state: 'list', reportedBy: TABLET, reportedAt: '2027-01-16', comment: '50 Bogen, nass. Gerne gleich P1000 mitbestellen.', history: [{ text: 'Auf Bestellliste gesetzt', who: TABLET, at: '2027-01-16' }] },
+      { id: 'o3', itemId: 'e1', name: 'Reifenschlauch 4.00-4', forWhat: 'LS8', state: 'list', reportedBy: 'NU', reportedAt: '2027-01-16', comment: '1 Stück mit gewinkeltem Ventil.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'NU', at: '2027-01-16' }] },
+      { id: 'o4', itemId: 'e3', name: 'Dichtungssatz Wasserballast', forWhat: 'ASG32', state: 'ordered', reportedBy: 'HE', reportedAt: '2027-01-09', delivery: '2027-01-20', comment: '1 Satz, bestellt am 12.01. von Heinrich.', history: [{ text: 'Bestellt', who: 'HE', at: '2027-01-12' }, { text: 'Auf Bestellliste gesetzt', who: 'HE', at: '2027-01-09' }] },
+      { id: 'o5', itemId: 'e2', name: 'Bremsbeläge', forWhat: 'ASG32', state: 'ordered', reportedBy: 'HE', reportedAt: '2027-01-09', delivery: '2027-01-22', comment: '1 Satz, bestellt am 13.01. von Heinrich.', history: [{ text: 'Bestellt', who: 'HE', at: '2027-01-13' }, { text: 'Auf Bestellliste gesetzt', who: 'HE', at: '2027-01-09' }] },
     ],
   }
 }

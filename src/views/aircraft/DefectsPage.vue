@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { state } from '../../store'
+import { can, state, userName } from '../../store'
 import type { Defect } from '../../types'
 import { fmtDate } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
 import DropdownSelect from '../../components/DropdownSelect.vue'
 import PriorityBadge from '../../components/PriorityBadge.vue'
 import DefectModal from './DefectModal.vue'
-import NewDefectModal from './NewDefectModal.vue'
+import DefectFormModal from './DefectFormModal.vue'
 
 const route = useRoute()
 const aircraftId = computed(() => String(route.params.id))
@@ -34,7 +34,8 @@ const closeDefect = () => {
   if (route.query.befund) router.replace({ query: {} })
 }
 const openDefect = computed(() => state.defects.find((d) => d.id === openId.value) ?? null)
-const creating = ref(false)
+// Formular für neuen ('new') oder bestehenden Befund; die Detailansicht ist solange ausgeblendet.
+const form = ref<Defect | 'new' | null>(null)
 </script>
 
 <template>
@@ -49,7 +50,7 @@ const creating = ref(false)
       </div>
       <div class="right">
         <DropdownSelect v-model="source" label="Quelle" :options="SOURCES" />
-        <button type="button" class="btn btn-primary btn-sm tall" @click="creating = true"><AppIcon name="camera" :size="17" :stroke="1.9" />Befund erfassen</button>
+        <button v-if="can('edit')" type="button" class="btn btn-primary btn-sm tall" @click="form = 'new'"><AppIcon name="camera" :size="17" :stroke="1.9" />Befund erfassen</button>
       </div>
     </div>
 
@@ -71,10 +72,10 @@ const creating = ref(false)
           <AppIcon :name="d.source === 'vf' ? 'cloud' : 'camera'" :size="15" :stroke="1.9" />
           {{ d.source === 'vf' ? 'Vereinsflieger' : `Befund · ${d.photos === 1 ? '1 Foto' : `${d.photos} Fotos`}` }}
         </span>
-        <span role="cell" class="c-stack"><strong>{{ fmtDate(d.reportedAt) }}</strong><span class="muted">{{ d.reportedBy }}</span></span>
+        <span role="cell" class="c-stack"><strong>{{ fmtDate(d.reportedAt) }}</strong><span class="muted">{{ userName(d.reportedBy) }}</span></span>
         <span role="cell" class="c-stack">
-          <template v-if="d.status === 'open'"><strong>{{ d.owner }}</strong></template>
-          <template v-else><strong>{{ fmtDate(d.doneAt!) }}</strong><span class="muted">{{ d.doneBy }}</span></template>
+          <template v-if="d.status === 'open'"><strong>{{ d.owner ? userName(d.owner) : 'noch niemand' }}</strong></template>
+          <template v-else><strong>{{ fmtDate(d.doneAt!) }}</strong><span class="muted">{{ userName(d.doneBy) }}</span></template>
         </span>
         <span role="cell"><PriorityBadge :priority="d.priority" /></span>
         <span role="cell" class="c-chev"><AppIcon name="chevronRight" /></span>
@@ -83,8 +84,8 @@ const creating = ref(false)
     </div>
   </section>
 
-  <DefectModal v-if="openDefect" :defect="openDefect" @close="closeDefect" />
-  <NewDefectModal v-if="creating" :aircraft-id="aircraftId" @close="creating = false; tab = 'open'" />
+  <DefectModal v-if="openDefect && !form" :defect="openDefect" @close="closeDefect" @edit="form = openDefect" />
+  <DefectFormModal v-if="form" :aircraft-id="aircraftId" :defect="form === 'new' ? undefined : form" @close="tab = form === 'new' ? 'open' : tab; form = null" />
 </template>
 
 <style scoped>

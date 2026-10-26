@@ -12,6 +12,8 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 **Zeitplan** (Startseite)
 - Saisonplan: welches Flugzeug ist wann in der Werkstatt
 - Werkstattleitung pro Samstag, offene Tage sind markiert und können übernommen werden
+- Kommentar und Verlauf pro Tag, geschlossene Tage (z. B. Weihnachten)
+- Admins verschieben die Werkstattzeiträume direkt im Saisonplan
 
 **Pro Flugzeug**
 - **Kanban** als Board (Offen · In Arbeit · Erledigt) mit Eignung für Einsteiger, Erfahrene oder nur Werkstattleiter/Prüfer, Checklisten und Abzeichnung durch die Werkstattleitung
@@ -24,6 +26,10 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 - Verbrauchsstoffe aus dem Lager und Ersatzteile mit Lagerort und Bestand
 - Bestellliste: muss bestellt werden → bestellt → geliefert (mit gelieferter Menge)
 - Bestellungen auch ohne Artikel, z. B. für einmalige Besorgungen
+
+**Verwaltung** (Admin): Konten mit Rollen, Saison
+
+**Rollen:** ohne Login nur lesen; Mitglieder bearbeiten Karten, Befunde, Inventur und Bestellungen; Werkstattleiter (auch das Werkstatt-Tablet) zeichnen zusätzlich ab und planen die Tage; Admins verwalten Konten und Saison. In der Demo wechselt man das Testkonto unten links.
 
 **FAQ** für Neue und Flugschüler
 
@@ -63,6 +69,6 @@ Mehr zur Code-Struktur und zu den Konventionen steht in [CLAUDE.md](CLAUDE.md).
 
 - **Backend** auf einem kleinen VPS bei Hetzner statt Beispieldaten
 - **Anbindung an Vereinsflieger** für Fristen und Mängel
-- **Rollen:** Lesezugriff ohne Login, Werkstattleiter (auch das Werkstatt-Tablet) mit fast allen Rechten, Admin mit allen Rechten
+- **Login** statt Testkonto-Wechsel, Rechte zusätzlich im Backend prüfen
 - **PWA** für die Nutzung am Tablet auch ohne Netz
 - echte Datei-Uploads und Fotos von der Kamera

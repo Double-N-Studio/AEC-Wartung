@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { addItemToOrders, countItem, openOrderFor, state } from '../../store'
+import { addItemToOrders, can, countItem, openOrderFor, state } from '../../store'
 import type { InventoryItem } from '../../types'
 import { fmtDay } from '../../utils/date'
-import { stockLevel, unitOf, type StockLevel } from '../../utils/stock'
+import { stockLevel, stockText, unitOf, type StockLevel } from '../../utils/stock'
 import AppIcon from '../AppIcon.vue'
 import DropdownSelect from '../DropdownSelect.vue'
 import LevelPicker from '../LevelPicker.vue'
@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{ items: InventoryItem[]; kinds?: ('vs' |
   kinds: () => ['vs', 'et'],
   planeFilter: true,
 })
-const emit = defineEmits<{ open: [item: InventoryItem] }>()
+const emit = defineEmits<{ open: [item: InventoryItem]; add: [] }>()
 
 const kind = ref<'vs' | 'et'>(props.kinds[0])
 const query = ref('')
@@ -74,6 +74,7 @@ const groups = computed(() =>
           <input v-model="query" type="search" placeholder="Artikel suchen" class="input">
         </label>
         <DropdownSelect v-if="props.planeFilter && kind === 'et'" v-model="plane" label="Flugzeug" :options="PLANES" />
+        <button v-if="can('edit')" type="button" class="btn btn-sm tall" @click="emit('add')"><AppIcon name="plus" :size="16" :stroke="2.2" />Artikel anlegen</button>
       </div>
     </div>
 
@@ -88,14 +89,15 @@ const groups = computed(() =>
               <span v-if="i.kind === 'et' && i.fits" class="meta-item">Passt für {{ i.fits }}</span>
             </span>
           </div>
-          <div class="control">
+          <div v-if="!can('edit')" class="control readonly" :class="{ zero: i.qty === 0 }">{{ stockText(i) }}</div>
+          <div v-else class="control">
             <QtyStepper v-if="i.mode === 'count'" :model-value="i.qty" :label="`${i.qty} ${unitOf(i, i.qty)}`" boxed @update:model-value="countItem(i, $event)" />
             <LevelPicker v-else :model-value="i.qty" @update:model-value="countItem(i, $event)" />
           </div>
           <div class="order">
             <span v-if="openOrderFor(i.id)?.state === 'list'" class="state list"><span class="state-dot" />Auf Bestellliste</span>
             <span v-else-if="openOrderFor(i.id)?.state === 'ordered'" class="state ordered"><span class="state-dot" />Bestellt · {{ fmtDay(openOrderFor(i.id)!.delivery!) }}</span>
-            <button v-else type="button" class="btn btn-sm" @click="addItemToOrders(i, props.forWhat)">Auf Bestellliste</button>
+            <button v-else-if="can('edit')" type="button" class="btn btn-sm" @click="addItemToOrders(i, props.forWhat)">Auf Bestellliste</button>
           </div>
         </li>
       </ul>
@@ -126,6 +128,9 @@ const groups = computed(() =>
 .meta-item { display: inline-flex; align-items: center; gap: 5px; }
 .control { flex: 0 0 224px; }
 .order { flex: 0 0 176px; display: flex; justify-content: flex-end; }
+.control.readonly { font-size: 13.5px; font-weight: 600; text-align: center; }
+.control.readonly.zero { color: var(--orange-ink); }
+.tall { height: 40px; }
 .state { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-size: 12.5px; font-weight: 600; }
 .state-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .state.list { color: var(--orange-ink); }

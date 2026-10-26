@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import AppIcon from './components/AppIcon.vue'
+import { currentUser } from './store'
 import logoUrl from './assets/aec-logo.png'
 
 const drawerOpen = ref(false)
@@ -26,6 +27,9 @@ watch(() => route.fullPath, () => { drawerOpen.value = false })
     <div v-if="drawerOpen" class="backdrop" @click="drawerOpen = false" />
 
     <main class="content">
+      <p v-if="!currentUser()" class="guest-note">
+        <AppIcon name="eye" :size="16" />Nicht angemeldet – du kannst alles ansehen, aber nichts ändern.
+      </p>
       <RouterView />
     </main>
   </div>
@@ -36,6 +40,10 @@ watch(() => route.fullPath, () => { drawerOpen.value = false })
 .topbar { display: none; }
 .sidebar-wrap { height: 100%; }
 .content { flex: 1; min-width: 0; height: 100%; overflow-y: auto; }
+.guest-note {
+  display: flex; align-items: center; gap: 8px; padding: 10px 32px;
+  background: var(--gray-soft); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--text-2);
+}
 
 @media (max-width: 900px) {
   .shell { flex-direction: column; }
@@ -53,5 +61,6 @@ watch(() => route.fullPath, () => { drawerOpen.value = false })
   .sidebar-wrap.open { transform: translateX(0); box-shadow: var(--shadow-modal); }
   .backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(23, 32, 43, 0.4); }
   .content { height: auto; flex: 1; min-height: 0; }
+  .guest-note { padding: 10px 16px; }
 }
 </style>

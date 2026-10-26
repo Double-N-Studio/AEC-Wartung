@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { setDayComment, setLeader, state } from '../store'
-import type { Aircraft, PersonKey } from '../types'
-import { LEADERS, PEOPLE } from '../mock/people'
-import { addDays, daysBetween, fmtDay, fmtLong, MONTHS, parse, toIso, TODAY } from '../utils/date'
+import { can, leaders, planesOn, setAircraftPeriod, setDayClosed, setDayComment, setLeader, state, userName } from '../store'
+import type { Aircraft } from '../types'
+import { addDays, daysBetween, fmtDay, fmtLong, fmtWhen, MONTHS, parse, toIso, TODAY } from '../utils/date'
 import AppIcon from '../components/AppIcon.vue'
 import AppModal from '../components/AppModal.vue'
+import HistoryList from '../components/HistoryList.vue'
 
 /* ---------- Saisonplan (Gantt) ---------- */
-const SEASON_START = '2026-11-02'
-const WEEKS = 21
+// Der Plan beginnt am Montag der Woche des ersten Werkstatt-Samstags und endet mit der Woche des letzten.
+const ganttStart = computed(() => addDays(state.season.start, -((parse(state.season.start).getDay() + 6) % 7)))
+const weekCount = computed(() => Math.max(1, Math.floor(daysBetween(ganttStart.value, state.season.end) / 7) + 1))
+const firstSat = computed(() => addDays(ganttStart.value, 5))
+const lastSat = computed(() => addDays(ganttStart.value, weekCount.value * 7 - 2))
 
 function isoWeek(iso: string) {
   const d = parse(iso)
@@ -18,8 +21,8 @@ function isoWeek(iso: string) {
   return 1 + Math.round(((thursday.getTime() - firstThursday.getTime()) / 86400000 - 3 + ((firstThursday.getDay() + 6) % 7)) / 7)
 }
 
-const weeks = computed(() => Array.from({ length: WEEKS }, (_, i) => {
-  const start = addDays(SEASON_START, i * 7)
+const weeks = computed(() => Array.from({ length: weekCount.value }, (_, i) => {
+  const start = addDays(ganttStart.value, i * 7)
   return { start, kw: isoWeek(start), month: parse(addDays(start, 3)).getMonth(), isNow: daysBetween(start, TODAY) >= 0 && daysBetween(start, TODAY) < 7 }
 }))
 
@@ -33,12 +36,68 @@ const months = computed(() => {
   return out
 })
 
-const weekIndex = (iso: string) => Math.max(0, Math.min(WEEKS - 1, Math.floor(daysBetween(SEASON_START, iso) / 7)))
-const todayPct = (daysBetween(SEASON_START, TODAY) / (WEEKS * 7)) * 100
+const weekIndex = (iso: string) => Math.max(0, Math.min(weekCount.value - 1, Math.floor(daysBetween(ganttStart.value, iso) / 7)))
+const todayPct = computed(() => (daysBetween(ganttStart.value, TODAY) / (weekCount.value * 7)) * 100)
+const showToday = computed(() => todayPct.value >= 0 && todayPct.value <= 100)
 
-const workDays = (a: Aircraft) => {
+/* Zeiträume ziehen (Admin): Balken verschieben oder an den Enden verlängern/kürzen, immer in ganzen Wochen. */
+const editPeriods = ref(false)
+type DragMode = 'move' | 'start' | 'end'
+const drag = ref<{ id: string; mode: DragMode; x: number; colW: number; start: string; end: string } | null>(null)
+const preview = ref<{ id: string; start: string; end: string } | null>(null)
+const periodOf = (a: Aircraft) => (preview.value?.id === a.id ? preview.value : a)
+
+const minIso = (a: string, b: string) => (a < b ? a : b)
+const maxIso = (a: string, b: string) => (a > b ? a : b)
+
+function shifted(p: { start: string; end: string }, mode: DragMode, weeksDelta: number) {
+  if (mode === 'start') return { start: maxIso(firstSat.value, minIso(addDays(p.start, weeksDelta * 7), p.end)), end: p.end }
+  if (mode === 'end') return { start: p.start, end: minIso(lastSat.value, maxIso(addDays(p.end, weeksDelta * 7), p.start)) }
+  // Verschieben: nicht über den Rand des Plans hinaus
+  const lo = Math.ceil(daysBetween(p.start, firstSat.value) / 7)
+  const hi = Math.floor(daysBetween(p.end, lastSat.value) / 7)
+  const d = Math.max(lo, Math.min(hi, weeksDelta))
+  return { start: addDays(p.start, d * 7), end: addDays(p.end, d * 7) }
+}
+
+function startDrag(a: Aircraft, mode: DragMode, e: PointerEvent) {
+  if (!editPeriods.value) return
+  e.preventDefault()
+  const track = (e.currentTarget as HTMLElement).closest('.g-track') as HTMLElement
+  drag.value = { id: a.id, mode, x: e.clientX, colW: track.clientWidth / weekCount.value, start: a.start, end: a.end }
+  preview.value = { id: a.id, start: a.start, end: a.end }
+  window.addEventListener('pointermove', moveDrag)
+  window.addEventListener('pointerup', endDrag)
+  window.addEventListener('pointercancel', endDrag)
+}
+
+function moveDrag(e: PointerEvent) {
+  const d = drag.value
+  if (!d) return
+  preview.value = { id: d.id, ...shifted(d, d.mode, Math.round((e.clientX - d.x) / d.colW)) }
+}
+
+function endDrag() {
+  window.removeEventListener('pointermove', moveDrag)
+  window.removeEventListener('pointerup', endDrag)
+  window.removeEventListener('pointercancel', endDrag)
+  const a = state.aircraft.find((x) => x.id === preview.value?.id)
+  if (a && preview.value && (a.start !== preview.value.start || a.end !== preview.value.end)) setAircraftPeriod(a, preview.value.start, preview.value.end)
+  drag.value = null
+  preview.value = null
+}
+
+/** Tastatur: Pfeil verschiebt um eine Woche, mit Umschalt ändert er das Ende. */
+function keyDrag(a: Aircraft, e: KeyboardEvent) {
+  if (!editPeriods.value || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
+  e.preventDefault()
+  const p = shifted(a, e.shiftKey ? 'end' : 'move', e.key === 'ArrowLeft' ? -1 : 1)
+  setAircraftPeriod(a, p.start, p.end)
+}
+
+const workDays = (p: { start: string; end: string }) => {
   let n = 0
-  for (let d = a.start; d <= a.end; d = addDays(d, 1)) {
+  for (let d = p.start; d <= p.end; d = addDays(d, 1)) {
     if (parse(d).getDay() === 6 && !state.schedule[d]?.closed) n += 1
   }
   return n
@@ -47,13 +106,14 @@ const workDays = (a: Aircraft) => {
 const bars = computed(() => [...state.aircraft]
   .sort((a, b) => a.start.localeCompare(b.start))
   .map((a) => {
+    const p = periodOf(a)
     const status = a.end < TODAY ? 'done' : a.start <= TODAY ? 'running' : 'planned'
     const tasks = state.tasks.filter((t) => t.aircraftId === a.id)
     const doneCount = tasks.filter((t) => t.status === 'erledigt').length
     const pct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0
     return {
-      a, status, pct, col: `${weekIndex(a.start) + 1} / ${weekIndex(a.end) + 2}`,
-      info: `${workDays(a)} Werkstatttage`, progress: `${doneCount} von ${tasks.length} erledigt`,
+      a, status, pct, col: `${weekIndex(p.start) + 1} / ${weekIndex(p.end) + 2}`, dragging: preview.value?.id === a.id,
+      range: rangeText(p), info: `${workDays(p)} Werkstatttage`, progress: `${doneCount} von ${tasks.length} erledigt`,
     }
   }))
 
@@ -61,13 +121,14 @@ const bars = computed(() => [...state.aircraft]
 const ganttScroll = ref<HTMLElement | null>(null)
 onMounted(() => {
   const el = ganttScroll.value
-  if (el && el.scrollWidth > el.clientWidth) el.scrollLeft = (el.scrollWidth * todayPct) / 100 - el.clientWidth / 2
+  if (el && el.scrollWidth > el.clientWidth) el.scrollLeft = (el.scrollWidth * todayPct.value) / 100 - el.clientWidth / 2
 })
 
 // Das Popup hängt am <body>, damit es nicht im scrollbaren Plan abgeschnitten wird.
 const pop = ref<{ id: string; top: number; left: number } | null>(null)
 const popBar = computed(() => bars.value.find((b) => b.a.id === pop.value?.id) ?? null)
 function toggleBar(id: string, e: MouseEvent) {
+  if (editPeriods.value) return
   if (pop.value?.id === id) { pop.value = null; return }
   const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
   pop.value = { id, top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - 256)) }
@@ -86,13 +147,24 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', closePop)
   window.removeEventListener('scroll', closePop, true)
   window.removeEventListener('resize', closePop)
+  endDrag()
 })
-const rangeText = (a: Aircraft) => `Sa ${fmtDay(a.start)}${a.start.slice(0, 4) !== a.end.slice(0, 4) ? a.start.slice(0, 4) : ''} – Sa ${fmtDay(a.end)}${a.end.slice(0, 4)}`
+function rangeText(p: { start: string; end: string }) {
+  return `Sa ${fmtDay(p.start)}${p.start.slice(0, 4) !== p.end.slice(0, 4) ? p.start.slice(0, 4) : ''} – Sa ${fmtDay(p.end)}${p.end.slice(0, 4)}`
+}
 
 /* ---------- Werkstatt-Termin (Kalender) ---------- */
-const CAL_MONTHS = [{ y: 2026, m: 11 }, { y: 2027, m: 0 }, { y: 2027, m: 1 }, { y: 2027, m: 2 }]
-const monthIdx = ref(1)
-const calMonth = computed(() => CAL_MONTHS[monthIdx.value])
+const calMonths = computed(() => {
+  const out: { y: number; m: number }[] = []
+  const end = parse(state.season.end)
+  for (let d = parse(state.season.start); d <= end; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+    out.push({ y: d.getFullYear(), m: d.getMonth() })
+  }
+  return out
+})
+const todayMonth = calMonths.value.findIndex((c) => c.y === parse(TODAY).getFullYear() && c.m === parse(TODAY).getMonth())
+const monthIdx = ref(Math.max(0, todayMonth))
+const calMonth = computed(() => calMonths.value[Math.min(monthIdx.value, calMonths.value.length - 1)])
 const monthLabel = computed(() => `${MONTHS[calMonth.value.m]} ${calMonth.value.y}`)
 
 interface Cell { iso: string; day: number; inMonth: boolean; isSat: boolean }
@@ -108,16 +180,28 @@ const cells = computed<Cell[]>(() => {
 })
 const saturdays = computed(() => cells.value.filter((c) => c.inMonth && c.isSat))
 
-const dayInfo = (iso: string) => state.schedule[iso] ?? { leader: null, planes: '' }
+const dayInfo = (iso: string) => state.schedule[iso] ?? {}
 const leaderOf = (iso: string) => dayInfo(iso).leader ?? null
+const leaderText = (iso: string, empty: string) => (leaderOf(iso) ? userName(leaderOf(iso)) : empty)
 
 const openDay = ref<string | null>(null)
 const editLeader = ref(false)
-watch(openDay, () => { editLeader.value = false })
+const commentDraft = ref('')
+const reasonDraft = ref('')
+watch(openDay, (iso) => {
+  editLeader.value = false
+  commentDraft.value = iso ? dayInfo(iso).comment ?? '' : ''
+  reasonDraft.value = iso ? dayInfo(iso).reason ?? '' : ''
+})
+const leaderOptions = computed(() => {
+  const list = leaders()
+  const current = openDay.value ? leaderOf(openDay.value) : null
+  return current && !list.some((u) => u.id === current) ? [...list, { id: current, name: userName(current) }] : list
+})
 const leaderModel = computed({
   get: () => (openDay.value ? leaderOf(openDay.value) ?? '' : ''),
   set: (v: string) => {
-    if (openDay.value) setLeader(openDay.value, (v || null) as PersonKey | null)
+    if (openDay.value) setLeader(openDay.value, v || null)
     editLeader.value = false
   },
 })
@@ -127,23 +211,47 @@ async function startEditLeader() {
   await nextTick()
   leaderSelect.value?.focus()
 }
-const commentModel = computed({
-  get: () => (openDay.value ? dayInfo(openDay.value).comment ?? '' : ''),
-  set: (v: string) => { if (openDay.value) setDayComment(openDay.value, v) },
+
+const commentEdit = computed(() => (openDay.value ? dayInfo(openDay.value).history?.find((h) => h.text.startsWith('Kommentar')) : undefined))
+function saveComment() {
+  if (openDay.value && can('edit')) setDayComment(openDay.value, commentDraft.value)
+}
+const closedModel = computed({
+  get: () => (openDay.value ? !!dayInfo(openDay.value).closed : false),
+  set: (v: boolean) => { if (openDay.value) setDayClosed(openDay.value, v, reasonDraft.value) },
 })
+function saveReason() {
+  if (openDay.value && closedModel.value && reasonDraft.value.trim() !== dayInfo(openDay.value).reason) setDayClosed(openDay.value, true, reasonDraft.value)
+}
+/** Beim Schließen (auch per Escape) den Kommentar übernehmen, der noch im Feld steht. */
+function closeDay() {
+  saveComment()
+  openDay.value = null
+}
 </script>
 
 <template>
   <div class="page">
     <header>
       <h1 class="page-title">Zeitplan</h1>
-      <p class="page-sub">Wintersaison 2026/27</p>
+      <p class="page-sub">Wintersaison {{ state.season.label }}</p>
     </header>
 
-    <section class="card gantt" aria-labelledby="gantt-h">
-      <h2 id="gantt-h" class="section-title">Saisonplan</h2>
+    <section class="card gantt" :class="{ editing: editPeriods }" aria-labelledby="gantt-h">
+      <div class="gantt-head">
+        <h2 id="gantt-h" class="section-title">Saisonplan</h2>
+        <template v-if="can('admin')">
+          <button v-if="editPeriods" type="button" class="btn btn-primary btn-sm" @click="editPeriods = false"><AppIcon name="check" :size="16" :stroke="2.6" />Fertig</button>
+          <button v-else type="button" class="icon-btn small-btn" aria-label="Werkstattzeiträume ändern" title="Werkstattzeiträume ändern" @click="editPeriods = true; pop = null">
+            <AppIcon name="pen" :size="16" />
+          </button>
+        </template>
+      </div>
+      <p v-if="editPeriods" class="edit-hint">
+        <AppIcon name="pen" :size="14" />Balken ziehen, um den Zeitraum zu verschieben, oder an den Enden ziehen, um ihn zu verlängern oder zu kürzen. Zeiträume laufen immer von Samstag bis Samstag.
+      </p>
       <div ref="ganttScroll" class="gantt-scroll">
-        <div class="gantt-inner">
+        <div class="gantt-inner" :style="{ '--weeks': weekCount, minWidth: `${weekCount * 39}px` }">
           <div class="g-row g-months">
             <span v-for="mo in months" :key="mo.label" :style="{ gridColumn: `${mo.from} / ${mo.to}` }">{{ mo.label }}</span>
           </div>
@@ -153,18 +261,28 @@ const commentModel = computed({
           <div class="g-bars">
             <div v-for="b in bars" :key="b.a.id" class="g-row g-track">
               <div class="g-bar-wrap" :style="{ gridColumn: b.col }">
-                <button type="button" class="g-bar" :class="b.status" :aria-expanded="pop?.id === b.a.id" @click="toggleBar(b.a.id, $event)">
+                <button
+                  type="button" class="g-bar" :class="[b.status, { dragging: b.dragging }]"
+                  :aria-expanded="editPeriods ? undefined : pop?.id === b.a.id"
+                  :aria-label="editPeriods ? `${b.a.type}: ${b.range}. Mit Pfeiltasten verschieben, mit Umschalt+Pfeil das Ende ändern.` : undefined"
+                  @click="toggleBar(b.a.id, $event)" @pointerdown="startDrag(b.a, 'move', $event)" @keydown="keyDrag(b.a, $event)"
+                >
+                  <span v-if="editPeriods" class="g-handle left" aria-hidden="true" @pointerdown.stop="startDrag(b.a, 'start', $event)" />
                   <AppIcon v-if="b.status === 'done'" name="check" :size="12" :stroke="3" />
-                  <span class="g-label">{{ b.a.type }} · {{ b.a.reg }}</span>
-                  <template v-if="b.status === 'running'">
+                  <span class="g-label">{{ b.a.type }}<template v-if="!editPeriods"> · {{ b.a.reg }}</template></span>
+                  <span v-if="editPeriods" class="g-range">{{ b.range }}</span>
+                  <template v-else-if="b.status === 'running'">
                     <span class="g-pct">{{ b.pct }} %</span>
                     <span class="g-progress"><span :style="{ width: `${b.pct}%` }" /></span>
                   </template>
+                  <span v-if="editPeriods" class="g-handle right" aria-hidden="true" @pointerdown.stop="startDrag(b.a, 'end', $event)" />
                 </button>
               </div>
             </div>
-            <div class="g-today" :style="{ left: `${todayPct}%` }" />
-            <span class="g-today-label" :style="{ left: `${todayPct}%` }">Heute · {{ fmtDay(TODAY) }}</span>
+            <template v-if="showToday">
+              <div class="g-today" :style="{ left: `${todayPct}%` }" />
+              <span class="g-today-label" :style="{ left: `${todayPct}%` }">Heute · {{ fmtDay(TODAY) }}</span>
+            </template>
           </div>
         </div>
       </div>
@@ -176,7 +294,7 @@ const commentModel = computed({
         <div class="cal-nav">
           <button type="button" class="icon-btn small-btn" aria-label="Vorheriger Monat" :disabled="monthIdx === 0" @click="monthIdx--"><AppIcon name="chevronLeft" :size="16" /></button>
           <span class="cal-month">{{ monthLabel }}</span>
-          <button type="button" class="icon-btn small-btn" aria-label="Nächster Monat" :disabled="monthIdx === CAL_MONTHS.length - 1" @click="monthIdx++"><AppIcon name="chevronRight" :size="16" /></button>
+          <button type="button" class="icon-btn small-btn" aria-label="Nächster Monat" :disabled="monthIdx >= calMonths.length - 1" @click="monthIdx++"><AppIcon name="chevronRight" :size="16" /></button>
         </div>
       </div>
 
@@ -193,8 +311,8 @@ const commentModel = computed({
             </span>
             <template v-if="dayInfo(c.iso).closed"><span class="cell-sub">{{ dayInfo(c.iso).reason }}</span></template>
             <template v-else>
-              <span v-if="dayInfo(c.iso).planes" class="cell-planes">{{ dayInfo(c.iso).planes }}</span>
-              <span class="cell-sub">{{ leaderOf(c.iso) ? PEOPLE[leaderOf(c.iso)!].name : 'Leitung offen' }}</span>
+              <span v-if="planesOn(c.iso)" class="cell-planes">{{ planesOn(c.iso) }}</span>
+              <span class="cell-sub">{{ leaderText(c.iso, 'Leitung offen') }}</span>
             </template>
           </button>
         </template>
@@ -210,8 +328,8 @@ const commentModel = computed({
             </span>
             <span v-if="dayInfo(c.iso).closed" class="muted">{{ dayInfo(c.iso).reason }} – geschlossen</span>
             <template v-else>
-              <span v-if="dayInfo(c.iso).planes" class="list-planes">{{ dayInfo(c.iso).planes }}</span>
-              <span class="muted">{{ leaderOf(c.iso) ? PEOPLE[leaderOf(c.iso)!].name : 'Leitung offen' }}</span>
+              <span v-if="planesOn(c.iso)" class="list-planes">{{ planesOn(c.iso) }}</span>
+              <span class="muted">{{ leaderText(c.iso, 'Leitung offen') }}</span>
             </template>
           </button>
         </li>
@@ -221,7 +339,7 @@ const commentModel = computed({
     <Teleport to="body">
       <div v-if="pop && popBar" class="g-pop" role="dialog" :aria-label="`${popBar.a.type} Zeitraum`" :style="{ top: `${pop.top}px`, left: `${pop.left}px` }">
         <strong>{{ popBar.a.type }} · {{ popBar.a.reg }}</strong>
-        <span>{{ rangeText(popBar.a) }}</span>
+        <span>{{ popBar.range }}</span>
         <span class="muted small">{{ popBar.info }}</span>
         <div class="pop-progress">
           <div class="pop-progress-text"><span class="muted">{{ popBar.progress }}</span><strong>{{ popBar.pct }} %</strong></div>
@@ -231,30 +349,47 @@ const commentModel = computed({
       </div>
     </Teleport>
 
-    <AppModal v-if="openDay" :title="fmtLong(openDay)" icon="calendar" subtitle="Werkstatttag · 9–17 Uhr" :width="500" @close="openDay = null">
-      <div v-if="dayInfo(openDay).closed" class="closed-box">Werkstatt geschlossen · {{ dayInfo(openDay).reason }}</div>
-      <template v-else>
-        <div class="day-tiles">
-          <div class="day-tile"><span>Flugzeuge</span><strong>{{ dayInfo(openDay).planes || '–' }}</strong></div>
-          <div class="day-tile">
-            <label for="day-leader">Werkstattleitung</label>
-            <select v-if="editLeader" id="day-leader" ref="leaderSelect" v-model="leaderModel" class="select leader-select" @blur="editLeader = false">
-              <option value="">Noch offen</option>
-              <option v-for="k in LEADERS" :key="k" :value="k">{{ PEOPLE[k].name }}</option>
-            </select>
-            <span v-else class="leader-row">
-              <strong>{{ leaderOf(openDay) ? PEOPLE[leaderOf(openDay)!].name : 'Noch offen' }}</strong>
-              <button type="button" class="pen-btn" aria-label="Werkstattleitung ändern" @click="startEditLeader"><AppIcon name="pen" :size="15" /></button>
-            </span>
-          </div>
-        </div>
+    <AppModal v-if="openDay" :title="fmtLong(openDay)" icon="calendar" subtitle="Werkstatttag · 9–17 Uhr" :width="500" @close="closeDay">
+      <template v-if="dayInfo(openDay).closed" #status>
+        <span class="pill pill-gray">Geschlossen</span>
       </template>
-      <div class="field">
-        <label for="day-comment">Kommentar zum Tag</label>
-        <textarea id="day-comment" v-model="commentModel" rows="3" class="textarea" placeholder="z. B. Heizung vorher anmachen, Material abholen …" />
+
+      <div v-if="dayInfo(openDay).closed && !can('lead')" class="closed-box">Werkstatt geschlossen · {{ dayInfo(openDay).reason }}</div>
+      <div v-else-if="!dayInfo(openDay).closed" class="day-tiles">
+        <div class="day-tile"><span>Flugzeuge</span><strong>{{ planesOn(openDay) || '–' }}</strong></div>
+        <div class="day-tile">
+          <label for="day-leader">Werkstattleitung</label>
+          <select v-if="editLeader" id="day-leader" ref="leaderSelect" v-model="leaderModel" class="select leader-select" @blur="editLeader = false">
+            <option value="">Noch offen</option>
+            <option v-for="u in leaderOptions" :key="u.id" :value="u.id">{{ u.name }}</option>
+          </select>
+          <span v-else class="leader-row">
+            <strong>{{ leaderText(openDay, 'Noch offen') }}</strong>
+            <button v-if="can('lead')" type="button" class="pen-btn" aria-label="Werkstattleitung ändern" @click="startEditLeader"><AppIcon name="pen" :size="15" /></button>
+          </span>
+        </div>
       </div>
+
+      <div v-if="can('edit')" class="field">
+        <label for="day-comment">Kommentar zum Tag</label>
+        <textarea id="day-comment" v-model="commentDraft" rows="3" class="textarea" placeholder="z. B. Heizung vorher anmachen, Material abholen …" @change="saveComment" />
+        <span v-if="commentEdit" class="muted small">Zuletzt geändert von {{ userName(commentEdit.who) }} · {{ fmtWhen(commentEdit.at) }}</span>
+      </div>
+      <div v-else-if="dayInfo(openDay).comment" class="field">
+        <span class="field-label">Kommentar zum Tag</span>
+        <p class="comment">{{ dayInfo(openDay).comment }}</p>
+        <span v-if="commentEdit" class="muted small">{{ userName(commentEdit.who) }} · {{ fmtWhen(commentEdit.at) }}</span>
+      </div>
+
+      <div v-if="can('lead')" class="closed-edit">
+        <label class="check-row"><input v-model="closedModel" type="checkbox"> Werkstatt an diesem Tag geschlossen</label>
+        <input v-if="closedModel" v-model="reasonDraft" class="input" aria-label="Grund" placeholder="Grund, z. B. Weihnachten" @change="saveReason">
+      </div>
+
+      <HistoryList :entries="dayInfo(openDay).history ?? []" />
+
       <template #footer>
-        <button type="button" class="btn btn-primary" @click="openDay = null">Fertig</button>
+        <button type="button" class="btn btn-primary" @click="closeDay">Fertig</button>
       </template>
     </AppModal>
   </div>
@@ -266,14 +401,20 @@ const commentModel = computed({
 
 /* Gantt */
 .gantt { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.gantt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
+.edit-hint {
+  display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 10px;
+  background: var(--accent-tint); border: 1px solid var(--accent-soft); font-size: 13px; color: var(--text-2); line-height: 1.45;
+}
+.edit-hint svg { flex-shrink: 0; margin-top: 2px; color: var(--accent-ink); }
 .gantt-scroll { overflow-x: auto; padding-bottom: 4px; }
-.gantt-inner { min-width: 820px; display: flex; flex-direction: column; gap: 4px; }
-.g-row { display: grid; grid-template-columns: repeat(21, minmax(0, 1fr)); }
-.g-months span { font-size: 12px; font-weight: 600; color: var(--text-2); border-left: 1px solid #D5DCE5; padding-left: 6px; height: 18px; }
+.gantt-inner { display: flex; flex-direction: column; gap: 4px; }
+.g-row { display: grid; grid-template-columns: repeat(var(--weeks), minmax(0, 1fr)); }
+.g-months span { font-size: 12px; font-weight: 600; color: var(--text-2); border-left: 1px solid var(--border-strong); padding-left: 6px; height: 18px; }
 .g-weeks span { font-size: 11px; color: var(--muted); text-align: center; height: 18px; }
 .g-weeks .now { color: var(--today); font-weight: 700; }
 .g-bars { position: relative; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-.g-track { height: 30px; background-image: linear-gradient(to right, var(--border-soft) 1px, transparent 1px); background-size: calc(100% / 21) 100%; }
+.g-track { height: 30px; background-image: linear-gradient(to right, var(--border-soft) 1px, transparent 1px); background-size: calc(100% / var(--weeks)) 100%; }
 .g-bar-wrap { position: relative; align-self: center; margin: 0 2px; }
 .g-bar {
   position: relative; width: 100%; height: 26px; border-radius: 7px; padding: 0 10px; border: 1px solid transparent;
@@ -291,9 +432,19 @@ const commentModel = computed({
 .g-bar.done { background: var(--green-soft); border-color: #B5DCC6; color: var(--green-ink); }
 .g-bar.running { background: var(--accent); color: #fff; }
 .g-bar.planned { background: var(--surface); border: 1.5px dashed var(--faint); color: var(--text-2); }
+/* Bearbeiten: ganze Balken ziehen, Griffe an den Enden */
+.editing .g-bar { touch-action: none; cursor: grab; padding: 0 16px 0 14px; box-shadow: 0 0 0 1px var(--accent-soft); }
+.editing .g-bar.running { padding-bottom: 0; }
+.editing .g-bar.dragging { cursor: grabbing; box-shadow: 0 0 0 2px var(--accent); }
+.editing .g-label { flex-shrink: 0; }
+.g-range { margin-left: auto; padding-left: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 11px; font-weight: 600; opacity: 0.85; }
+.g-handle { position: absolute; top: 0; bottom: 0; width: 12px; cursor: ew-resize; touch-action: none; }
+.g-handle::after { content: ''; position: absolute; top: 6px; bottom: 6px; left: 5px; width: 2px; border-radius: 1px; background: currentColor; opacity: 0.55; }
+.g-handle.left { left: 0; }
+.g-handle.right { right: 0; }
 .g-pop {
   position: fixed; z-index: 40; width: 240px; padding: 14px;
-  background: var(--surface); border: 1px solid #D5DCE5; border-radius: 12px; box-shadow: var(--shadow-pop);
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: var(--shadow-pop);
   display: flex; flex-direction: column; gap: 4px; font-size: 13px;
 }
 .g-today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--today); pointer-events: none; }
@@ -301,12 +452,13 @@ const commentModel = computed({
   position: absolute; top: 6px; transform: translateX(-50%); pointer-events: none; white-space: nowrap;
   background: var(--today); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
 }
+.editing .g-today-label { opacity: 0.35; }
 
 /* Kalender */
 .cal { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
 .cal-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .cal-nav { display: flex; align-items: center; gap: 4px; }
-.small-btn { width: 36px; height: 36px; border-color: #D5DCE5; color: var(--text-2); }
+.small-btn { width: 36px; height: 36px; border-color: var(--border-strong); color: var(--text-2); }
 .cal-month { min-width: 132px; text-align: center; font-size: 15px; font-weight: 600; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
 .wd { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 2px; }
@@ -349,6 +501,10 @@ const commentModel = computed({
 .note-icon { color: var(--muted); flex-shrink: 0; }
 .cell-top .note-icon { margin-left: 4px; margin-right: auto; }
 .closed-box { padding: 14px 16px; border-radius: 12px; background: var(--bg); font-size: 14px; font-weight: 600; color: var(--text-2); }
+.comment { font-size: 14px; line-height: 1.5; white-space: pre-line; }
+.closed-edit { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); }
+.check-row { display: flex; align-items: center; gap: 10px; min-height: 32px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.check-row input { width: 20px; height: 20px; accent-color: var(--accent); }
 
 @media (max-width: 640px) {
   .cal-grid { display: none; }

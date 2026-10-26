@@ -5,7 +5,7 @@ import type { Priority } from '../types'
 const props = defineProps<{ priority: Priority }>()
 
 const COLORS: Record<Priority, [string, string]> = {
-  Hoch: ['#FDE2E1', '#A12C23'],
+  Hoch: ['var(--red-soft)', 'var(--red-ink)'],
   Normal: ['#FBEFC8', '#6E5200'],
   Niedrig: ['var(--green-soft)', 'var(--green-ink)'],
   'Sehr niedrig': ['var(--gray-soft)', 'var(--text-2)'],

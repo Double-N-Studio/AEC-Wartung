@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { resetDemo, state } from '../store'
+import { can, resetDemo, state } from '../store'
+import AccountSwitcher from './AccountSwitcher.vue'
 import AppIcon from './AppIcon.vue'
 import logoUrl from '../assets/aec-logo.png'
 
@@ -17,7 +18,7 @@ function onReset() {
   <nav class="sidebar" aria-label="Hauptnavigation">
     <div class="brand">
       <img :src="logoUrl" alt="Aero-Club Bad Nauheim" class="logo">
-      <span class="brand-sub">Winterwartung · Saison 2026/27</span>
+      <span class="brand-sub">Winterwartung · Saison {{ state.season.label }}</span>
     </div>
 
     <div class="group">
@@ -26,6 +27,9 @@ function onReset() {
       </RouterLink>
       <RouterLink to="/inventur" class="nav-item" active-class="active" @click="emit('navigate')">
         <AppIcon name="box" :size="20" :stroke="1.8" /> Inventur
+      </RouterLink>
+      <RouterLink v-if="can('admin')" to="/verwaltung" class="nav-item" active-class="active" @click="emit('navigate')">
+        <AppIcon name="settings" :size="20" :stroke="1.8" /> Verwaltung
       </RouterLink>
     </div>
 
@@ -49,13 +53,7 @@ function onReset() {
     <RouterLink to="/faq" class="nav-item" active-class="active" @click="emit('navigate')">
       <AppIcon name="help" :size="20" :stroke="1.8" /> FAQ
     </RouterLink>
-    <div class="user">
-      <span class="user-icon"><AppIcon name="tablet" :size="20" :stroke="1.8" /></span>
-      <div class="user-text">
-        <strong>Werkstatt-Tablet</strong>
-        <span>Werkstattleiter</span>
-      </div>
-    </div>
+    <AccountSwitcher />
     <button type="button" class="reset" @click="onReset"><AppIcon name="refresh" :size="14" /> Demo zurücksetzen</button>
   </nav>
 </template>
@@ -87,14 +85,6 @@ function onReset() {
 .nav-plane.disabled { cursor: default; }
 .spacer { flex-grow: 1; }
 .spacer + .nav-item { margin-bottom: -12px; }
-.user { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: var(--bg); }
-.user-icon {
-  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-  display: inline-flex; align-items: center; justify-content: center; background: #DCE8F7; color: var(--accent-ink);
-}
-.user-text { display: flex; flex-direction: column; gap: 1px; }
-.user-text strong { font-size: 14px; font-weight: 600; }
-.user-text span { font-size: 12px; color: var(--muted); }
 .reset {
   margin-top: -12px; align-self: center; display: inline-flex; align-items: center; gap: 6px;
   height: 32px; padding: 0 10px; border: 0; background: transparent; font-size: 12px; color: var(--muted);

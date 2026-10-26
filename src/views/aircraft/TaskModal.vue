@@ -1,29 +1,43 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { aircraftLabel, finishTask, setChecklistItem, signTask, startTask, state } from '../../store'
-import type { PersonKey, Task } from '../../types'
-import { PEOPLE } from '../../mock/people'
+import { computed, ref } from 'vue'
+import {
+  aircraftLabel, can, deleteTask, finishTask, reopenTask, resetTaskToOpen, setChecklistItem, signer, signTask,
+  startTask, state, unsignTask, userName,
+} from '../../store'
+import type { Task } from '../../types'
 import { fmtDay, fmtWhen } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
+import ConfirmModal from '../../components/ConfirmModal.vue'
 import HistoryList from '../../components/HistoryList.vue'
 import LevelBadge from '../../components/LevelBadge.vue'
 
 const props = defineProps<{ task: Task }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; edit: [] }>()
 
 const STATUS = { offen: ['Offen', 'pill-gray'], arbeit: ['In Arbeit', 'pill-accent'], erledigt: ['Erledigt', 'pill-green'] }
 const defect = computed(() => state.defects.find((d) => d.id === props.task.defectId))
+const doc = computed(() => state.documents.find((d) => d.id === props.task.docId))
 const checked = computed(() => props.task.checklist.filter((c) => c.done).length)
 const started = computed(() => props.task.history.find((h) => h.text === 'Arbeit gestartet'))
-// Abzeichnen übernimmt die heutige Werkstattleitung.
-const todaysLeader: PersonKey = 'MA'
+// Abgezeichnete Karten sind gesperrt, bis die Werkstattleitung die Abzeichnung zurücknimmt.
+const editable = computed(() => can('edit') && !props.task.signedBy)
+
+const confirming = ref(false)
+function remove() {
+  deleteTask(props.task)
+  emit('close')
+}
 </script>
 
 <template>
   <AppModal :title="task.title" icon="wrench" :subtitle="`Kanban-Karte · ${aircraftLabel(task.aircraftId)}`" @close="emit('close')">
     <template #status>
       <span class="pill" :class="STATUS[task.status][1]">{{ STATUS[task.status][0] }}</span>
+    </template>
+    <template v-if="editable" #tools>
+      <button type="button" class="tool" aria-label="Bearbeiten" title="Bearbeiten" @click="emit('edit')"><AppIcon name="pen" :size="19" /></button>
+      <button type="button" class="tool" aria-label="Löschen" title="Löschen" @click="confirming = true"><AppIcon name="trash" :size="19" /></button>
     </template>
 
     <div class="tiles">
@@ -45,14 +59,14 @@ const todaysLeader: PersonKey = 'MA'
       <AppIcon name="chevronRight" :size="16" class="muted" />
     </RouterLink>
 
-    <div v-if="task.doc" class="links">
-      <RouterLink :to="`/flugzeug/${task.aircraftId}/dokumente`"><AppIcon name="file" :size="16" />{{ task.doc }}</RouterLink>
+    <div v-if="doc" class="links">
+      <RouterLink :to="{ path: `/flugzeug/${task.aircraftId}/dokumente`, query: { dokument: doc.id } }"><AppIcon name="file" :size="16" />{{ doc.title }}</RouterLink>
     </div>
 
     <div v-if="task.checklist.length" class="checklist" role="group" aria-label="Checkliste">
-      <label v-for="(item, i) in task.checklist" :key="i" class="check" :class="{ done: item.done, locked: task.signedBy }">
+      <label v-for="(item, i) in task.checklist" :key="i" class="check" :class="{ done: item.done, locked: !editable }">
         <input
-          type="checkbox" :checked="item.done" :disabled="!!task.signedBy"
+          type="checkbox" :checked="item.done" :disabled="!editable"
           @change="setChecklistItem(task, i, ($event.target as HTMLInputElement).checked)"
         ><span>{{ item.text }}</span>
       </label>
@@ -61,21 +75,35 @@ const todaysLeader: PersonKey = 'MA'
     <HistoryList :entries="task.history" />
 
     <template #meta>
-      <span v-if="task.signedBy" class="signed"><AppIcon name="shield" :size="15" />Abgezeichnet von {{ task.signedBy }} · {{ fmtWhen(task.signedAt!) }}</span>
-      <span v-else-if="task.status === 'erledigt'">Erledigt von {{ task.doneBy }} · {{ fmtWhen(task.doneAt!) }}</span>
-      <span v-else-if="started">Gestartet von {{ started.who }} · {{ fmtWhen(started.at) }}</span>
+      <span v-if="task.signedBy" class="signed"><AppIcon name="shield" :size="15" />Abgezeichnet von {{ userName(task.signedBy) }} · {{ fmtWhen(task.signedAt!) }}</span>
+      <span v-else-if="task.status === 'erledigt'">Erledigt von {{ userName(task.doneBy) }} · {{ fmtWhen(task.doneAt!) }}</span>
+      <span v-else-if="started">Gestartet von {{ userName(started.who) }} · {{ fmtWhen(started.at) }}</span>
     </template>
     <template #footer>
-      <button v-if="task.status === 'offen'" type="button" class="btn btn-primary" @click="startTask(task)">Arbeit starten</button>
-      <button v-else-if="task.status === 'arbeit'" type="button" class="btn btn-primary" @click="finishTask(task)">
-        <AppIcon name="check" :size="16" :stroke="2.6" />Als erledigt melden
-      </button>
-      <button v-else-if="!task.signedBy" type="button" class="btn btn-primary" @click="signTask(task, todaysLeader)">
-        <AppIcon name="shield" :size="16" />Abzeichnen als {{ PEOPLE[todaysLeader].name }}
-      </button>
-      <button v-else type="button" class="btn" @click="emit('close')">Schließen</button>
+      <template v-if="editable && task.status === 'offen'">
+        <button type="button" class="btn btn-primary" @click="startTask(task)">Arbeit starten</button>
+      </template>
+      <template v-else-if="editable && task.status === 'arbeit'">
+        <button type="button" class="btn btn-ghost" @click="resetTaskToOpen(task)">Zurück auf Offen</button>
+        <button type="button" class="btn btn-primary" @click="finishTask(task)"><AppIcon name="check" :size="16" :stroke="2.6" />Als erledigt melden</button>
+      </template>
+      <template v-else-if="editable">
+        <button type="button" class="btn btn-ghost" @click="reopenTask(task)">Wieder in Arbeit</button>
+        <button v-if="can('lead')" type="button" class="btn btn-primary" @click="signTask(task)">
+          <AppIcon name="shield" :size="16" />Abzeichnen als {{ userName(signer()) }}
+        </button>
+      </template>
+      <template v-else>
+        <button v-if="task.signedBy && can('lead')" type="button" class="btn btn-ghost" @click="unsignTask(task)">Abzeichnung zurücknehmen</button>
+        <button type="button" class="btn" @click="emit('close')">Schließen</button>
+      </template>
     </template>
   </AppModal>
+
+  <ConfirmModal
+    v-if="confirming" title="Kanban-Karte löschen?" :text="`„${task.title}“ wird mit Checkliste und Verlauf gelöscht.`"
+    @confirm="remove" @close="confirming = false"
+  />
 </template>
 
 <style scoped>

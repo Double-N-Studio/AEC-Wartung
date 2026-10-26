@@ -4,14 +4,27 @@ import AppIcon from './AppIcon.vue'
 
 /**
  * Gemeinsames Popup aller Seiten.
- * Kopf: Typ-Symbol, Titel, Untertitel, Status-Chips (#status). Fuß: Info links (#meta), Aktionen rechts (#footer).
+ * Kopf: Typ-Symbol, Titel, Untertitel, Status-Chips (#status), Werkzeuge wie Bearbeiten/Löschen (#tools).
+ * Fuß: Info links (#meta), Aktionen rechts (#footer).
  */
 const props = withDefaults(defineProps<{ title: string; icon: string; subtitle?: string; width?: number }>(), { width: 640 })
 const emit = defineEmits<{ close: [] }>()
 
-const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') emit('close') }
-onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+// Escape schließt nur das oberste Popup, z. B. die Rückfrage vor dem Löschen.
+const token = Symbol('modal')
+const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && openModals[openModals.length - 1] === token) emit('close') }
+onMounted(() => {
+  openModals.push(token)
+  document.addEventListener('keydown', onKey)
+})
+onBeforeUnmount(() => {
+  openModals.splice(openModals.indexOf(token), 1)
+  document.removeEventListener('keydown', onKey)
+})
+</script>
+
+<script lang="ts">
+const openModals: symbol[] = []
 </script>
 
 <template>
@@ -25,7 +38,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
             <p v-if="props.subtitle" class="modal-sub">{{ props.subtitle }}</p>
           </div>
           <div v-if="$slots.status" class="modal-status"><slot name="status" /></div>
-          <button type="button" class="modal-close" aria-label="Schließen" @click="emit('close')"><AppIcon name="x" :size="20" /></button>
+          <div class="modal-tools">
+            <slot name="tools" />
+            <button type="button" class="modal-close" aria-label="Schließen" @click="emit('close')"><AppIcon name="x" :size="20" /></button>
+          </div>
         </header>
         <div class="modal-body"><slot /></div>
         <footer v-if="$slots.footer || $slots.meta" class="modal-foot">
@@ -59,11 +75,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 .modal-title { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
 .modal-sub { font-size: 13px; color: var(--text-2); }
 .modal-status { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.modal-close {
+.modal-tools { display: flex; align-items: center; gap: 2px; }
+.modal-close, .modal-tools :deep(.tool) {
   width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--text-2);
   display: inline-flex; align-items: center; justify-content: center;
 }
-.modal-close:hover { background: var(--accent-soft); }
+.modal-close:hover, .modal-tools :deep(.tool:hover) { background: var(--accent-soft); color: var(--accent-ink); }
 .modal-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
 .modal-foot {
   flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap;

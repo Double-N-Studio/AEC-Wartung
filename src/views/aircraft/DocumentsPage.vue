@@ -1,34 +1,57 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { addDocument, aircraftLabel, state } from '../../store'
+import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { addDocument, aircraftLabel, can, deleteDocument, state, updateDocument } from '../../store'
+import type { DocumentItem } from '../../types'
 import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
+import ConfirmModal from '../../components/ConfirmModal.vue'
 
 const route = useRoute()
+const router = useRouter()
 const aircraftId = computed(() => String(route.params.id))
 const docs = computed(() => state.documents.filter((d) => d.aircraftId === aircraftId.value))
 
+// ?dokument=<id> öffnet ein Dokument direkt (Link aus der Kanban-Karte).
 const viewId = ref<string | null>(null)
+watch(() => route.query.dokument, (id) => { if (typeof id === 'string') viewId.value = id }, { immediate: true })
 const viewing = computed(() => docs.value.find((d) => d.id === viewId.value) ?? null)
+function closeViewer() {
+  viewId.value = null
+  if (route.query.dokument) router.replace({ query: {} })
+}
 
-const adding = ref(false)
+/* Hinzufügen und Bearbeiten teilen sich ein Formular; die Datei ist im Mockup simuliert. */
+const KINDS = ['Handbuch', 'Anleitung', 'Prüfbericht', 'Sonstiges']
+const editing = ref<DocumentItem | 'new' | null>(null)
 const form = reactive({ title: '', kind: 'Handbuch', file: false })
-function openAdd() {
-  Object.assign(form, { title: '', kind: 'Handbuch', file: false })
-  adding.value = true
+function openForm(doc: DocumentItem | 'new') {
+  Object.assign(form, { title: doc === 'new' ? '' : doc.title, kind: 'Handbuch', file: false })
+  editing.value = doc
 }
 function submit() {
-  if (!form.title.trim() || !form.file) return
-  addDocument(aircraftId.value, form.title, form.kind)
-  adding.value = false
+  if (!form.title.trim()) return
+  if (editing.value === 'new') {
+    if (!form.file) return
+    addDocument(aircraftId.value, form.title, form.kind)
+  } else if (editing.value) {
+    updateDocument(editing.value, form.title, form.file)
+  }
+  editing.value = null
+}
+
+const removing = ref<DocumentItem | null>(null)
+function confirmRemove() {
+  if (removing.value) deleteDocument(removing.value)
+  removing.value = null
+  closeViewer()
 }
 </script>
 
 <template>
   <div class="head">
     <h2 class="title">Handbücher und Unterlagen</h2>
-    <button type="button" class="btn btn-sm tall" @click="openAdd"><AppIcon name="plus" :size="17" :stroke="2.2" />Dokument hinzufügen</button>
+    <button v-if="can('edit')" type="button" class="btn btn-sm tall" @click="openForm('new')"><AppIcon name="plus" :size="17" :stroke="2.2" />Dokument hinzufügen</button>
   </div>
 
   <div class="grid">
@@ -40,8 +63,13 @@ function submit() {
       <span class="info"><strong>{{ d.title }}</strong><span class="muted">{{ d.meta }}</span></span>
     </button>
   </div>
+  <p v-if="!docs.length" class="muted empty">Noch keine Dokumente.</p>
 
-  <AppModal v-if="viewing" :title="viewing.title" icon="file" :subtitle="viewing.meta" :width="780" @close="viewId = null">
+  <AppModal v-if="viewing && !editing && !removing" :title="viewing.title" icon="file" :subtitle="viewing.meta" :width="780" @close="closeViewer">
+    <template v-if="can('edit')" #tools>
+      <button type="button" class="tool" aria-label="Bearbeiten" title="Bearbeiten" @click="openForm(viewing)"><AppIcon name="pen" :size="19" /></button>
+      <button type="button" class="tool" aria-label="Löschen" title="Löschen" @click="removing = viewing"><AppIcon name="trash" :size="19" /></button>
+    </template>
     <div class="viewer">
       <img v-if="viewing.image" :src="viewing.image" :alt="viewing.title" class="viewer-img">
       <div v-else class="viewer-img placeholder big"><AppIcon name="file" :size="48" :stroke="1.5" /><span>Scan_2027-01-16.pdf</span></div>
@@ -51,21 +79,26 @@ function submit() {
     </template>
   </AppModal>
 
-  <AppModal v-if="adding" title="Dokument hinzufügen" icon="upload" :subtitle="aircraftLabel(aircraftId)":width="560" @close="adding = false">
-    <form id="add-doc" class="form" @submit.prevent="submit">
+  <AppModal
+    v-if="editing" :title="editing === 'new' ? 'Dokument hinzufügen' : 'Dokument bearbeiten'" :icon="editing === 'new' ? 'upload' : 'file'"
+    :subtitle="aircraftLabel(aircraftId)" :width="560" @close="editing = null"
+  >
+    <form id="doc-form" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="ad-title">Titel</label>
         <input id="ad-title" v-model="form.title" class="input" required placeholder="z. B. Prüfbericht Bordnetz">
       </div>
-      <div class="field">
+      <div v-if="editing === 'new'" class="field">
         <label for="ad-kind">Art</label>
         <select id="ad-kind" v-model="form.kind" class="select">
-          <option v-for="k in ['Handbuch', 'Anleitung', 'Prüfbericht', 'Sonstiges']" :key="k" :value="k">{{ k }}</option>
+          <option v-for="k in KINDS" :key="k" :value="k">{{ k }}</option>
         </select>
       </div>
       <div class="field">
-        <span class="field-label">Datei</span>
-        <button v-if="!form.file" type="button" class="drop" @click="form.file = true"><AppIcon name="upload" :size="24" :stroke="1.8" />PDF auswählen</button>
+        <span class="field-label">{{ editing === 'new' ? 'Datei' : 'Neue Version' }}</span>
+        <button v-if="!form.file" type="button" class="drop" @click="form.file = true">
+          <AppIcon name="upload" :size="24" :stroke="1.8" />{{ editing === 'new' ? 'PDF auswählen' : 'Neue PDF-Version hochladen (optional)' }}
+        </button>
         <div v-else class="file">
           <AppIcon name="file" :size="22" :stroke="1.8" />
           <div class="file-info"><strong>Scan_2027-01-16.pdf</strong><span class="muted">2,4 MB</span></div>
@@ -74,10 +107,15 @@ function submit() {
       </div>
     </form>
     <template #footer>
-      <button type="button" class="btn btn-ghost" @click="adding = false">Abbrechen</button>
-      <button type="submit" form="add-doc" class="btn btn-primary" :disabled="!form.file">Hinzufügen</button>
+      <button type="button" class="btn btn-ghost" @click="editing = null">Abbrechen</button>
+      <button type="submit" form="doc-form" class="btn btn-primary" :disabled="editing === 'new' && !form.file">{{ editing === 'new' ? 'Hinzufügen' : 'Speichern' }}</button>
     </template>
   </AppModal>
+
+  <ConfirmModal
+    v-if="removing" title="Dokument löschen?" :text="`„${removing.title}“ wird gelöscht. Kanban-Karten, die darauf verweisen, verlieren den Link.`"
+    @confirm="confirmRemove" @close="removing = null"
+  />
 </template>
 
 <style scoped>
@@ -110,7 +148,7 @@ function submit() {
 .file { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--subtle); color: var(--muted); }
 .file-info { display: flex; flex-direction: column; flex: 1; color: var(--text); font-size: 14px; }
 .file-info .muted { font-size: 12px; }
-.btn-primary:disabled { opacity: 0.5; cursor: default; }
+.empty { padding: 24px 0; text-align: center; font-size: 14px; }
 @media (max-width: 640px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .preview { height: 220px; }

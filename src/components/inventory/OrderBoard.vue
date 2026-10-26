@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { can, userName } from '../../store'
 import type { Order } from '../../types'
 import { fmtDay } from '../../utils/date'
 import AppIcon from '../AppIcon.vue'
@@ -12,7 +13,7 @@ const groups = computed(() => [
   { title: 'Muss bestellt werden', dot: 'var(--today)', list: props.orders.filter((o) => o.state === 'list'), canAdd: true },
   { title: 'Bestellt', dot: 'var(--green)', list: props.orders.filter((o) => o.state === 'ordered'), canAdd: false },
 ])
-const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung ca. ${fmtDay(o.delivery!)}` : `${o.forWhat} · gemeldet von ${o.reportedBy}`)
+const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung ca. ${fmtDay(o.delivery!)}` : `${o.forWhat} · gemeldet von ${userName(o.reportedBy)}`)
 </script>
 
 <template>
@@ -21,7 +22,7 @@ const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung c
     <div v-for="g in groups" :key="g.title" class="group">
       <div class="head">
         <h3 class="title"><span class="dot" :style="{ background: g.dot }" />{{ g.title }}<span class="count">{{ g.list.length }}</span></h3>
-        <button v-if="g.canAdd" type="button" class="add" aria-label="Auf Bestellliste" title="Auf Bestellliste" @click="emit('add')">
+        <button v-if="g.canAdd && can('edit')" type="button" class="add" aria-label="Auf Bestellliste" title="Auf Bestellliste" @click="emit('add')">
           <AppIcon name="plus" :stroke="2.2" />
         </button>
       </div>
