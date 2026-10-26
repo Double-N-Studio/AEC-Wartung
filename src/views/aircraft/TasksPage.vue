@@ -60,10 +60,11 @@ const creating = ref(false)
       <div class="col-list">
         <button v-for="t in column(col.status)" :key="t.id" type="button" class="task" @click="openId = t.id">
           <span class="task-top">
-            <LevelBadge v-if="t.status !== 'erledigt'" :level="t.level" />
+            <span class="task-title">{{ t.title }}</span>
+            <LevelBadge v-if="t.status !== 'erledigt'" :level="t.level" class="task-tag" />
             <AppIcon v-else name="check" :size="18" :stroke="2.4" class="done-icon" />
           </span>
-          <span class="task-title">{{ t.title }}</span>
+          <span v-if="t.desc" class="task-desc">{{ t.desc }}</span>
           <!-- Checklisten-Fortschritt erst ab "In Arbeit"; offene Karten zeigen die Dauer. -->
           <span v-if="t.status === 'offen' || (t.status === 'arbeit' && (t.checklist.length || t.deadline))" class="task-meta">
             <span v-if="t.status === 'offen'"><AppIcon name="clock" :size="14" />{{ t.duration }}</span>
@@ -106,12 +107,17 @@ const creating = ref(false)
 .col-list { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 340px); min-height: 120px; overflow-y: auto; padding-right: 2px; }
 .task {
   width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  padding: 14px; display: flex; flex-direction: column; gap: 9px; flex-shrink: 0;
+  padding: 14px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; min-height: 104px;
 }
 .task:hover { border-color: var(--border-strong); }
-.task-top { display: flex; }
+.task-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.task-tag, .done-icon { flex-shrink: 0; }
 .done-icon { color: var(--green); }
-.task-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; }
+.task-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; min-width: 0; }
+.task-desc {
+  font-size: 12.5px; line-height: 1.4; color: var(--text-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .task-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: var(--muted); }
 .task-meta > span { display: inline-flex; align-items: center; gap: 5px; }
 .deadline { color: var(--orange-ink); font-weight: 600; }

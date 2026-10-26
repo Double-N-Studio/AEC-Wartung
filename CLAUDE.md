@@ -66,4 +66,6 @@ public/docs/                    Vorschaubilder der Dokumente
 - Der Button „Auf Bestellliste“ ist immer weiß (sekundär).
 - Kalender: Flugzeuge sind der Titel eines Samstags, die Werkstattleitung steht als Untertitel ohne Avatar. „Leitung offen“ ist kein Warnstatus (keine gelbe Fläche, kein Warnsymbol).
 - Kanban: Checklisten-Fortschritt (z. B. 2/4) erst ab „In Arbeit“, nicht bei „Offen“.
+- Kanban-Karten: Eignungs-Tag rechts neben dem Titel, darunter die Beschreibung (max. 2 Zeilen); Mindesthöhe, damit Karten ohne Beschreibung keine dünnen Streifen werden.
+- Neue Bestellung über den „+“-Button auf der Karte „Muss bestellt werden“ (gleiches Design wie im Kanban), nicht oben rechts auf der Seite.
 - Bestellliste: Bei ähnlichem Namen schlägt das Formular „Meinst du …“ einen Inventur-Artikel vor, damit die Bestellung dem Artikel zugeordnet wird.

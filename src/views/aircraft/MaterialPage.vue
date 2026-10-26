@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { fitsAircraft, state } from '../../store'
 import type { Order } from '../../types'
-import AppIcon from '../../components/AppIcon.vue'
 import OrderBoard from '../../components/inventory/OrderBoard.vue'
 import StockTable from '../../components/inventory/StockTable.vue'
 import ItemModal from '../inventory/ItemModal.vue'
@@ -29,12 +28,9 @@ function openOrder(o: Order) {
 </script>
 
 <template>
-  <div class="head">
-    <p class="muted note">Ersatzteile und Bestellungen für {{ aircraft.type }} – dieselben Daten wie in der <RouterLink to="/inventur">Inventur</RouterLink>.</p>
-    <button type="button" class="btn btn-sm tall" @click="creating = true"><AppIcon name="plus" :size="17" :stroke="2.2" />Auf Bestellliste</button>
-  </div>
+  <p class="muted note">Ersatzteile und Bestellungen für {{ aircraft.type }} – dieselben Daten wie in der <RouterLink to="/inventur">Inventur</RouterLink>.</p>
 
-  <OrderBoard :orders="orders" @open="openOrder" />
+  <OrderBoard :orders="orders" @open="openOrder" @add="creating = true" />
   <StockTable :items="items" :kinds="['et']" :plane-filter="false" :for-what="aircraft.type" @open="openItemId = $event.id" />
 
   <ItemModal v-if="openItem" :item="openItem" :for-what="aircraft.type" @close="openItemId = null" />
@@ -43,7 +39,5 @@ function openOrder(o: Order) {
 </template>
 
 <style scoped>
-.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .note { font-size: 13.5px; }
-.tall { height: 40px; }
 </style>
