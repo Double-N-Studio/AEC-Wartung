@@ -21,8 +21,8 @@ export const router = createRouter({
       path: '/flugzeug/:id',
       component: AircraftLayout,
       children: [
-        { path: '', redirect: (to) => `/flugzeug/${to.params.id}/arbeitspakete` },
-        { path: 'arbeitspakete', component: TasksPage },
+        { path: '', redirect: (to) => `/flugzeug/${to.params.id}/kanban` },
+        { path: 'kanban', component: TasksPage },
         { path: 'dokumente', component: DocumentsPage },
         { path: 'fristen', component: DeadlinesPage },
         { path: 'maengel', component: DefectsPage },

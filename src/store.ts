@@ -5,7 +5,7 @@ import { CURRENT_USER, DEVICE_USER, PEOPLE } from './mock/people'
 import { addDays, NOW, TODAY } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v6'
+const STORAGE_KEY = 'aec-winterwartung-demo-v7'
 
 function load(): AppState {
   try {
@@ -136,7 +136,7 @@ export function createTask(aircraftId: string, input: NewTask): Task {
     const defect = state.defects.find((d) => d.id === task.defectId)
     if (defect && !defect.taskId) {
       defect.taskId = task.id
-      log(defect.history, 'Arbeitspaket angelegt.')
+      log(defect.history, 'Kanban-Karte angelegt.')
     }
   }
   return task

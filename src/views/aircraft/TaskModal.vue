@@ -21,7 +21,7 @@ const todaysLeader: PersonKey = 'MA'
 </script>
 
 <template>
-  <AppModal :title="task.title" icon="wrench" :subtitle="`Arbeitspaket · ${aircraftLabel(task.aircraftId)}`" @close="emit('close')">
+  <AppModal :title="task.title" icon="wrench" :subtitle="`Kanban-Karte · ${aircraftLabel(task.aircraftId)}`" @close="emit('close')">
     <template #status>
       <span class="pill" :class="STATUS[task.status][1]">{{ STATUS[task.status][0] }}</span>
     </template>

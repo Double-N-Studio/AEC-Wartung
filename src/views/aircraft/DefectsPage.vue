@@ -25,7 +25,7 @@ const rows = computed(() => mine.value.filter((d) => d.status === tab.value && (
 const STATUS_TEXT = { offen: 'Offen', arbeit: 'In Arbeit', erledigt: 'Erledigt' }
 const taskOf = (d: Defect) => (d.taskId ? state.tasks.find((t) => t.id === d.taskId) : undefined)
 
-// ?befund=<id> öffnet einen Mangel/Befund direkt (Link aus dem Arbeitspaket).
+// ?befund=<id> öffnet einen Mangel/Befund direkt (Link aus der Kanban-Karte).
 const router = useRouter()
 const openId = ref<string | null>(null)
 watch(() => route.query.befund, (id) => { if (typeof id === 'string') openId.value = id }, { immediate: true })
@@ -65,7 +65,7 @@ const creating = ref(false)
       <button v-for="d in rows" :key="d.id" type="button" class="row table-row item" role="row" @click="openId = d.id">
         <span role="cell" class="c-title">
           <strong>{{ d.title }}</strong><span class="desc">{{ d.desc }}</span>
-          <span v-if="taskOf(d)" class="linked"><AppIcon name="wrench" :size="13" />Arbeitspaket · {{ STATUS_TEXT[taskOf(d)!.status] }}</span>
+          <span v-if="taskOf(d)" class="linked"><AppIcon name="wrench" :size="13" />Kanban · {{ STATUS_TEXT[taskOf(d)!.status] }}</span>
         </span>
         <span role="cell" class="c-src">
           <AppIcon :name="d.source === 'vf' ? 'cloud' : 'camera'" :size="15" :stroke="1.9" />

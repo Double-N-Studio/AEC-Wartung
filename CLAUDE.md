@@ -39,7 +39,7 @@ src/
   components/                   wiederverwendbare Bausteine (AppModal, Badges, DropdownSelect …)
   components/inventory/         Bestellliste + Bestandstabelle (Inventur und Material-Reiter)
   views/                        Seiten: Zeitplan, Inventur, FAQ
-  views/aircraft/               Flugzeug-Reiter: Arbeitspakete, Dokumente, Fristen, Mängel/Befunde, Material
+  views/aircraft/               Flugzeug-Reiter: Kanban, Dokumente, Fristen, Mängel/Befunde, Material
   views/inventory/              Popups der Inventur
 public/docs/                    Vorschaubilder der Dokumente
 ```
@@ -60,6 +60,7 @@ public/docs/                    Vorschaubilder der Dokumente
 ## Produkt-Entscheidungen aus dem Feedback
 
 - Startseite ist der Zeitplan; gearbeitet wird nur samstags.
+- Der Reiter heißt „Kanban“, ein Eintrag „Kanban-Karte“ (auch bei Mängeln/Befunden); im Code bleibt es `Task`.
 - Keine Helfer-Zuteilung bei Arbeitspaketen; wer startet, ergibt sich aus dem angemeldeten Konto und steht nur im Verlauf.
 - Arbeitspakete haben keine Bereiche (Rumpf, Fläche …), nur Eignungsstufen.
 - Inventur: nur Verbrauchsstoffe oder Ersatzteile (kein „Alle“), „leer“ meldet man durch Bestand 0, Statusanzeigen sind Text, keine Buttons.

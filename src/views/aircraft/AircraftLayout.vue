@@ -12,7 +12,7 @@ const tasks = computed(() => state.tasks.filter((t) => t.aircraftId === aircraft
 const tabs = computed(() => {
   const id = aircraft.value?.id
   return [
-    { to: 'arbeitspakete', label: 'Arbeitspakete', count: tasks.value.length },
+    { to: 'kanban', label: 'Kanban', count: tasks.value.length },
     { to: 'dokumente', label: 'Dokumente', count: state.documents.filter((d) => d.aircraftId === id).length },
     { to: 'fristen', label: 'Fristen', count: state.deadlines.filter((d) => d.aircraftId === id).length },
     { to: 'maengel', label: 'Mängel/Befunde', count: state.defects.filter((d) => d.aircraftId === id && d.status === 'open').length },

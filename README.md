@@ -14,10 +14,10 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 - Werkstattleitung pro Samstag, offene Tage sind markiert und können übernommen werden
 
 **Pro Flugzeug**
-- **Arbeitspakete** als Board (Offen · In Arbeit · Erledigt) mit Eignung für Einsteiger, Erfahrene oder nur Werkstattleiter/Prüfer, Checklisten und Abzeichnung durch die Werkstattleitung
+- **Kanban** als Board (Offen · In Arbeit · Erledigt) mit Eignung für Einsteiger, Erfahrene oder nur Werkstattleiter/Prüfer, Checklisten und Abzeichnung durch die Werkstattleitung
 - **Dokumente** wie Flughandbuch, Wartungshandbuch, Aufbauanleitung und Gewichtsübersicht
 - **Fristen** aus Vereinsflieger, mit Warnung bei bald ablaufenden Terminen
-- **Mängel/Befunde**: Mängel aus Vereinsflieger und eigene Befunde mit Fotos, daraus direkt ein Arbeitspaket anlegen
+- **Mängel/Befunde**: Mängel aus Vereinsflieger und eigene Befunde mit Fotos, daraus direkt eine Kanban-Karte anlegen
 - **Material**: Ersatzteile und Bestellungen für dieses Flugzeug
 
 **Inventur**

@@ -4,27 +4,17 @@ import { PEOPLE } from './people'
 
 const ASG = 'asg32'
 
-const polish = (side: string) => [
-  { text: `Fläche ${side} mit Wasser und Mikrofasertuch vorreinigen`, done: false },
-  { text: 'Insekten- und Fettreste entfernen', done: false },
-  { text: 'Politur auftragen und auspolieren', done: false },
-]
-
 const created = { text: 'Angelegt', who: 'Heinrich', at: '2027-01-09' }
+const WHB = 'Wartungshandbuch'
 
-function done(
+function pkg(
   id: string, level: Task['level'], title: string, duration: string, desc: string,
-  by: string, at: string, signedBy: string, signedAt: string,
+  checklist: string[] = [], extra: Partial<Task> = {},
 ): Task {
   return {
-    id, aircraftId: ASG, status: 'erledigt', level, title, duration, desc, checklist: [],
-    doneBy: by, doneAt: at, signedBy, signedAt,
-    history: [
-      { text: 'Abgezeichnet', who: signedBy, at: signedAt },
-      { text: 'Als erledigt gemeldet', who: by, at },
-      { text: 'Arbeit gestartet', who: by.split(',')[0], at: at.slice(0, 10) },
-      created,
-    ],
+    id, aircraftId: ASG, status: 'offen', level, title, duration, desc,
+    checklist: checklist.map((text) => ({ text, done: false })),
+    history: [created], ...extra,
   }
 }
 
@@ -47,8 +37,9 @@ export function initialState(): AppState {
   for (const a of s.aircraft) {
     const tasks = s.tasks.filter((t) => t.aircraftId === a.id)
     if (a.end < TODAY) completeAll(s, a, tasks)
+    else if (a.id === ASG) tasks.forEach((t) => applyAsg(t))
     else if (a.id === 'ls8') tasks.forEach((t) => applyLs8(t))
-    else if (a.id !== ASG) tasks.forEach((t) => resetTask(t))
+    else tasks.forEach((t) => resetTask(t))
     if (a.id !== ASG) tasks.forEach((t) => { t.history[t.history.length - 1] = { ...created, at: a.start < TODAY ? a.start : TODAY } })
   }
   return s
@@ -101,21 +92,39 @@ function completeAll(s: AppState, a: Aircraft, tasks: Task[]) {
       defect.status = 'done'
       defect.doneAt = day
       defect.doneBy = t.doneBy
-      defect.history.unshift({ text: 'Mit dem Arbeitspaket behoben.', who: t.doneBy!, at: day })
+      defect.history.unshift({ text: 'Mit der Kanban-Karte behoben.', who: t.doneBy!, at: day })
     }
   })
+}
+
+const tick = (t: Task, n: number) => t.checklist.slice(0, n).forEach((c) => { c.done = true })
+
+/** ASG32: erster Werkstatttag war der 09.01., heute ist der zweite. */
+function applyAsg(t: Task) {
+  const day1 = '2027-01-09'
+  const doneDay1: Record<string, [string, string]> = {
+    an1: ['Tim, Jonas', '10:05'], fl1: ['Felix, Lena', '11:50'], ru1: ['Sophie', '12:40'], hl1: ['Lena', '13:05'],
+    fl2: ['Jonas', '14:20'], ru2: ['Felix', '15:35'], hl2: ['Jonas', '16:10'],
+  }
+  if (doneDay1[t.id]) finishAt(t, doneDay1[t.id][0], `${day1}T${doneDay1[t.id][1]}`, 'Heinrich')
+  else if (t.id === 'an2') finishAt(t, 'Tim', `${TODAY}T09:20`, 'Matze')
+  else if (t.id === 'ru3') { startAt(t, 'Heinrich', day1); tick(t, 1) }
+  else if (t.id === 'ru4') { startAt(t, 'Jonas', day1); tick(t, 1) }
+  else if (t.id === 'ru8') { startAt(t, 'Felix', day1); tick(t, 1) }
+  else if (t.id === 'hl3') startAt(t, 'Sophie', `${TODAY}T09:40`)
+  else if (t.id === 'fl3') { startAt(t, 'Lorenz', `${TODAY}T09:50`); tick(t, 1) }
 }
 
 /** LS8: erster Werkstatttag ist heute. */
 function applyLs8(t: Task) {
   const id = t.id.replace('ls8-', '')
   resetTask(t)
-  if (id === 't18') finishAt(t, 'Tim, Lena', `${TODAY}T10:10`, 'Matze')
-  else if (id === 't11') finishAt(t, 'Lorenz', `${TODAY}T10:55`)
-  else if (id === 't3') { startAt(t, 'Lena', `${TODAY}T10:30`); t.checklist[0].done = t.checklist[1].done = true }
-  else if (id === 't1') { startAt(t, 'Nuno', `${TODAY}T10:40`); t.checklist[0].done = true }
-  else if (id === 't17') startAt(t, 'Sophie', `${TODAY}T11:05`)
-  else if (id === 't13') startAt(t, 'Felix', `${TODAY}T11:20`)
+  if (id === 'an1') finishAt(t, 'Tim, Lena', `${TODAY}T10:10`, 'Matze')
+  else if (id === 'hl1') finishAt(t, 'Lorenz', `${TODAY}T10:55`)
+  else if (id === 'ru1') { startAt(t, 'Lena', `${TODAY}T10:30`); tick(t, 2) }
+  else if (id === 'fl1') startAt(t, 'Nuno', `${TODAY}T10:40`)
+  else if (id === 'an4') startAt(t, 'Sophie', `${TODAY}T11:05`)
+  else if (id === 'fl2') startAt(t, 'Felix', `${TODAY}T11:20`)
 }
 
 function baseState(): AppState {
@@ -150,48 +159,81 @@ function baseState(): AppState {
     },
 
     tasks: [
-      { id: 't1', aircraftId: ASG, status: 'offen', level: 'ein', title: 'Fläche links reinigen und polieren', duration: '~2 h', checklist: polish('links'), desc: 'Linke Fläche oben und unten reinigen und polieren. Politur und Tücher findest du in der Inventur.', history: [created] },
-      { id: 't2', aircraftId: ASG, status: 'offen', level: 'ein', title: 'Fläche rechts reinigen und polieren', duration: '~2 h', checklist: polish('rechts'), desc: 'Rechte Fläche oben und unten reinigen und polieren. Politur und Tücher findest du in der Inventur.', history: [created] },
-      { id: 't3', aircraftId: ASG, status: 'offen', level: 'ein', title: 'Cockpit aussaugen', duration: '~0,5 h', checklist: [
-        { text: 'Sitzschalen ausbauen', done: false },
-        { text: 'Rumpfboden aussaugen', done: false },
-        { text: 'Gurte und Sitzschalen abwischen', done: false },
-        { text: 'Sitzschalen wieder einbauen', done: false },
-      ], desc: 'Cockpit vorne und hinten gründlich aussaugen.', history: [created] },
-      { id: 't4', aircraftId: ASG, status: 'offen', level: 'erf', title: 'Wasserballast-Ventile reinigen und Dichtheit prüfen', duration: '~1 h', checklist: [], doc: 'Wartungshandbuch', desc: 'Ablassventile ausbauen, reinigen und auf Dichtheit prüfen.', history: [created] },
-      { id: 't5', aircraftId: ASG, status: 'offen', level: 'erf', title: 'Seitenruderseile und Umlenkrollen prüfen', duration: '~0,5 h', checklist: [], doc: 'Wartungshandbuch', desc: 'Seile auf Verschleiß und Spannung prüfen, Umlenkrollen auf Leichtgängigkeit.', history: [created] },
-      { id: 't6', aircraftId: ASG, status: 'offen', level: 'wl', title: 'Schwerpunktkupplung prüfen (lt. Herstellervorgabe)', duration: '~1 h', checklist: [], deadline: '2027-03-31', doc: 'Wartungshandbuch', desc: 'Prüfung der Schwerpunktkupplung nach Herstellervorgabe. Ergebnis ins Bordbuch eintragen.', history: [created] },
-      { id: 't7', aircraftId: ASG, status: 'arbeit', level: 'erf', title: 'Radbremse und Reifen prüfen', duration: '~2 h', checklist: [
-        { text: 'Bremsbeläge auf Verschleiß prüfen', done: true },
-        { text: 'Reifendruck und Profil prüfen', done: false },
-        { text: 'Radlager auf Spiel prüfen', done: false },
-      ], defectId: 'm4', desc: 'Bremsbeläge, Reifen und Radlager prüfen. Zum Klackern beim Schieben siehe Mangel.', history: [{ text: 'Arbeit gestartet', who: 'Jonas', at: '2027-01-09' }, created] },
-      { id: 't8', aircraftId: ASG, status: 'arbeit', level: 'ein', title: 'Haube polieren', duration: '~1 h', checklist: [], desc: 'Haube innen und außen mit Plexiglas-Politur behandeln. Keine Papiertücher verwenden.', history: [{ text: 'Arbeit gestartet', who: 'Sophie', at: '2027-01-16T09:40' }, created] },
-      { id: 't9', aircraftId: ASG, status: 'arbeit', level: 'erf', title: 'GPS-Antenne prüfen', duration: '~1 h', checklist: [], defectId: 'm3', desc: 'Antennenkabel und Stecker prüfen, Empfang mit dem Flarm testen.', history: [{ text: 'Arbeit gestartet', who: 'Felix', at: '2027-01-09' }, created] },
-      { id: 't10', aircraftId: ASG, status: 'arbeit', level: 'wl', title: 'Lack-Riss am Höhenleitwerk links ausbessern', duration: '~3 h', checklist: [], defectId: 'm1', desc: 'Riss anschleifen, mit Gelcoat ausbessern und nachpolieren.', history: [{ text: 'Arbeit gestartet', who: 'Heinrich', at: '2027-01-09' }, created] },
-      done('t11', 'ein', 'Fallschirme zur Packprüfung abgeben', '~0,5 h', 'Beide Fallschirme zur Packprüfung bringen.', 'Tim', '2027-01-16T09:20', 'Matze', '2027-01-16'),
-      done('t12', 'erf', 'Querkraftbolzen neu fetten', '~1 h', 'Querkraftbolzen reinigen und neu fetten.', 'Jonas', '2027-01-09T16:10', 'Heinrich', '2027-01-09'),
-      done('t13', 'ein', 'Leitwerk reinigen und polieren', '~2 h', 'Höhen- und Seitenleitwerk reinigen und polieren.', 'Felix', '2027-01-09T15:35', 'Heinrich', '2027-01-09'),
-      done('t14', 'ein', 'Instrumentenbrett reinigen', '~1 h', 'Instrumentenbrett und Glas der Instrumente vorsichtig reinigen.', 'Lena', '2027-01-09T14:20', 'Heinrich', '2027-01-09'),
-      done('t15', 'erf', 'Bremsklappen reinigen und schmieren', '~2 h', 'Bremsklappenkästen reinigen, Gelenke schmieren.', 'Jonas, Lena', '2027-01-09T13:05', 'Heinrich', '2027-01-09'),
-      done('t16', 'erf', 'Batterien: Kapazitätstest', '~1 h', 'Alle Batterien laden und Kapazität messen.', 'Felix', '2027-01-09T12:40', 'Heinrich', '2027-01-09'),
-      done('t17', 'ein', 'Rumpf außen reinigen', '~2 h', 'Rumpf außen gründlich reinigen.', 'Sophie', '2027-01-09T11:50', 'Heinrich', '2027-01-09'),
-      done('t18', 'ein', 'Abrüsten, Flächen auf Böcke legen', '~1 h', 'Flugzeug abrüsten und Flächen auf die Böcke legen.', 'Tim, Jonas', '2027-01-09T10:05', 'Heinrich', '2027-01-09'),
+      // Flügel
+      pkg('fl1', 'ein', 'Flügel: Putzen', '~2 h', 'Mit Spüliwasser putzen, auch die Bremsklappen und den Bremsklappenkasten.'),
+      pkg('fl2', 'ein', 'Flügel: Entfetten und Klebereste entfernen', '~1 h', 'Fett und Klebereste mit Waschbenzin entfernen.'),
+      pkg('fl3', 'erf', 'Flügel: Zustand prüfen', '~2 h', 'Flügel inkl. Querruder und Bremsklappen prüfen. Gefundene Mängel zuerst beheben, bevor es weitergeht.', [
+        'Lack und Beschädigungen prüfen',
+        'Querruder-Sandwichschale auf Druckstellen prüfen (druckempfindlich, bei Druckstellen das Wartungshandbuch konsultieren)',
+        'Lagerung auf Korrosion und Verklemmen prüfen: an jedem Hebel mit 25 kg nach hinten ziehen und dabei einfahren',
+      ], { doc: WHB }),
+      pkg('fl4', 'erf', 'Flügel: Polieren', '~3 h', 'Mit Rotationsmaschine und feiner Schleifpolitur polieren.'),
+      pkg('fl5', 'erf', 'Flügel: Bänder prüfen', '~1,5 h', 'Gewebe-, Abdicht- und Zackenbänder prüfen und bei Bedarf erneuern.', [
+        'Gewebe- und Abdichtbänder prüfen, ggf. erneuern (Wartungshandbuch 4.2.2.1)',
+        'Zackenband auf der Flügelunterseite prüfen, ggf. erneuern',
+      ], { doc: WHB }),
+      pkg('fl6', 'ein', 'Flügel: Wachsen', '~2 h', 'Wachs mit Watte auftragen, nach der Ablüftzeit mit Mikrofasertuch abpolieren.'),
+      pkg('fl7', 'erf', 'Flügel: Buchsen fetten', '~0,5 h', 'Hauptbolzenbuchsen, Querkraftbolzen und die Kugeln der Ruderanschlüsse fetten.'),
+      pkg('fl8', 'ein', 'Flügel: Wassersäcke prüfen', '~0,5 h', 'Wassersäcke auf Dichtigkeit prüfen.'),
+      // Rumpf
+      pkg('ru1', 'ein', 'Rumpf: Putzen', '~2 h', 'Rumpf innen und außen reinigen, Sitzwanne ausbauen.', [
+        'Rumpf aussaugen, Schwerpunkt- und Bugkupplung mit Druckluft ausblasen',
+        'Lack und Innenraum mit Spüliwasser wischen, Hydraulikölflecken mit Waschbenzin entfernen',
+        'Sitzwanne ausbauen',
+      ]),
+      pkg('ru2', 'ein', 'Rumpf: Entfetten und Klebereste entfernen', '~1 h', 'Hauptbolzen, Querkraftbuchsen und die Kupplung der Ruderanschlüsse entfetten, alle Klebereste entfernen. Nur Waschbenzin verwenden, kein Aceton auf Lack.'),
+      pkg('ru3', 'wl', 'Rumpf: Zustand prüfen', '~2 h', 'Rumpf inkl. Haubennotabwurf und SL-Bänder prüfen. Gefundene Mängel zuerst beheben.', [
+        'Lack und Beschädigungen prüfen',
+        'Haubennotabwurf und Rögerhaken prüfen (Wartungshandbuch 4.9)',
+        'Spaltabklebungen an Höhen- und Seitenruder prüfen, ggf. erneuern (4.2.3 und 4.2.4)',
+      ], { doc: WHB }),
+      pkg('ru4', 'erf', 'Rumpf: Fahrwerk', '~2 h', 'Fahrwerk reinigen, schmieren und prüfen. Zum Klackern beim Schieben siehe Mangel.', [
+        'Fahrwerkskasten reinigen, alle Gelenke mit Maschinenöl schmieren',
+        'Verknievorspannung prüfen: 12–15 kg',
+        'Gummi-Federelemente auf Verformung und Ablösung prüfen',
+      ], { defectId: 'm4' }),
+      pkg('ru5', 'erf', 'Rumpf: Polieren', '~2 h', 'Mit Rotationsmaschine und feiner Schleifpolitur polieren.'),
+      pkg('ru6', 'ein', 'Rumpf: Wachsen', '~1,5 h', 'Wachs mit Watte auftragen, nach der Ablüftzeit mit Mikrofasertuch abpolieren.'),
+      pkg('ru7', 'erf', 'Rumpf: Fetten und Schmieren', '~0,5 h', 'Bolzen und Buchsen fetten, Kupplungen schmieren.', [
+        'Hauptbolzen, Querkraftbuchsen und die Kupplung der Ruderanschlüsse fetten',
+        'Bug- und Schwerpunktkupplung mit Sprühöl schmieren',
+      ]),
+      pkg('ru8', 'erf', 'Rumpf: Batterien und Avionik', '~2 h', 'Stromsystem und Batterien prüfen, Software aktualisieren. Zur Flarm-Fehlermeldung siehe Mangel.', [
+        'Stromsystem durchtesten',
+        'Updates für LX und Flarm einspielen',
+        'Batteriekapazität messen und mit Labelmaker aufkleben',
+      ], { defectId: 'm3' }),
+      pkg('ru9', 'wl', 'Rumpf: Sitzwanne einbauen', '~0,5 h', 'Erst nach der Fremdkörperkontrolle durch befugtes Personal einbauen.'),
+      // Höhenleitwerk
+      pkg('hl1', 'ein', 'Höhenleitwerk: Putzen', '~0,5 h', 'Mit Spüliwasser putzen.'),
+      pkg('hl2', 'erf', 'Höhenleitwerk: Entfetten und Klebereste entfernen', '~0,5 h', 'Klebereste und Fett in den Buchsen entfernen, nur Waschbenzin verwenden. Danach die Buchsen neu fetten.'),
+      pkg('hl3', 'erf', 'Höhenleitwerk: Bänder prüfen', '~1 h', 'Spaltabklebungen prüfen, ggf. erneuern (Wartungshandbuch 4.2.3 und 4.2.4).', [], { doc: WHB }),
+      pkg('hl4', 'erf', 'Höhenleitwerk: Polieren und Wachsen', '~1,5 h', 'Mit Rotationsmaschine und feiner Schleifpolitur polieren, danach wachsen.'),
+      // Anhänger
+      pkg('an1', 'ein', 'Anhänger: Aussaugen und Auswischen', '~1 h', 'Anhänger und Teppich aussaugen, danach auswischen.'),
+      pkg('an2', 'ein', 'Anhänger: Teppich prüfen', '~0,5 h', 'Teppich kontrollieren, ggf. erneuern.'),
+      pkg('an3', 'ein', 'Anhänger: Stauraum und Gasfedern', '~0,5 h', 'Stauraum vorne aussaugen und auswischen. Darin sollen liegen: Kopie des Fahrzeugscheins, Ersatzreifen, Wagenheber und Radmutterschlüssel.'),
+      pkg('an4', 'ein', 'Anhänger: Außen putzen', '~1,5 h', 'Außen mit dem Hochdruckreiniger abdampfen, restlichen Dreck mit Schwamm und Wasser entfernen.'),
+      pkg('an5', 'ein', 'Anhänger: Wachsen', '~1,5 h', 'Außen mit Autowachs versiegeln.'),
+      pkg('an6', 'erf', 'Anhänger: Reifen prüfen', '~0,5 h', 'Reifendruck und Reifenalter prüfen, vor dem TÜV-Termin.', [
+        'Reifendruck in allen Reifen prüfen',
+        'Reifenalter prüfen: beim 100er-Hänger höchstens 6 Jahre, beim 80er-Hänger Tausch alle 10 Jahre',
+      ], { deadline: '2027-01-31' }),
     ],
 
     defects: [
-      { id: 'm1', aircraftId: ASG, title: 'Lack-Riss Höhenleitwerk links', source: 'befund', photos: 2, reportedAt: '2027-01-09', reportedBy: 'Heinrich', priority: 'Normal', owner: 'Heinrich', status: 'open', taskId: 't10',
+      { id: 'm1', aircraftId: ASG, title: 'Lack-Riss Höhenleitwerk links', source: 'befund', photos: 2, reportedAt: '2027-01-09', reportedBy: 'Heinrich', priority: 'Normal', owner: 'Heinrich', status: 'open',
         desc: 'Haarriss im Lack an der Nasenleiste, ca. 4 cm lang. Beim Polieren entdeckt.',
-        history: [{ text: 'Befund mit 2 Fotos erfasst, Arbeitspaket angelegt.', who: 'Heinrich', at: '2027-01-09' }] },
+        history: [{ text: 'Befund mit 2 Fotos erfasst.', who: 'Heinrich', at: '2027-01-09' }] },
       { id: 'm2', aircraftId: ASG, title: 'Hauben-Fenster hinten', source: 'vf', photos: 0, reportedAt: '2026-06-04', reportedBy: 'Lorenz', priority: 'Normal', owner: 'Matze', status: 'open',
         desc: 'Die Schiene des hinteren Haubenfensters ist unten gebrochen. Fenster nur mit Vorsicht benutzen.',
         history: [{ text: 'Ersatz ist bestellt, Einbau in der Winterwartung.', who: 'Matze', at: '2027-01-09' }, { text: 'Ersatzschiene beim Hersteller angefragt.', who: 'Matze', at: '2026-06-12' }] },
-      { id: 'm3', aircraftId: ASG, title: 'Flarm: Fehlermeldung Antenne B', source: 'vf', photos: 0, reportedAt: '2026-05-11', reportedBy: 'Felix', priority: 'Normal', owner: 'Matze', status: 'open', taskId: 't9',
+      { id: 'm3', aircraftId: ASG, title: 'Flarm: Fehlermeldung Antenne B', source: 'vf', photos: 0, reportedAt: '2026-05-11', reportedBy: 'Felix', priority: 'Normal', owner: 'Matze', status: 'open', taskId: 'ru8',
         desc: 'Flarm meldet einen Fehler an Antenne B. Antennenkabel und Antenne prüfen, ggf. ersetzen.',
         history: [{ text: 'Aus Vereinsflieger übernommen.', who: 'System', at: '2026-05-11' }] },
-      { id: 'm4', aircraftId: ASG, title: 'Lager am Hauptfahrwerk schlägt', source: 'vf', photos: 0, reportedAt: '2026-09-21', reportedBy: 'Jonas', priority: 'Niedrig', owner: 'Jonas', status: 'open', taskId: 't7',
+      { id: 'm4', aircraftId: ASG, title: 'Lager am Hauptfahrwerk schlägt', source: 'vf', photos: 0, reportedAt: '2026-09-21', reportedBy: 'Jonas', priority: 'Niedrig', owner: 'Jonas', status: 'open', taskId: 'ru4',
         desc: 'Beim Schieben klackt das Hauptfahrwerk einmal pro Umdrehung. Zu Beginn der Winterarbeit prüfen und ggf. das Lager reparieren oder Ersatzteile bestellen.',
-        history: [{ text: 'Wird zusammen mit Radbremse und Reifen geprüft.', who: 'Heinrich', at: '2027-01-09' }] },
+        history: [{ text: 'Wird zusammen mit dem Fahrwerk geprüft.', who: 'Heinrich', at: '2027-01-09' }] },
       { id: 'm5', aircraftId: ASG, title: 'Mückenputzer: Rutschkupplung', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'Felix', priority: 'Niedrig', owner: 'noch niemand', status: 'open',
         desc: 'Die Rutschkupplung am Antrieb des linken Putzflügels ist verschlissen und rutscht beim Einfahren ab ca. 100 km/h.',
         history: [{ text: 'Aus Vereinsflieger übernommen.', who: 'System', at: '2026-06-11' }] },

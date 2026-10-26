@@ -32,7 +32,7 @@ const chips = computed(() => [
 const checked = (t: Task) => t.checklist.filter((c) => c.done).length
 const defectOf = (t: Task) => (t.defectId ? state.defects.find((d) => d.id === t.defectId) : undefined)
 
-// ?paket=<id> öffnet ein Arbeitspaket direkt (Link aus dem Mangel/Befund).
+// ?paket=<id> öffnet eine Kanban-Karte direkt (Link aus dem Mangel/Befund).
 const router = useRouter()
 const openId = ref<string | null>(null)
 watch(() => route.query.paket, (id) => { if (typeof id === 'string') openId.value = id }, { immediate: true })
@@ -61,7 +61,7 @@ const creating = ref(false)
         <span class="dot" :style="{ background: col.dot }" />
         <h2>{{ col.title }}</h2>
         <span class="count">{{ column(col.status).length }}</span>
-        <button v-if="col.status === 'offen'" type="button" class="add" aria-label="Arbeitspaket anlegen" @click="creating = true">
+        <button v-if="col.status === 'offen'" type="button" class="add" aria-label="Kanban-Karte anlegen" @click="creating = true">
           <AppIcon name="plus" :stroke="2.2" />
         </button>
       </div>
@@ -89,7 +89,7 @@ const creating = ref(false)
             <span v-else class="unsigned"><AppIcon name="clock" :size="14" />Abzeichnung offen</span>
           </span>
         </button>
-        <p v-if="!column(col.status).length" class="empty">Keine Arbeitspakete.</p>
+        <p v-if="!column(col.status).length" class="empty">Keine Karten.</p>
       </div>
     </section>
   </div>

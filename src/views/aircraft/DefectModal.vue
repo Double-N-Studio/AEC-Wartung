@@ -48,12 +48,12 @@ function saveNote() {
       <select id="df-owner" v-model="owner" class="select owner">
         <option v-for="o in OWNERS" :key="o" :value="o">{{ o }}</option>
       </select>
-      <span class="muted">Arbeitspaket</span>
+      <span class="muted">Kanban</span>
       <span>
-        <RouterLink v-if="task" :to="{ path: `/flugzeug/${defect.aircraftId}/arbeitspakete`, query: { paket: task.id } }" class="strong task-link">
+        <RouterLink v-if="task" :to="{ path: `/flugzeug/${defect.aircraftId}/kanban`, query: { paket: task.id } }" class="strong task-link">
           <AppIcon name="wrench" :size="15" />{{ task.title }}<span class="pill pill-gray">{{ STATUS_TEXT[task.status] }}</span>
         </RouterLink>
-        <button v-else type="button" class="btn btn-sm" @click="createTaskFromDefect(defect)">Arbeitspaket erstellen</button>
+        <button v-else type="button" class="btn btn-sm" @click="createTaskFromDefect(defect)">Kanban-Karte erstellen</button>
       </span>
     </div>
 

@@ -20,7 +20,7 @@ function submit() {
 </script>
 
 <template>
-  <AppModal title="Arbeitspaket anlegen" icon="wrench" :subtitle="aircraftLabel(props.aircraftId)":width="760" @close="emit('close')">
+  <AppModal title="Kanban-Karte anlegen" icon="wrench" :subtitle="aircraftLabel(props.aircraftId)":width="760" @close="emit('close')">
     <form id="new-task" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="nt-title">Titel</label>
