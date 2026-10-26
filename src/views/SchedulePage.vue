@@ -153,7 +153,7 @@ function rangeText(p: { start: string; end: string }) {
   return `Sa ${fmtDay(p.start)}${p.start.slice(0, 4) !== p.end.slice(0, 4) ? p.start.slice(0, 4) : ''} – Sa ${fmtDay(p.end)}${p.end.slice(0, 4)}`
 }
 
-/* ---------- Werkstatt-Termin (Kalender) ---------- */
+/* ---------- Werkstatt-Termine (Kalender) ---------- */
 const calMonths = computed(() => {
   const out: { y: number; m: number }[] = []
   const end = parse(state.season.end)
@@ -290,7 +290,7 @@ function closeDay() {
 
     <section class="card cal" aria-labelledby="cal-h">
       <div class="cal-head">
-        <h2 id="cal-h" class="section-title">Werkstatt-Termin</h2>
+        <h2 id="cal-h" class="section-title">Werkstatt-Termine</h2>
         <div class="cal-nav">
           <button type="button" class="icon-btn small-btn" aria-label="Vorheriger Monat" :disabled="monthIdx === 0" @click="monthIdx--"><AppIcon name="chevronLeft" :size="16" /></button>
           <span class="cal-month">{{ monthLabel }}</span>

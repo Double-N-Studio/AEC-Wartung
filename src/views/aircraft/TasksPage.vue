@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { can, state, userName } from '../../store'
 import type { Level, Task, TaskStatus } from '../../types'
@@ -28,6 +28,34 @@ const chips = computed(() => [
   { value: 'alle' as const, label: 'Alle', fg: 'var(--text)', bars: 0 },
   ...LEVEL_KEYS.map((k) => ({ value: k, label: LEVELS[k].long, fg: LEVELS[k].fg, bars: LEVELS[k].bars })),
 ])
+
+// Scroll-Hinweis: Verlauf am unteren Rand und "N weitere", solange eine Spalte unten noch Karten verbirgt.
+const lists: Partial<Record<TaskStatus, HTMLElement>> = {}
+const overflow = reactive<Record<TaskStatus, { fade: boolean; more: number }>>({
+  offen: { fade: false, more: 0 }, arbeit: { fade: false, more: 0 }, erledigt: { fade: false, more: 0 },
+})
+const measure = (status: TaskStatus) => {
+  const el = lists[status]
+  if (!el) return
+  const bottom = el.scrollTop + el.clientHeight
+  overflow[status].fade = el.scrollHeight - bottom > 4
+  // Karten, die zu mehr als der Hälfte unterhalb des sichtbaren Bereichs liegen.
+  overflow[status].more = [...el.querySelectorAll<HTMLElement>('.task')].filter((c) => c.offsetTop + c.offsetHeight / 2 > bottom).length
+}
+const resizeObserver = new ResizeObserver((entries) => {
+  for (const e of entries) measure((e.target as HTMLElement).dataset.status as TaskStatus)
+})
+const setList = (status: TaskStatus, el: HTMLElement | null) => {
+  if (el === lists[status]) return
+  if (lists[status]) resizeObserver.unobserve(lists[status]!)
+  if (el) { lists[status] = el; resizeObserver.observe(el) } else delete lists[status]
+}
+watch(filtered, () => COLUMNS.forEach((c) => measure(c.status)), { flush: 'post' })
+onBeforeUnmount(() => resizeObserver.disconnect())
+const scrollMore = (status: TaskStatus) => {
+  const el = lists[status]
+  el?.scrollBy({ top: el.clientHeight * 0.8, behavior: 'smooth' })
+}
 
 const checked = (t: Task) => t.checklist.filter((c) => c.done).length
 const defectOf = (t: Task) => (t.defectId ? state.defects.find((d) => d.id === t.defectId) : undefined)
@@ -66,7 +94,8 @@ const form = ref<Task | 'new' | null>(null)
           <AppIcon name="plus" :stroke="2.2" />
         </button>
       </div>
-      <div class="col-list">
+      <div class="col-scroll">
+      <div :ref="(el) => setList(col.status, el as HTMLElement | null)" class="col-list" :data-status="col.status" @scroll.passive="measure(col.status)">
         <button v-for="t in column(col.status)" :key="t.id" type="button" class="task" @click="openId = t.id">
           <span class="task-top">
             <span class="task-title">{{ t.title }}</span>
@@ -91,6 +120,11 @@ const form = ref<Task | 'new' | null>(null)
           </span>
         </button>
         <p v-if="!column(col.status).length" class="empty">Keine Karten.</p>
+      </div>
+      <div v-if="overflow[col.status].fade" class="col-fade" />
+      <button v-if="overflow[col.status].more" type="button" class="col-more" @click="scrollMore(col.status)">
+        {{ overflow[col.status].more }} weitere<AppIcon name="chevronDown" :size="14" :stroke="2.2" />
+      </button>
       </div>
     </section>
   </div>
@@ -117,7 +151,19 @@ const form = ref<Task | 'new' | null>(null)
   margin-left: auto; width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border-strong);
   background: var(--surface); color: var(--accent-ink); display: inline-flex; align-items: center; justify-content: center;
 }
-.col-list { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 340px); min-height: 120px; overflow-y: auto; padding-right: 2px; }
+.col-scroll { position: relative; }
+.col-list { position: relative; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 340px); min-height: 120px; overflow-y: auto; padding-right: 2px; }
+.col-fade {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 64px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--column));
+}
+.col-more {
+  position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+  height: 30px; padding: 0 10px 0 12px; border-radius: 999px; border: 1px solid var(--border-strong);
+  background: var(--surface); box-shadow: var(--shadow-pop); color: var(--text-2);
+  font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.col-more:hover { color: var(--text); }
 .task {
   width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 14px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; min-height: 104px;
