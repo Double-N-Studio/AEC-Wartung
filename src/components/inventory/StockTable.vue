@@ -137,7 +137,9 @@ const groups = computed(() =>
 }
 @media (max-width: 640px) {
   .row { gap: 10px; }
-  .control { flex: 1 1 100%; }
-  .order { flex: 1 1 100%; justify-content: flex-start; }
+  /* Zähler/Picker teilt sich die Zeile mit dem Bestellstatus; erst auf sehr schmalen Geräten umbrechen. */
+  .control { flex: 0 0 168px; }
+  .order { flex: 1 1 auto; }
+  .order .btn-sm { padding: 0 10px; }
 }
 </style>

@@ -27,6 +27,9 @@ const OPTIONS = [
 .level { width: 100%; border: 1px solid var(--border); border-radius: 12px; }
 .level button { flex: 1; min-width: 0; height: 34px; padding: 0 4px; font-size: 12.5px; }
 .level button.warn[aria-pressed='true'] { color: var(--orange-ink); }
+@media (max-width: 640px) {
+  .level:not(.big) button { padding: 0 2px; font-size: 12px; }
+}
 .level.big { width: auto; }
 .level.big button { flex: none; height: 40px; padding: 0 16px; font-size: 14px; }
 </style>
