@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
-import { createTask, state, type NewTask } from '../../store'
+import { aircraftLabel, createTask, state, type NewTask } from '../../store'
 import { LEVEL_KEYS, LEVELS } from '../../utils/levels'
 import AppModal from '../../components/AppModal.vue'
 import LevelBars from '../../components/LevelBars.vue'
@@ -20,7 +20,7 @@ function submit() {
 </script>
 
 <template>
-  <AppModal title="Arbeitspaket anlegen" kicker="ASG32 · D-3362" :width="760" @close="emit('close')">
+  <AppModal title="Arbeitspaket anlegen" :kicker="aircraftLabel(props.aircraftId)":width="760" @close="emit('close')">
     <form id="new-task" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="nt-title">Titel</label>

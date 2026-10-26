@@ -1,69 +1,68 @@
-# Winterwartung
+# Winterwartung · Aero-Club Bad Nauheim
 
-Web-App zur digitalen Organisation der Winterwartung unserer Vereins-Segelflugzeuge.
+Web-App, mit der wir die Winterwartung unserer Vereins-Segelflugzeuge planen und nachvollziehen:
+wer arbeitet wann an welchem Flugzeug, was ist erledigt und abgezeichnet, welche Mängel sind offen und was muss bestellt werden.
+Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 
-Ziel ist, die Winterarbeit zu digitaliseren und klar verfolgen zu können was wann gemacht wird. Aufgaben können klar zu geteilt werden und alle Daten sind zentralisiert.
+> **Stand:** klickbare Mock-Seite mit Beispieldaten, ohne Backend. Sie dient als Vorschau für den Vorstand.
+> Änderungen in der Demo werden nur im eigenen Browser gespeichert und lassen sich über „Demo zurücksetzen“ in der Seitenleiste verwerfen.
 
 ## Funktionen
 
-### Arbeitsplanung
-- **Kanban-Board pro Flugzeug**: Alle Arbeitspakete eines Flugzeugs auf einen Blick, von „offen“ über „in Arbeit“ bis „erledigt“. Tracking wer was erledigt hat.
-- **Nachverfolgung**: Für jeden Schritt ist festgehalten, wer ihn wann erledigt und abgezeichnet hat.
-- **Eignung**: Jedes Arbeitspaket zeigt, für wen es geeignet ist, damit sich auch Neue und Flugschüler passende Aufgaben aussuchen können.
-- **Zeitplanung**: Welches Flugzeug ist wann in der Werkstatt dran?
-- **Werkstattleitung**: Übersicht, wer an welchem Tag vor Ort ist und die Leitung übernimmt.
+**Zeitplan** (Startseite)
+- Saisonplan: welches Flugzeug ist wann in der Werkstatt
+- Werkstattleitung pro Samstag, offene Tage sind markiert und können übernommen werden
 
-### Technische Unterlagen
-- **Dokumente**: Wartungshandbücher, Wägeberichte... Direkt aus der App aufrufbar, passend zum jeweiligen Flugzeug.
-- **Fristen**: Werden automatisch aus Vereinsflieger übernommen.
-- **Mängelliste**: Wird automatisch aus Vereinsflieger übernommen.
-- **Befunde**: Neue Befunde können mit Foto direkt am Tablet erfasst werden.
+**Pro Flugzeug**
+- **Arbeitspakete** als Board (Offen · In Arbeit · Erledigt) mit Eignung für Einsteiger, Erfahrene oder nur Werkstattleiter/Prüfer, Checklisten und Abzeichnung durch die Werkstattleitung
+- **Dokumente** wie Flughandbuch, Wartungshandbuch, Aufbauanleitung und Gewichtsübersicht
+- **Fristen** aus Vereinsflieger, mit Warnung bei bald ablaufenden Terminen
+- **Mängel/Befunde**: Mängel aus Vereinsflieger und eigene Befunde mit Fotos, daraus direkt ein Arbeitspaket anlegen
+- **Material**: Ersatzteile und Bestellungen für dieses Flugzeug
 
-### Material
-- **Material und Bestellungen**: Was wird gebraucht, was ist bestellt, was ist schon da?
+**Inventur**
+- Verbrauchsstoffe aus dem Lager und Ersatzteile mit Lagerort und Bestand
+- Bestellliste: muss bestellt werden → bestellt → geliefert (mit gelieferter Menge)
+- Bestellungen auch ohne Artikel, z. B. für einmalige Besorgungen
 
-## Nutzung
+**FAQ** für Neue und Flugschüler
 
-- **Werkstatt**: Tablet im Browser, App-Adresse als Lesezeichen bzw. auf dem Startbildschirm
-- **Zu Hause / Büro**: Aufruf über die URL im Browser
+## Loslegen
 
-
-## Technicals
-
-- **Backend**: kleines VPS bei Hetzner
-- **Hosting**: GitHub Pages
-- **PWA** für offline Funktionalität am Tablet
-
-### Mock-Seite (aktueller Stand)
-
-Statische Vorschau ohne Backend: Vue 3 + Vite + TypeScript, alle Daten liegen in `src/mock/`.
-Änderungen in der Demo werden im Browser gespeichert und lassen sich über „Demo zurücksetzen“ in der Seitenleiste verwerfen.
+Voraussetzung: Node.js 22 oder neuer.
 
 ```bash
 npm install
 npm run dev
 ```
 
-`npm run build` erzeugt die statische Seite in `dist/`. Bei jedem Push auf `main` baut der Workflow
-`.github/workflows/deploy.yml` die Seite und veröffentlicht sie über GitHub Pages
-(in den Repo-Einstellungen unter *Pages* als Quelle „GitHub Actions“ wählen).
+Die Seite läuft dann unter http://localhost:5173.
 
-### Rollen
-- Es gibt eine Nutzerrolle ohne Login mit Lesezugriff, eine Adminrolle mit allen Berechtigungen sowie eine Werkstattleiterrolle mit fast allen Berechtigungen
-  (Tablet Zugriff)
+| Befehl | Zweck |
+| --- | --- |
+| `npm run dev` | Entwicklungsserver mit Hot Reload |
+| `npm run build` | Typprüfung und statischer Build nach `dist/` |
+| `npm run preview` | den Build lokal ansehen |
 
-### Dummy Data
+## Veröffentlichen
 
-#### Flugzeuge
-- ASK21 D-5071
-- ASK23 D-6987
-- ASG32 D-3362
-- ARCUS-T D-KSBN
-- Discus-2b D-8586
-- LS8 D-0169
+Jeder Push auf `main` baut die Seite über GitHub Actions (`.github/workflows/deploy.yml`) und veröffentlicht sie auf GitHub Pages.
+Einmalig im Repository unter *Settings → Pages* als Quelle „GitHub Actions“ auswählen.
+Durch Hash-Routing und relative Pfade funktioniert die Seite unter jedem Repo-Namen.
 
-#### Nutzer
-- Admin: Nuno
-- Werkstattleiter: Tablet
-- Werkstattleiter: Matze
-- Werkstattleiter: Heinrich
+## Technik
+
+- Vue 3, Vue Router, Vite, TypeScript
+- eigenes CSS mit Design-Tokens in `src/styles/base.css`
+- Beispieldaten in `src/mock/`, gemeinsamer Zustand in `src/store.ts`
+- responsiv für Tablet, Desktop und Handy
+
+Mehr zur Code-Struktur und zu den Konventionen steht in [CLAUDE.md](CLAUDE.md).
+
+## Geplant
+
+- **Backend** auf einem kleinen VPS bei Hetzner statt Beispieldaten
+- **Anbindung an Vereinsflieger** für Fristen und Mängel
+- **Rollen:** Lesezugriff ohne Login, Werkstattleiter (auch das Werkstatt-Tablet) mit fast allen Rechten, Admin mit allen Rechten
+- **PWA** für die Nutzung am Tablet auch ohne Netz
+- echte Datei-Uploads und Fotos von der Kamera

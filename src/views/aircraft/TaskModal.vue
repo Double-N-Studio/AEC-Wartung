@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { finishTask, signTask, startTask, state } from '../../store'
 import type { PersonKey, Task } from '../../types'
-import { HELPERS, PEOPLE } from '../../mock/people'
+import { PEOPLE } from '../../mock/people'
 import { fmtDay, fmtWhen } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
@@ -15,7 +15,6 @@ const emit = defineEmits<{ close: [] }>()
 const STATUS_TEXT = { offen: 'Offen', arbeit: 'In Arbeit', erledigt: 'Erledigt' }
 const defect = computed(() => state.defects.find((d) => d.id === props.task.defectId))
 const checked = computed(() => props.task.checklist.filter((c) => c.done).length)
-const starter = ref<PersonKey | ''>('')
 // Abzeichnen übernimmt die heutige Werkstattleitung.
 const todaysLeader: PersonKey = 'MA'
 </script>
@@ -46,14 +45,7 @@ const todaysLeader: PersonKey = 'MA'
         </div>
 
         <div class="actions">
-          <template v-if="task.status === 'offen'">
-            <label for="starter" class="sr-only">Wer startet die Arbeit?</label>
-            <select id="starter" v-model="starter" class="select starter">
-              <option value="">Wer startet? Name wählen …</option>
-              <option v-for="k in HELPERS" :key="k" :value="k">{{ PEOPLE[k].name }}</option>
-            </select>
-            <button type="button" class="btn btn-primary" @click="startTask(task, starter)">Arbeit starten</button>
-          </template>
+          <button v-if="task.status === 'offen'" type="button" class="btn btn-primary" @click="startTask(task)">Arbeit starten</button>
           <button v-else-if="task.status === 'arbeit'" type="button" class="btn btn-primary" @click="finishTask(task)">
             <AppIcon name="check" :size="16" :stroke="2.6" />Als erledigt melden
           </button>
@@ -84,7 +76,6 @@ const todaysLeader: PersonKey = 'MA'
 }
 .check input { width: 20px; height: 20px; accent-color: var(--accent); }
 .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.starter { width: auto; min-width: 220px; }
 .small { font-size: 12.5px; }
 .signed-box {
   display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 10px;
@@ -92,6 +83,5 @@ const todaysLeader: PersonKey = 'MA'
 }
 @media (max-width: 760px) {
   .grid { grid-template-columns: 1fr; }
-  .starter { width: 100%; }
 }
 </style>

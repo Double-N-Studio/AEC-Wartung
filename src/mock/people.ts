@@ -15,7 +15,7 @@ export const PEOPLE: Record<PersonKey, Person> = {
 /** Personen, die Werkstattleitung übernehmen können. */
 export const LEADERS: PersonKey[] = ['MA', 'HE']
 
-/** Personen für Auswahllisten in der Werkstatt. */
-export const HELPERS: PersonKey[] = ['JO', 'LE', 'SO', 'FE', 'TI', 'HE', 'MA']
-
 export const DEVICE_USER = 'Werkstatt-Tablet'
+
+/** Angemeldetes Konto (im Mockup immer das Werkstatt-Tablet). */
+export const CURRENT_USER = DEVICE_USER

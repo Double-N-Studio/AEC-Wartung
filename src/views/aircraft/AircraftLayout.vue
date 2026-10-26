@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { state } from '../../store'
+import { fitsAircraft, state } from '../../store'
 import { fmtDate, fmtDay } from '../../utils/date'
 
 const route = useRoute()
@@ -19,6 +19,7 @@ const tabs = computed(() => {
     { to: 'dokumente', label: 'Dokumente', count: state.documents.filter((d) => d.aircraftId === id).length },
     { to: 'fristen', label: 'Fristen', count: state.deadlines.filter((d) => d.aircraftId === id).length },
     { to: 'maengel', label: 'Mängel/Befunde', count: state.defects.filter((d) => d.aircraftId === id && d.status === 'open').length, warn: true },
+    { to: 'material', label: 'Material', count: state.inventory.filter((i) => fitsAircraft(i, aircraft.value?.type ?? '')).length },
   ]
 })
 </script>
@@ -47,7 +48,6 @@ const tabs = computed(() => {
       <RouterLink v-for="t in tabs" :key="t.to" :to="`${base}/${t.to}`" class="tab" active-class="active">
         {{ t.label }}<span class="tab-count" :class="{ warn: t.warn }">{{ t.count }}</span>
       </RouterLink>
-      <span class="tab disabled" title="Im Mockup noch ohne Inhalt">Material</span>
     </nav>
 
     <RouterView />

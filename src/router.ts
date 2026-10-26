@@ -7,6 +7,7 @@ import TasksPage from './views/aircraft/TasksPage.vue'
 import DocumentsPage from './views/aircraft/DocumentsPage.vue'
 import DeadlinesPage from './views/aircraft/DeadlinesPage.vue'
 import DefectsPage from './views/aircraft/DefectsPage.vue'
+import MaterialPage from './views/aircraft/MaterialPage.vue'
 
 // Hash-Routing, damit GitHub Pages ohne Server-Rewrites funktioniert.
 export const router = createRouter({
@@ -25,6 +26,7 @@ export const router = createRouter({
         { path: 'dokumente', component: DocumentsPage },
         { path: 'fristen', component: DeadlinesPage },
         { path: 'maengel', component: DefectsPage },
+        { path: 'material', component: MaterialPage },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },

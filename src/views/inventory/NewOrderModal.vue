@@ -3,8 +3,9 @@ import { reactive } from 'vue'
 import { addFreeOrder, state } from '../../store'
 import AppModal from '../../components/AppModal.vue'
 
+const props = withDefaults(defineProps<{ forWhat?: string }>(), { forWhat: 'Lager' })
 const emit = defineEmits<{ close: [] }>()
-const form = reactive({ name: '', forWhat: 'Lager', comment: '' })
+const form = reactive({ name: '', forWhat: props.forWhat, comment: '' })
 
 function submit() {
   if (!form.name.trim()) return

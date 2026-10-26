@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { createDefect } from '../../store'
+import { aircraftLabel, createDefect } from '../../store'
 import type { Priority } from '../../types'
 import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
@@ -19,7 +19,7 @@ function submit() {
 </script>
 
 <template>
-  <AppModal title="Befund erfassen" kicker="ASG32 · D-3362" :width="600" @close="emit('close')">
+  <AppModal title="Befund erfassen" :kicker="aircraftLabel(props.aircraftId)":width="600" @close="emit('close')">
     <form id="new-defect" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="nd-title">Kurzbeschreibung</label>

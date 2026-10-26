@@ -1,10 +1,10 @@
 import { reactive, watch } from 'vue'
 import type { AppState, Defect, HistoryEntry, InventoryItem, Order, PersonKey, Task } from './types'
 import { initialState } from './mock/data'
-import { DEVICE_USER, PEOPLE } from './mock/people'
+import { CURRENT_USER, DEVICE_USER, PEOPLE } from './mock/people'
 import { addDays, NOW, TODAY } from './utils/date'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v1'
+const STORAGE_KEY = 'aec-winterwartung-demo-v2'
 
 function load(): AppState {
   try {
@@ -30,6 +30,16 @@ export function resetDemo() {
   Object.assign(state, initialState())
 }
 
+export function aircraftLabel(id: string) {
+  const a = state.aircraft.find((x) => x.id === id)
+  return a ? `${a.type} · ${a.reg}` : ''
+}
+
+/** Ersatzteil passt zu diesem Flugzeugtyp? */
+export function fitsAircraft(item: InventoryItem, type: string) {
+  return item.kind === 'et' && (item.fits === 'alle Flugzeuge' || (item.fits ?? '').split(', ').includes(type))
+}
+
 function nextId(prefix: string) {
   state.counter += 1
   return `${prefix}${state.counter}`
@@ -48,9 +58,10 @@ export function setLeader(date: string, leader: PersonKey | null) {
 
 /* ---------- Arbeitspakete ---------- */
 
-export function startTask(task: Task, who: PersonKey | '') {
+/** Wer gestartet hat, ergibt sich aus dem angemeldeten Konto. */
+export function startTask(task: Task) {
   task.status = 'arbeit'
-  log(task.history, 'Arbeit gestartet', who ? PEOPLE[who].name : DEVICE_USER, NOW)
+  log(task.history, 'Arbeit gestartet', CURRENT_USER, NOW)
 }
 
 export function finishTask(task: Task) {
@@ -178,13 +189,13 @@ export function logCount(item: InventoryItem) {
   else log(item.history, text)
 }
 
-export function addItemToOrders(item: InventoryItem) {
+export function addItemToOrders(item: InventoryItem, forWhat?: string) {
   if (openOrderFor(item.id)) return
   state.orders.push({
     id: nextId('o'),
     itemId: item.id,
     name: item.name,
-    forWhat: item.kind === 'et' ? item.fits ?? 'Lager' : 'Lager',
+    forWhat: forWhat ?? (item.kind === 'et' ? item.fits ?? 'Lager' : 'Lager'),
     state: 'list',
     reportedBy: DEVICE_USER,
     reportedAt: TODAY,

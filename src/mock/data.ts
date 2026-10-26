@@ -26,17 +26,34 @@ function done(
   }
 }
 
+/**
+ * Im Mockup haben alle Flugzeuge denselben Inhalt wie die ASG32.
+ * Die Datensätze werden pro Flugzeug mit eigenen IDs kopiert.
+ */
 export function initialState(): AppState {
+  const s = baseState()
+  const own = <T extends { aircraftId: string }>(list: T[]) => list.filter((x) => x.aircraftId === ASG)
+  const pre = (id: string, ref?: string) => (ref ? `${id}-${ref}` : undefined)
+  for (const a of s.aircraft.filter((x) => x.id !== ASG)) {
+    s.tasks.push(...own(s.tasks).map((t) => ({ ...structuredClone(t), id: `${a.id}-${t.id}`, aircraftId: a.id, defectId: pre(a.id, t.defectId) })))
+    s.defects.push(...own(s.defects).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id, taskId: pre(a.id, d.taskId) })))
+    s.deadlines.push(...own(s.deadlines).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id })))
+    s.documents.push(...own(s.documents).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id })))
+  }
+  return s
+}
+
+function baseState(): AppState {
   return {
     counter: 100,
 
     aircraft: [
-      { id: 'ask21', type: 'ASK21', reg: 'D-5071', hasDetails: false, start: '2026-11-07', end: '2026-12-05' },
-      { id: 'ask23', type: 'ASK23', reg: 'D-6987', hasDetails: false, start: '2026-11-14', end: '2026-12-12' },
+      { id: 'ask21', type: 'ASK21', reg: 'D-5071', hasDetails: true, sponsor: 'Heinrich', start: '2026-11-07', end: '2026-12-05' },
+      { id: 'ask23', type: 'ASK23', reg: 'D-6987', hasDetails: true, sponsor: 'Matze', start: '2026-11-14', end: '2026-12-12' },
       { id: ASG, type: 'ASG32', reg: 'D-3362', hasDetails: true, serial: '32031', sponsor: 'Lorenz D.', start: '2027-01-09', end: '2027-01-30' },
-      { id: 'arcus', type: 'ARCUS-T', reg: 'D-KSBN', hasDetails: false, start: '2027-02-06', end: '2027-03-13' },
-      { id: 'discus', type: 'Discus-2b', reg: 'D-8586', hasDetails: false, start: '2026-12-05', end: '2027-01-09' },
-      { id: 'ls8', type: 'LS8', reg: 'D-0169', hasDetails: false, start: '2027-01-16', end: '2027-02-13' },
+      { id: 'arcus', type: 'ARCUS-T', reg: 'D-KSBN', hasDetails: true, sponsor: 'Felix', start: '2027-02-06', end: '2027-03-13' },
+      { id: 'discus', type: 'Discus-2b', reg: 'D-8586', hasDetails: true, sponsor: 'Jonas', start: '2026-12-05', end: '2027-01-09' },
+      { id: 'ls8', type: 'LS8', reg: 'D-0169', hasDetails: true, sponsor: 'Sophie', start: '2027-01-16', end: '2027-02-13' },
     ],
 
     schedule: {
@@ -155,6 +172,8 @@ export function initialState(): AppState {
       { id: 'e5', kind: 'et', name: 'Batterie 12 V', location: 'Ladeecke', mode: 'count', qty: 3, unit: ['Stk.', 'Stk.'], fits: 'alle Flugzeuge', history: [] },
       { id: 'e6', kind: 'et', name: 'Spornrad', location: 'Ersatzteilschrank, Fach 1', mode: 'count', qty: 1, unit: ['Stk.', 'Stk.'], fits: 'ASK21, ASK23', history: [] },
       { id: 'e7', kind: 'et', name: 'Kugelgelenk', location: 'Kleinteilekasten B', mode: 'count', qty: 2, unit: ['Stk.', 'Stk.'], fits: 'LS8', history: [] },
+      { id: 'e8', kind: 'et', name: 'Bremsseil Radbremse', location: 'Ersatzteilschrank, Fach 2', mode: 'count', qty: 1, unit: ['Stk.', 'Stk.'], fits: 'Discus-2b, LS8', history: [] },
+      { id: 'e9', kind: 'et', name: 'Zündkerzen', location: 'Motorschrank', mode: 'count', qty: 4, unit: ['Stk.', 'Stk.'], fits: 'ARCUS-T', history: [] },
     ],
 
     orders: [

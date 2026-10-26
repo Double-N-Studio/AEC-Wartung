@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { setLeader, state } from '../store'
 import type { Aircraft, PersonKey } from '../types'
 import { LEADERS, PEOPLE } from '../mock/people'
@@ -62,8 +62,29 @@ onMounted(() => {
   if (el && el.scrollWidth > el.clientWidth) el.scrollLeft = (el.scrollWidth * todayPct) / 100 - el.clientWidth / 2
 })
 
-const openBar = ref<string | null>(null)
-const toggleBar = (id: string) => { openBar.value = openBar.value === id ? null : id }
+// Das Popup hängt am <body>, damit es nicht im scrollbaren Plan abgeschnitten wird.
+const pop = ref<{ id: string; top: number; left: number } | null>(null)
+const popBar = computed(() => bars.value.find((b) => b.a.id === pop.value?.id) ?? null)
+function toggleBar(id: string, e: MouseEvent) {
+  if (pop.value?.id === id) { pop.value = null; return }
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  pop.value = { id, top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - 256)) }
+}
+const closePop = (e: Event) => {
+  const t = e.target as HTMLElement | null
+  if (e.type === 'click' && t?.closest('.g-pop, .g-bar')) return
+  pop.value = null
+}
+onMounted(() => {
+  document.addEventListener('click', closePop)
+  window.addEventListener('scroll', closePop, true)
+  window.addEventListener('resize', closePop)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closePop)
+  window.removeEventListener('scroll', closePop, true)
+  window.removeEventListener('resize', closePop)
+})
 const rangeText = (a: Aircraft) => `Sa ${fmtDay(a.start)}${a.start.slice(0, 4) !== a.end.slice(0, 4) ? a.start.slice(0, 4) : ''} – Sa ${fmtDay(a.end)}${a.end.slice(0, 4)}`
 
 /* ---------- Werkstattleitung (Kalender) ---------- */
@@ -115,16 +136,10 @@ const leaderModel = computed({
           <div class="g-bars">
             <div v-for="b in bars" :key="b.a.id" class="g-row g-track">
               <div class="g-bar-wrap" :style="{ gridColumn: b.col }">
-                <button type="button" class="g-bar" :class="b.status" :aria-expanded="openBar === b.a.id" @click="toggleBar(b.a.id)">
+                <button type="button" class="g-bar" :class="b.status" :aria-expanded="pop?.id === b.a.id" @click="toggleBar(b.a.id, $event)">
                   <AppIcon v-if="b.status === 'done'" name="check" :size="12" :stroke="3" />
                   {{ b.a.type }} · {{ b.a.reg }}
                 </button>
-                <div v-if="openBar === b.a.id" class="g-pop">
-                  <strong>{{ b.a.type }} · {{ b.a.reg }}</strong>
-                  <span>{{ rangeText(b.a) }}</span>
-                  <span class="muted small">{{ b.info }}</span>
-                  <RouterLink v-if="b.a.hasDetails" :to="`/flugzeug/${b.a.id}`" class="small strong">Zum Flugzeug →</RouterLink>
-                </div>
               </div>
             </div>
             <div class="g-today" :style="{ left: `${todayPct}%` }" />
@@ -173,6 +188,15 @@ const leaderModel = computed({
       </ul>
     </section>
 
+    <Teleport to="body">
+      <div v-if="pop && popBar" class="g-pop" role="dialog" :aria-label="`${popBar.a.type} Zeitraum`" :style="{ top: `${pop.top}px`, left: `${pop.left}px` }">
+        <strong>{{ popBar.a.type }} · {{ popBar.a.reg }}</strong>
+        <span>{{ rangeText(popBar.a) }}</span>
+        <span class="muted small">{{ popBar.info }}</span>
+        <RouterLink :to="`/flugzeug/${popBar.a.id}`" class="small strong">Zum Flugzeug →</RouterLink>
+      </div>
+    </Teleport>
+
     <AppModal v-if="openDay" :title="fmtLong(openDay)" kicker="Werkstatttag · 9–17 Uhr" :width="500" @close="openDay = null">
       <div v-if="dayInfo(openDay).closed" class="closed-box">Werkstatt geschlossen · {{ dayInfo(openDay).reason }}</div>
       <div v-else class="day-body">
@@ -212,8 +236,8 @@ const leaderModel = computed({
 .g-months span { font-size: 12px; font-weight: 600; color: var(--text-2); border-left: 1px solid #D5DCE5; padding-left: 6px; height: 18px; }
 .g-weeks span { font-size: 11px; color: var(--muted); text-align: center; height: 18px; }
 .g-weeks .now { color: var(--today); font-weight: 700; }
-.g-bars { position: relative; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
-.g-track { height: 32px; background-image: linear-gradient(to right, var(--border-soft) 1px, transparent 1px); background-size: calc(100% / 21) 100%; }
+.g-bars { position: relative; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.g-track { height: 30px; background-image: linear-gradient(to right, var(--border-soft) 1px, transparent 1px); background-size: calc(100% / 21) 100%; }
 .g-bar-wrap { position: relative; align-self: center; margin: 0 2px; }
 .g-bar {
   width: 100%; height: 26px; border-radius: 7px; padding: 0 10px; border: 1px solid transparent;
@@ -223,7 +247,7 @@ const leaderModel = computed({
 .g-bar.running { background: var(--accent); color: #fff; }
 .g-bar.planned { background: var(--surface); border: 1.5px dashed var(--faint); color: var(--text-2); }
 .g-pop {
-  position: absolute; top: 32px; left: 0; z-index: 5; width: 240px; padding: 14px;
+  position: fixed; z-index: 40; width: 240px; padding: 14px;
   background: var(--surface); border: 1px solid #D5DCE5; border-radius: 12px; box-shadow: var(--shadow-pop);
   display: flex; flex-direction: column; gap: 4px; font-size: 13px;
 }
@@ -239,11 +263,11 @@ const leaderModel = computed({
 .cal-nav { display: flex; align-items: center; gap: 4px; }
 .small-btn { width: 36px; height: 36px; border-color: #D5DCE5; color: var(--text-2); }
 .cal-month { min-width: 132px; text-align: center; font-size: 15px; font-weight: 600; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
 .wd { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 2px; }
 .wd.sat { color: var(--text); }
 .cell {
-  height: 76px; border-radius: 10px; padding: 7px 9px; font-size: 13px; text-align: left;
+  height: 62px; border-radius: 10px; padding: 5px 9px; font-size: 13px; text-align: left;
   display: flex; flex-direction: column; gap: 4px; overflow: hidden;
 }
 .cell.out { color: var(--muted); }
@@ -251,7 +275,8 @@ const leaderModel = computed({
 .sat-cell { background: var(--surface); border: 1px solid #B9C3CF; color: var(--text); }
 .sat-cell.closed { background: var(--subtle); border-color: var(--border-soft); }
 .sat-cell.open { background: var(--warn-soft); border-color: var(--warn-border); }
-.sat-cell.today { background: var(--accent-tint); border: 2px solid var(--accent); padding: 6px 8px; }
+.sat-cell.today { background: var(--accent-tint); border: 2px solid var(--accent); padding: 4px 8px; }
+.sat-cell { gap: 2px; }
 .cell-top { display: flex; align-items: center; justify-content: space-between; }
 .cell-day { font-weight: 700; }
 .today .cell-day { color: var(--accent-ink); }

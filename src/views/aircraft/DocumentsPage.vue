@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { addDocument, state } from '../../store'
+import { addDocument, aircraftLabel, state } from '../../store'
 import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
 
@@ -51,7 +51,7 @@ function submit() {
     </template>
   </AppModal>
 
-  <AppModal v-if="adding" title="Dokument hinzufügen" kicker="ASG32 · D-3362" :width="560" @close="adding = false">
+  <AppModal v-if="adding" title="Dokument hinzufügen" :kicker="aircraftLabel(aircraftId)":width="560" @close="adding = false">
     <form id="add-doc" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="ad-title">Titel</label>
