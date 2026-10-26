@@ -164,25 +164,26 @@ const leaderModel = computed({
         <template v-for="c in cells" :key="c.iso">
           <div v-if="!c.inMonth" class="cell out">{{ c.day }}</div>
           <div v-else-if="!c.isSat" class="cell plain">{{ c.day }}</div>
-          <button v-else type="button" class="cell sat-cell" :class="{ closed: dayInfo(c.iso).closed, open: !dayInfo(c.iso).closed && !leaderOf(c.iso), today: c.iso === TODAY }" @click="openDay = c.iso">
+          <button v-else type="button" class="cell sat-cell" :class="{ closed: dayInfo(c.iso).closed, today: c.iso === TODAY }" @click="openDay = c.iso">
             <span class="cell-top"><span class="cell-day">{{ c.day }}</span><span v-if="c.iso === TODAY" class="today-pill">Heute</span></span>
             <template v-if="dayInfo(c.iso).closed"><span class="cell-sub">{{ dayInfo(c.iso).reason }}</span></template>
-            <template v-else-if="leaderOf(c.iso)">
-              <span class="cell-leader"><PersonAvatar :person="leaderOf(c.iso)!" :size="20" />{{ PEOPLE[leaderOf(c.iso)!].name }}</span>
-              <span class="cell-sub">{{ dayInfo(c.iso).planes }}</span>
+            <template v-else>
+              <span v-if="dayInfo(c.iso).planes" class="cell-planes">{{ dayInfo(c.iso).planes }}</span>
+              <span class="cell-sub">{{ leaderOf(c.iso) ? PEOPLE[leaderOf(c.iso)!].name : 'Leitung offen' }}</span>
             </template>
-            <span v-else class="cell-open"><AppIcon name="alert" :size="14" /> Leitung offen</span>
           </button>
         </template>
       </div>
 
       <ul class="cal-list">
         <li v-for="c in saturdays" :key="c.iso">
-          <button type="button" class="list-item" :class="{ open: !dayInfo(c.iso).closed && !leaderOf(c.iso), today: c.iso === TODAY }" @click="openDay = c.iso">
+          <button type="button" class="list-item" :class="{ today: c.iso === TODAY }" @click="openDay = c.iso">
             <span class="list-date"><strong>Sa {{ fmtDay(c.iso) }}</strong><span v-if="c.iso === TODAY" class="today-pill">Heute</span></span>
             <span v-if="dayInfo(c.iso).closed" class="muted">{{ dayInfo(c.iso).reason }} – geschlossen</span>
-            <span v-else-if="leaderOf(c.iso)" class="cell-leader"><PersonAvatar :person="leaderOf(c.iso)!" :size="22" />{{ PEOPLE[leaderOf(c.iso)!].name }} <span class="muted">· {{ dayInfo(c.iso).planes }}</span></span>
-            <span v-else class="cell-open"><AppIcon name="alert" :size="14" /> Leitung offen</span>
+            <template v-else>
+              <span v-if="dayInfo(c.iso).planes" class="list-planes">{{ dayInfo(c.iso).planes }}</span>
+              <span class="muted">{{ leaderOf(c.iso) ? PEOPLE[leaderOf(c.iso)!].name : 'Leitung offen' }}</span>
+            </template>
           </button>
         </li>
       </ul>
@@ -203,7 +204,7 @@ const leaderModel = computed({
         <div class="field">
           <span class="field-label">Werkstattleitung</span>
           <div v-if="leaderOf(openDay)" class="leader-row"><PersonAvatar :person="leaderOf(openDay)!" :size="40" /><strong>{{ PEOPLE[leaderOf(openDay)!].name }}</strong></div>
-          <div v-else class="warn-box"><AppIcon name="alert" :size="16" /> Noch niemand eingetragen</div>
+          <div v-else class="empty-box">Noch niemand eingetragen</div>
         </div>
         <div class="field">
           <label for="day-leader">Werkstattleitung festlegen</label>
@@ -267,35 +268,33 @@ const leaderModel = computed({
 .wd { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 2px; }
 .wd.sat { color: var(--text); }
 .cell {
-  height: 62px; border-radius: 10px; padding: 5px 9px; font-size: 13px; text-align: left;
+  min-height: 62px; border-radius: 10px; padding: 5px 9px; font-size: 13px; text-align: left;
   display: flex; flex-direction: column; gap: 4px; overflow: hidden;
 }
 .cell.out { color: var(--muted); }
 .cell.plain { background: var(--subtle); border: 1px solid var(--border-soft); font-weight: 600; color: var(--text-2); }
 .sat-cell { background: var(--surface); border: 1px solid #B9C3CF; color: var(--text); }
 .sat-cell.closed { background: var(--subtle); border-color: var(--border-soft); }
-.sat-cell.open { background: var(--warn-soft); border-color: var(--warn-border); }
 .sat-cell.today { background: var(--accent-tint); border: 2px solid var(--accent); padding: 4px 8px; }
 .sat-cell { gap: 2px; }
 .cell-top { display: flex; align-items: center; justify-content: space-between; }
 .cell-day { font-weight: 700; }
 .today .cell-day { color: var(--accent-ink); }
 .today-pill { font-size: 10.5px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 999px; padding: 1px 7px; }
-.cell-leader { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; }
+.cell-planes { font-size: 12.5px; font-weight: 600; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .cell-sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.cell-open { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--orange-ink); }
+.list-planes { font-weight: 600; }
 .cal-list { display: none; list-style: none; margin: 0; padding: 0; flex-direction: column; gap: 8px; }
 .list-item {
   width: 100%; min-height: 56px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
   padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); text-align: left; font-size: 13.5px;
 }
-.list-item.open { background: var(--warn-soft); border-color: var(--warn-border); }
 .list-item.today { border: 2px solid var(--accent); background: var(--accent-tint); }
 .list-date { display: flex; align-items: center; gap: 8px; }
 
 .day-body { display: flex; flex-direction: column; gap: 16px; }
 .leader-row { display: flex; align-items: center; gap: 12px; font-size: 16px; }
-.warn-box { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--orange-ink); font-size: 14px; font-weight: 600; }
+.empty-box { padding: 12px 14px; border-radius: 10px; background: var(--subtle); color: var(--text-2); font-size: 14px; }
 .closed-box { padding: 14px 16px; border-radius: 12px; background: var(--bg); font-size: 14px; font-weight: 600; color: var(--text-2); }
 
 @media (max-width: 640px) {

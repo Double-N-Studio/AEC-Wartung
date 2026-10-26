@@ -4,7 +4,7 @@ import { initialState } from './mock/data'
 import { CURRENT_USER, DEVICE_USER, PEOPLE } from './mock/people'
 import { addDays, NOW, TODAY } from './utils/date'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v2'
+const STORAGE_KEY = 'aec-winterwartung-demo-v3'
 
 function load(): AppState {
   try {
@@ -189,7 +189,7 @@ export function logCount(item: InventoryItem) {
   else log(item.history, text)
 }
 
-export function addItemToOrders(item: InventoryItem, forWhat?: string) {
+export function addItemToOrders(item: InventoryItem, forWhat?: string, comment = '') {
   if (openOrderFor(item.id)) return
   state.orders.push({
     id: nextId('o'),
@@ -199,7 +199,7 @@ export function addItemToOrders(item: InventoryItem, forWhat?: string) {
     state: 'list',
     reportedBy: DEVICE_USER,
     reportedAt: TODAY,
-    comment: '',
+    comment: comment.trim(),
     history: [{ text: 'Auf Bestellliste gesetzt', who: DEVICE_USER, at: TODAY }],
   })
 }

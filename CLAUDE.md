@@ -64,3 +64,6 @@ public/docs/                    Vorschaubilder der Dokumente
 - Arbeitspakete haben keine Bereiche (Rumpf, Fläche …), nur Eignungsstufen.
 - Inventur: nur Verbrauchsstoffe oder Ersatzteile (kein „Alle“), „leer“ meldet man durch Bestand 0, Statusanzeigen sind Text, keine Buttons.
 - Der Button „Auf Bestellliste“ ist immer weiß (sekundär).
+- Kalender: Flugzeuge sind der Titel eines Samstags, die Werkstattleitung steht als Untertitel ohne Avatar. „Leitung offen“ ist kein Warnstatus (keine gelbe Fläche, kein Warnsymbol).
+- Kanban: Checklisten-Fortschritt (z. B. 2/4) erst ab „In Arbeit“, nicht bei „Offen“.
+- Bestellliste: Bei ähnlichem Namen schlägt das Formular „Meinst du …“ einen Inventur-Artikel vor, damit die Bestellung dem Artikel zugeordnet wird.

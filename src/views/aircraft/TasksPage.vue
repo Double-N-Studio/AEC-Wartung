@@ -64,9 +64,10 @@ const creating = ref(false)
             <AppIcon v-else name="check" :size="18" :stroke="2.4" class="done-icon" />
           </span>
           <span class="task-title">{{ t.title }}</span>
-          <span v-if="t.status === 'offen'" class="task-meta">
-            <span><AppIcon name="clock" :size="14" />{{ t.duration }}</span>
-            <span v-if="t.checklist.length"><AppIcon name="list" :size="14" />{{ checked(t) }}/{{ t.checklist.length }}</span>
+          <!-- Checklisten-Fortschritt erst ab "In Arbeit"; offene Karten zeigen die Dauer. -->
+          <span v-if="t.status === 'offen' || (t.status === 'arbeit' && (t.checklist.length || t.deadline))" class="task-meta">
+            <span v-if="t.status === 'offen'"><AppIcon name="clock" :size="14" />{{ t.duration }}</span>
+            <span v-else-if="t.checklist.length"><AppIcon name="list" :size="14" />{{ checked(t) }}/{{ t.checklist.length }}</span>
             <span v-if="t.deadline" class="deadline"><AppIcon name="calendar" :size="14" />Frist {{ fmtDay(t.deadline) }}</span>
           </span>
           <span v-if="t.status === 'erledigt'" class="task-done">
