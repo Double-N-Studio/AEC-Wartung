@@ -47,9 +47,10 @@ watch(() => route.fullPath, () => { drawerOpen.value = false })
   .topbar-title { font-size: 16px; font-weight: 700; }
   .sidebar-wrap {
     position: fixed; top: 0; bottom: 0; left: 0; z-index: 60;
-    transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: var(--shadow-modal);
+    transform: translateX(-100%); transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .sidebar-wrap.open { transform: translateX(0); }
+  /* Schatten nur im offenen Zustand, sonst ragt er geschlossen von links ins Bild. */
+  .sidebar-wrap.open { transform: translateX(0); box-shadow: var(--shadow-modal); }
   .backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(23, 32, 43, 0.4); }
   .content { height: auto; flex: 1; min-height: 0; }
 }
