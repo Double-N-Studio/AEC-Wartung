@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { setLeader, state } from '../store'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { setDayComment, setLeader, state } from '../store'
 import type { Aircraft, PersonKey } from '../types'
 import { LEADERS, PEOPLE } from '../mock/people'
 import { addDays, daysBetween, fmtDay, fmtLong, MONTHS, parse, toIso, TODAY } from '../utils/date'
@@ -50,8 +50,11 @@ const bars = computed(() => [...state.aircraft]
     const status = a.end < TODAY ? 'done' : a.start <= TODAY ? 'running' : 'planned'
     const tasks = state.tasks.filter((t) => t.aircraftId === a.id)
     const doneCount = tasks.filter((t) => t.status === 'erledigt').length
-    const info = status === 'done' ? 'fertig' : tasks.length ? `${doneCount} von ${tasks.length} erledigt` : status === 'planned' ? 'geplant' : 'läuft'
-    return { a, status, col: `${weekIndex(a.start) + 1} / ${weekIndex(a.end) + 2}`, info: `${workDays(a)} Werkstatttage · ${info}` }
+    const pct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0
+    return {
+      a, status, pct, col: `${weekIndex(a.start) + 1} / ${weekIndex(a.end) + 2}`,
+      info: `${workDays(a)} Werkstatttage`, progress: `${doneCount} von ${tasks.length} erledigt`,
+    }
   }))
 
 // Auf schmalen Bildschirmen den Plan so scrollen, dass "Heute" sichtbar ist.
@@ -109,9 +112,24 @@ const dayInfo = (iso: string) => state.schedule[iso] ?? { leader: null, planes: 
 const leaderOf = (iso: string) => dayInfo(iso).leader ?? null
 
 const openDay = ref<string | null>(null)
+const editLeader = ref(false)
+watch(openDay, () => { editLeader.value = false })
 const leaderModel = computed({
   get: () => (openDay.value ? leaderOf(openDay.value) ?? '' : ''),
-  set: (v: string) => { if (openDay.value) setLeader(openDay.value, (v || null) as PersonKey | null) },
+  set: (v: string) => {
+    if (openDay.value) setLeader(openDay.value, (v || null) as PersonKey | null)
+    editLeader.value = false
+  },
+})
+const leaderSelect = ref<HTMLSelectElement | null>(null)
+async function startEditLeader() {
+  editLeader.value = true
+  await nextTick()
+  leaderSelect.value?.focus()
+}
+const commentModel = computed({
+  get: () => (openDay.value ? dayInfo(openDay.value).comment ?? '' : ''),
+  set: (v: string) => { if (openDay.value) setDayComment(openDay.value, v) },
 })
 </script>
 
@@ -119,7 +137,7 @@ const leaderModel = computed({
   <div class="page">
     <header>
       <h1 class="page-title">Zeitplan</h1>
-      <p class="page-sub">Wintersaison 2026/27 · Werkstatt samstags 9–17 Uhr</p>
+      <p class="page-sub">Wintersaison 2026/27</p>
     </header>
 
     <section class="card gantt" aria-labelledby="gantt-h">
@@ -137,7 +155,11 @@ const leaderModel = computed({
               <div class="g-bar-wrap" :style="{ gridColumn: b.col }">
                 <button type="button" class="g-bar" :class="b.status" :aria-expanded="pop?.id === b.a.id" @click="toggleBar(b.a.id, $event)">
                   <AppIcon v-if="b.status === 'done'" name="check" :size="12" :stroke="3" />
-                  {{ b.a.type }} · {{ b.a.reg }}
+                  <span class="g-label">{{ b.a.type }} · {{ b.a.reg }}</span>
+                  <template v-if="b.status === 'running'">
+                    <span class="g-pct">{{ b.pct }} %</span>
+                    <span class="g-progress"><span :style="{ width: `${b.pct}%` }" /></span>
+                  </template>
                 </button>
               </div>
             </div>
@@ -164,7 +186,11 @@ const leaderModel = computed({
           <div v-if="!c.inMonth" class="cell out">{{ c.day }}</div>
           <div v-else-if="!c.isSat" class="cell plain">{{ c.day }}</div>
           <button v-else type="button" class="cell sat-cell" :class="{ closed: dayInfo(c.iso).closed, today: c.iso === TODAY }" @click="openDay = c.iso">
-            <span class="cell-top"><span class="cell-day">{{ c.day }}</span><span v-if="c.iso === TODAY" class="today-pill">Heute</span></span>
+            <span class="cell-top">
+              <span class="cell-day">{{ c.day }}</span>
+              <AppIcon v-if="dayInfo(c.iso).comment" name="note" :size="14" class="note-icon" />
+              <span v-if="c.iso === TODAY" class="today-pill">Heute</span>
+            </span>
             <template v-if="dayInfo(c.iso).closed"><span class="cell-sub">{{ dayInfo(c.iso).reason }}</span></template>
             <template v-else>
               <span v-if="dayInfo(c.iso).planes" class="cell-planes">{{ dayInfo(c.iso).planes }}</span>
@@ -177,7 +203,11 @@ const leaderModel = computed({
       <ul class="cal-list">
         <li v-for="c in saturdays" :key="c.iso">
           <button type="button" class="list-item" :class="{ today: c.iso === TODAY }" @click="openDay = c.iso">
-            <span class="list-date"><strong>Sa {{ fmtDay(c.iso) }}</strong><span v-if="c.iso === TODAY" class="today-pill">Heute</span></span>
+            <span class="list-date">
+              <strong>Sa {{ fmtDay(c.iso) }}</strong>
+              <AppIcon v-if="dayInfo(c.iso).comment" name="note" :size="14" class="note-icon" />
+              <span v-if="c.iso === TODAY" class="today-pill">Heute</span>
+            </span>
             <span v-if="dayInfo(c.iso).closed" class="muted">{{ dayInfo(c.iso).reason }} – geschlossen</span>
             <template v-else>
               <span v-if="dayInfo(c.iso).planes" class="list-planes">{{ dayInfo(c.iso).planes }}</span>
@@ -193,6 +223,10 @@ const leaderModel = computed({
         <strong>{{ popBar.a.type }} · {{ popBar.a.reg }}</strong>
         <span>{{ rangeText(popBar.a) }}</span>
         <span class="muted small">{{ popBar.info }}</span>
+        <div class="pop-progress">
+          <div class="pop-progress-text"><span class="muted">{{ popBar.progress }}</span><strong>{{ popBar.pct }} %</strong></div>
+          <div class="pop-bar"><div :style="{ width: `${popBar.pct}%` }" /></div>
+        </div>
         <RouterLink :to="`/flugzeug/${popBar.a.id}`" class="small strong">Zum Flugzeug →</RouterLink>
       </div>
     </Teleport>
@@ -202,16 +236,23 @@ const leaderModel = computed({
       <template v-else>
         <div class="day-tiles">
           <div class="day-tile"><span>Flugzeuge</span><strong>{{ dayInfo(openDay).planes || '–' }}</strong></div>
-          <div class="day-tile"><span>Werkstattleitung</span><strong>{{ leaderOf(openDay) ? PEOPLE[leaderOf(openDay)!].name : 'Noch offen' }}</strong></div>
-        </div>
-        <div class="field">
-          <label for="day-leader">Werkstattleitung festlegen</label>
-          <select id="day-leader" v-model="leaderModel" class="select">
-            <option value="">Noch offen</option>
-            <option v-for="k in LEADERS" :key="k" :value="k">{{ PEOPLE[k].name }}</option>
-          </select>
+          <div class="day-tile">
+            <label for="day-leader">Werkstattleitung</label>
+            <select v-if="editLeader" id="day-leader" ref="leaderSelect" v-model="leaderModel" class="select leader-select" @blur="editLeader = false">
+              <option value="">Noch offen</option>
+              <option v-for="k in LEADERS" :key="k" :value="k">{{ PEOPLE[k].name }}</option>
+            </select>
+            <span v-else class="leader-row">
+              <strong>{{ leaderOf(openDay) ? PEOPLE[leaderOf(openDay)!].name : 'Noch offen' }}</strong>
+              <button type="button" class="pen-btn" aria-label="Werkstattleitung ändern" @click="startEditLeader"><AppIcon name="pen" :size="15" /></button>
+            </span>
+          </div>
         </div>
       </template>
+      <div class="field">
+        <label for="day-comment">Kommentar zum Tag</label>
+        <textarea id="day-comment" v-model="commentModel" rows="3" class="textarea" placeholder="z. B. Heizung vorher anmachen, Material abholen …" />
+      </div>
       <template #footer>
         <button type="button" class="btn btn-primary" @click="openDay = null">Fertig</button>
       </template>
@@ -235,9 +276,18 @@ const leaderModel = computed({
 .g-track { height: 30px; background-image: linear-gradient(to right, var(--border-soft) 1px, transparent 1px); background-size: calc(100% / 21) 100%; }
 .g-bar-wrap { position: relative; align-self: center; margin: 0 2px; }
 .g-bar {
-  width: 100%; height: 26px; border-radius: 7px; padding: 0 10px; border: 1px solid transparent;
+  position: relative; width: 100%; height: 26px; border-radius: 7px; padding: 0 10px; border: 1px solid transparent;
   display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden;
 }
+.g-bar.running { padding-bottom: 4px; }
+.g-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.g-pct { margin-left: auto; padding-left: 6px; font-size: 11.5px; font-weight: 700; opacity: 0.85; }
+.g-progress { position: absolute; left: 8px; right: 8px; bottom: 3px; height: 3px; border-radius: 2px; background: rgb(255 255 255 / 0.3); overflow: hidden; }
+.g-progress span { display: block; height: 100%; background: #fff; border-radius: 2px; transition: width 0.3s; }
+.pop-progress { display: flex; flex-direction: column; gap: 5px; margin: 6px 0 4px; }
+.pop-progress-text { display: flex; justify-content: space-between; font-size: 12.5px; }
+.pop-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.pop-bar div { height: 100%; background: var(--accent); border-radius: 3px; }
 .g-bar.done { background: var(--green-soft); border-color: #B5DCC6; color: var(--green-ink); }
 .g-bar.running { background: var(--accent); color: #fff; }
 .g-bar.planned { background: var(--surface); border: 1.5px dashed var(--faint); color: var(--text-2); }
@@ -288,7 +338,16 @@ const leaderModel = computed({
 
 .day-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .day-tile { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
-.day-tile > span { font-size: 12px; color: var(--muted); }
+.day-tile > span:first-child, .day-tile > label { font-size: 12px; color: var(--muted); font-weight: 400; }
+.leader-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.pen-btn {
+  width: 28px; height: 28px; flex-shrink: 0; border: 0; border-radius: 7px; background: transparent; color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pen-btn:hover { background: var(--subtle); color: var(--accent-ink); }
+.leader-select { height: 32px; padding: 0 8px; font-size: 14px; }
+.note-icon { color: var(--muted); flex-shrink: 0; }
+.cell-top .note-icon { margin-left: 4px; margin-right: auto; }
 .closed-box { padding: 14px 16px; border-radius: 12px; background: var(--bg); font-size: 14px; font-weight: 600; color: var(--text-2); }
 
 @media (max-width: 640px) {

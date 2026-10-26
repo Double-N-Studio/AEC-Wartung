@@ -52,12 +52,15 @@ function submit() {
         </div>
         <input v-else id="no-name" v-model="form.name" class="input" required autocomplete="off" placeholder="z. B. Schleifpapier P1000">
         <div v-if="suggestions.length" class="suggest" role="group" aria-label="Ähnliche Artikel in der Inventur">
-          <span class="suggest-q">Meinst du …</span>
-          <button v-for="s in suggestions" :key="s.id" type="button" class="suggest-item" @click="pick(s)">
-            <strong>{{ s.name }}</strong>
-            <span class="muted small">{{ kindText(s) }} · {{ s.location }}</span>
-          </button>
-          <button type="button" class="btn btn-sm btn-ghost" @click="dismissed = true">Nein, neuer Eintrag</button>
+          <span>Meinst du</span>
+          <template v-for="(s, i) in suggestions" :key="s.id">
+            <span v-if="i > 0">oder</span>
+            <button type="button" class="suggest-item" :title="`${kindText(s)} · ${s.location}`" @click="pick(s)">
+              <strong>{{ s.name }}</strong>
+            </button>
+          </template>
+          <span class="suggest-end">?</span>
+          <button type="button" class="suggest-dismiss" aria-label="Vorschlag ausblenden" @click="dismissed = true">Nein</button>
         </div>
         <p v-if="existing" class="notice">
           {{ existing.state === 'ordered' ? 'Dieser Artikel ist bereits bestellt.' : 'Dieser Artikel steht bereits auf der Bestellliste.' }}
@@ -90,11 +93,16 @@ function submit() {
   padding: 10px 12px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent-tint);
 }
 .linked-text, .suggest-item { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; font-size: 14px; }
-.suggest { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: var(--subtle); }
-.suggest-q { font-size: 13px; font-weight: 600; color: var(--text-2); }
-.suggest-item { padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--surface); }
-.suggest-item:hover { border-color: var(--accent); }
-.suggest .btn-ghost { align-self: flex-start; }
+.suggest { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 13px; color: var(--muted); }
+.suggest-item {
+  flex-direction: row; align-items: baseline; gap: 6px; padding: 2px 4px; border: 0; border-radius: 6px; background: transparent;
+  font-size: 13px; color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px;
+}
+.suggest-item strong { font-weight: 600; }
+.suggest-item:hover { background: var(--accent-tint); }
+.suggest-end { margin-left: -6px; }
+.suggest-dismiss { padding: 2px 4px; border: 0; background: transparent; font-size: 12.5px; color: var(--muted); }
+.suggest-dismiss:hover { color: var(--text-2); text-decoration: underline; }
 .notice { font-size: 13px; color: var(--text-2); }
 .btn-primary:disabled { opacity: 0.5; cursor: default; }
 </style>

@@ -32,6 +32,7 @@ export interface ScheduleDay {
   planes?: string
   closed?: boolean
   reason?: string
+  comment?: string
 }
 
 export type Level = 'ein' | 'erf' | 'wl'

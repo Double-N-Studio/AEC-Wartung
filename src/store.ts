@@ -4,7 +4,7 @@ import { initialState } from './mock/data'
 import { CURRENT_USER, DEVICE_USER, PEOPLE } from './mock/people'
 import { addDays, NOW, TODAY } from './utils/date'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v3'
+const STORAGE_KEY = 'aec-winterwartung-demo-v4'
 
 function load(): AppState {
   try {
@@ -51,9 +51,14 @@ const log = (list: HistoryEntry[], text: string, who = DEVICE_USER, at: string =
 
 /* ---------- Zeitplan ---------- */
 
+const scheduleDay = (date: string) => state.schedule[date] ?? (state.schedule[date] = { planes: '' })
+
 export function setLeader(date: string, leader: PersonKey | null) {
-  const day = state.schedule[date] ?? (state.schedule[date] = { planes: '' })
-  day.leader = leader
+  scheduleDay(date).leader = leader
+}
+
+export function setDayComment(date: string, comment: string) {
+  scheduleDay(date).comment = comment
 }
 
 /* ---------- Arbeitspakete ---------- */
@@ -72,6 +77,27 @@ export function finishTask(task: Task) {
   delete task.signedBy
   delete task.signedAt
   log(task.history, 'Als erledigt gemeldet', task.doneBy, NOW)
+}
+
+/** Rücknahme von „Erledigt“, solange noch nicht abgezeichnet. */
+function reopenTask(task: Task) {
+  task.status = 'arbeit'
+  delete task.doneBy
+  delete task.doneAt
+  log(task.history, 'Wieder in Arbeit', CURRENT_USER, NOW)
+}
+
+/**
+ * Checkliste steuert den Status: erster Haken startet, alle Haken melden erledigt,
+ * ein entfernter Haken nimmt „Erledigt“ zurück. Abgezeichnete Pakete bleiben unverändert.
+ */
+export function setChecklistItem(task: Task, index: number, done: boolean) {
+  if (task.signedBy) return
+  task.checklist[index].done = done
+  const all = task.checklist.every((c) => c.done)
+  if (done && task.status === 'offen') startTask(task)
+  if (all && task.status === 'arbeit') finishTask(task)
+  else if (!done && task.status === 'erledigt') reopenTask(task)
 }
 
 export function signTask(task: Task, who: PersonKey) {

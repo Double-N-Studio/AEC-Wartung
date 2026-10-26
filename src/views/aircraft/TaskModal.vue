@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { aircraftLabel, finishTask, signTask, startTask, state } from '../../store'
+import { aircraftLabel, finishTask, setChecklistItem, signTask, startTask, state } from '../../store'
 import type { PersonKey, Task } from '../../types'
 import { PEOPLE } from '../../mock/people'
 import { fmtDay, fmtWhen } from '../../utils/date'
@@ -41,8 +41,11 @@ const todaysLeader: PersonKey = 'MA'
     </div>
 
     <div v-if="task.checklist.length" class="checklist" role="group" aria-label="Checkliste">
-      <label v-for="(item, i) in task.checklist" :key="i" class="check" :class="{ done: item.done }">
-        <input v-model="item.done" type="checkbox"><span>{{ item.text }}</span>
+      <label v-for="(item, i) in task.checklist" :key="i" class="check" :class="{ done: item.done, locked: task.signedBy }">
+        <input
+          type="checkbox" :checked="item.done" :disabled="!!task.signedBy"
+          @change="setChecklistItem(task, i, ($event.target as HTMLInputElement).checked)"
+        ><span>{{ item.text }}</span>
       </label>
     </div>
 
@@ -84,6 +87,7 @@ const todaysLeader: PersonKey = 'MA'
 }
 .check:last-child { border-bottom: 0; }
 .check.done { color: var(--muted); text-decoration: line-through; }
+.check.locked { cursor: default; }
 .check input { width: 20px; height: 20px; accent-color: var(--accent); }
 .signed { display: inline-flex; align-items: center; gap: 6px; color: var(--green-ink); font-weight: 600; }
 </style>

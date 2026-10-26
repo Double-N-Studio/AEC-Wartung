@@ -1,4 +1,6 @@
-import type { AppState, Task } from '../types'
+import type { Aircraft, AppState, Task } from '../types'
+import { addDays, TODAY } from '../utils/date'
+import { PEOPLE } from './people'
 
 const ASG = 'asg32'
 
@@ -40,7 +42,80 @@ export function initialState(): AppState {
     s.deadlines.push(...own(s.deadlines).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id })))
     s.documents.push(...own(s.documents).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id })))
   }
+  // Damit das Board je Flugzeug anders aussieht: abgeschlossene Flugzeuge komplett erledigt,
+  // ASG32 und LS8 gemischt, Arcus-T noch gar nicht angefangen.
+  for (const a of s.aircraft) {
+    const tasks = s.tasks.filter((t) => t.aircraftId === a.id)
+    if (a.end < TODAY) completeAll(s, a, tasks)
+    else if (a.id === 'ls8') tasks.forEach((t) => applyLs8(t))
+    else if (a.id !== ASG) tasks.forEach((t) => resetTask(t))
+    if (a.id !== ASG) tasks.forEach((t) => { t.history[t.history.length - 1] = { ...created, at: a.start < TODAY ? a.start : TODAY } })
+  }
   return s
+}
+
+const HELPERS = ['Tim', 'Lena', 'Jonas', 'Sophie', 'Felix', 'Nuno', 'Lorenz']
+
+function resetTask(t: Task) {
+  t.status = 'offen'
+  t.checklist.forEach((c) => { c.done = false })
+  delete t.doneBy
+  delete t.doneAt
+  delete t.signedBy
+  delete t.signedAt
+  t.history = [created]
+}
+
+function startAt(t: Task, who: string, at: string) {
+  t.status = 'arbeit'
+  t.history = [{ text: 'Arbeit gestartet', who, at }, created]
+}
+
+function finishAt(t: Task, who: string, at: string, signedBy?: string) {
+  t.status = 'erledigt'
+  t.checklist.forEach((c) => { c.done = true })
+  t.doneBy = who
+  t.doneAt = at
+  t.history = [{ text: 'Als erledigt gemeldet', who, at }, { text: 'Arbeit gestartet', who, at: at.slice(0, 10) }, created]
+  if (signedBy) {
+    t.signedBy = signedBy
+    t.signedAt = at.slice(0, 10)
+    t.history.unshift({ text: 'Abgezeichnet', who: signedBy, at: t.signedAt })
+  } else {
+    delete t.signedBy
+    delete t.signedAt
+  }
+}
+
+/** Alle Pakete auf die Werkstatttage des Flugzeugs verteilt erledigt und abgezeichnet, Mängel dazu behoben. */
+function completeAll(s: AppState, a: Aircraft, tasks: Task[]) {
+  const days: string[] = []
+  for (let d = a.start; d <= a.end; d = addDays(d, 7)) if (!s.schedule[d]?.closed) days.push(d)
+  tasks.forEach((t, i) => {
+    const day = days[Math.floor((i * days.length) / tasks.length)]
+    const leader = s.schedule[day]?.leader
+    const at = `${day}T${String(10 + (i % 7)).padStart(2, '0')}:${i % 2 ? '45' : '15'}`
+    finishAt(t, HELPERS[i % HELPERS.length], at, leader ? PEOPLE[leader].name : i % 2 ? 'Heinrich' : 'Matze')
+    const defect = s.defects.find((d) => d.id === t.defectId)
+    if (defect) {
+      defect.status = 'done'
+      defect.doneAt = day
+      defect.doneBy = t.doneBy
+      defect.history.unshift({ text: 'Mit dem Arbeitspaket behoben.', who: t.doneBy!, at: day })
+    }
+  })
+}
+
+/** LS8: erster Werkstatttag ist heute. */
+function applyLs8(t: Task) {
+  const id = t.id.replace('ls8-', '')
+  resetTask(t)
+  if (id === 't18') finishAt(t, 'Tim, Lena', `${TODAY}T10:10`, 'Matze')
+  else if (id === 't11') finishAt(t, 'Lorenz', `${TODAY}T10:55`)
+  else if (id === 't3') { startAt(t, 'Lena', `${TODAY}T10:30`); t.checklist[0].done = t.checklist[1].done = true }
+  else if (id === 't1') { startAt(t, 'Nuno', `${TODAY}T10:40`); t.checklist[0].done = true }
+  else if (id === 't17') startAt(t, 'Sophie', `${TODAY}T11:05`)
+  else if (id === 't13') startAt(t, 'Felix', `${TODAY}T11:20`)
 }
 
 function baseState(): AppState {
@@ -52,28 +127,26 @@ function baseState(): AppState {
       { id: 'ask23', type: 'ASK23', reg: 'D-6987', hasDetails: true, sponsor: 'Matze', start: '2026-11-14', end: '2026-12-12' },
       { id: ASG, type: 'ASG32', reg: 'D-3362', hasDetails: true, serial: '32031', sponsor: 'Lorenz D.', start: '2027-01-09', end: '2027-01-30' },
       { id: 'arcus', type: 'Arcus-T', reg: 'D-KSBN', hasDetails: true, sponsor: 'Felix', start: '2027-02-06', end: '2027-03-13' },
-      { id: 'discus', type: 'Discus-2b', reg: 'D-8586', hasDetails: true, sponsor: 'Jonas', start: '2026-12-05', end: '2027-01-09' },
+      { id: 'discus', type: 'Discus-2b', reg: 'D-9596', hasDetails: true, sponsor: 'Jonas', start: '2026-12-05', end: '2027-01-09' },
       { id: 'ls8', type: 'LS8', reg: 'D-0169', hasDetails: true, sponsor: 'Sophie', start: '2027-01-16', end: '2027-02-13' },
     ],
 
     schedule: {
-      '2026-12-05': { leader: 'MA', planes: 'Discus-2b · ASK21 Abnahme' },
-      '2026-12-12': { leader: 'HE', planes: 'Discus-2b · ASK23 Abnahme' },
+      '2026-12-05': { leader: 'MA', planes: 'Discus-2b · ASK21' },
+      '2026-12-12': { leader: 'HE', planes: 'Discus-2b · ASK23' },
       '2026-12-19': { leader: 'MA', planes: 'Discus-2b' },
       '2026-12-26': { closed: true, reason: 'Weihnachten' },
       '2027-01-02': { closed: true, reason: 'Neujahr' },
       '2027-01-09': { leader: 'HE', planes: 'Discus-2b · ASG32' },
       '2027-01-16': { leader: 'MA', planes: 'ASG32 · LS8' },
       '2027-01-23': { leader: null, planes: 'ASG32 · LS8' },
-      '2027-01-30': { leader: 'HE', planes: 'ASG32 Abnahme · LS8' },
+      '2027-01-30': { leader: 'HE', planes: 'ASG32 · LS8' },
       '2027-02-06': { leader: 'MA', planes: 'LS8 · Arcus-T' },
-      '2027-02-13': { leader: null, planes: 'LS8 Abnahme · Arcus-T' },
+      '2027-02-13': { leader: null, planes: 'LS8 · Arcus-T' },
       '2027-02-20': { leader: 'HE', planes: 'Arcus-T' },
       '2027-02-27': { leader: 'MA', planes: 'Arcus-T' },
       '2027-03-06': { leader: 'HE', planes: 'Arcus-T' },
-      '2027-03-13': { leader: 'MA', planes: 'Arcus-T Abnahme' },
-      '2027-03-20': { leader: null, planes: 'Aufrüsten für die Saison' },
-      '2027-03-27': { leader: 'HE', planes: 'Saisonstart' },
+      '2027-03-13': { leader: 'MA', planes: 'Arcus-T' },
     },
 
     tasks: [
