@@ -89,7 +89,7 @@ onBeforeUnmount(() => {
 })
 const rangeText = (a: Aircraft) => `Sa ${fmtDay(a.start)}${a.start.slice(0, 4) !== a.end.slice(0, 4) ? a.start.slice(0, 4) : ''} – Sa ${fmtDay(a.end)}${a.end.slice(0, 4)}`
 
-/* ---------- Werkstattleitung (Kalender) ---------- */
+/* ---------- Werkstatt-Termin (Kalender) ---------- */
 const CAL_MONTHS = [{ y: 2026, m: 11 }, { y: 2027, m: 0 }, { y: 2027, m: 1 }, { y: 2027, m: 2 }]
 const monthIdx = ref(1)
 const calMonth = computed(() => CAL_MONTHS[monthIdx.value])
@@ -172,7 +172,7 @@ const commentModel = computed({
 
     <section class="card cal" aria-labelledby="cal-h">
       <div class="cal-head">
-        <h2 id="cal-h" class="section-title">Werkstattleitung</h2>
+        <h2 id="cal-h" class="section-title">Werkstatt-Termin</h2>
         <div class="cal-nav">
           <button type="button" class="icon-btn small-btn" aria-label="Vorheriger Monat" :disabled="monthIdx === 0" @click="monthIdx--"><AppIcon name="chevronLeft" :size="16" /></button>
           <span class="cal-month">{{ monthLabel }}</span>

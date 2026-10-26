@@ -3,8 +3,9 @@ import type { AppState, Defect, HistoryEntry, InventoryItem, Order, PersonKey, T
 import { initialState } from './mock/data'
 import { CURRENT_USER, DEVICE_USER, PEOPLE } from './mock/people'
 import { addDays, NOW, TODAY } from './utils/date'
+import { FLAG, stockText, unitOf } from './utils/stock'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v4'
+const STORAGE_KEY = 'aec-winterwartung-demo-v6'
 
 function load(): AppState {
   try {
@@ -208,8 +209,14 @@ export function setQty(item: InventoryItem, qty: number) {
   item.qty = Math.max(0, qty)
 }
 
+/** Bestand setzen und als Zählung im Verlauf festhalten (eine Zählung pro Tag, spätere überschreiben). */
+export function countItem(item: InventoryItem, qty: number) {
+  setQty(item, qty)
+  logCount(item)
+}
+
 export function logCount(item: InventoryItem) {
-  const text = item.mode === 'flag' ? (item.qty ? 'Gezählt: genug vorhanden' : 'Gezählt: leer') : `Gezählt: ${item.qty} ${item.qty === 1 ? item.unit[0] : item.unit[1]}`
+  const text = `Gezählt: ${stockText(item)}`
   const last = item.history[0]
   if (last && last.at === TODAY && last.text.startsWith('Gezählt')) last.text = text
   else log(item.history, text)
@@ -253,8 +260,8 @@ export function markDelivered(order: Order, qty: number) {
   order.state = 'delivered'
   const item = order.itemId ? state.inventory.find((i) => i.id === order.itemId) : undefined
   if (item) {
-    item.qty = item.mode === 'flag' ? 1 : item.qty + qty
-    const text = item.mode === 'flag' ? 'Geliefert' : `Geliefert: ${qty} ${qty === 1 ? item.unit[0] : item.unit[1]}`
+    item.qty = item.mode === 'flag' ? FLAG.full : item.qty + qty
+    const text = item.mode === 'flag' ? 'Geliefert' : `Geliefert: ${qty} ${unitOf(item, qty)}`
     log(item.history, text)
   }
   log(order.history, 'Geliefert')

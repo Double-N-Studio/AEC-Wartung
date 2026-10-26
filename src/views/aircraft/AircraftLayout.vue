@@ -15,7 +15,7 @@ const tabs = computed(() => {
     { to: 'arbeitspakete', label: 'Arbeitspakete', count: tasks.value.length },
     { to: 'dokumente', label: 'Dokumente', count: state.documents.filter((d) => d.aircraftId === id).length },
     { to: 'fristen', label: 'Fristen', count: state.deadlines.filter((d) => d.aircraftId === id).length },
-    { to: 'maengel', label: 'Mängel/Befunde', count: state.defects.filter((d) => d.aircraftId === id && d.status === 'open').length, warn: true },
+    { to: 'maengel', label: 'Mängel/Befunde', count: state.defects.filter((d) => d.aircraftId === id && d.status === 'open').length },
     { to: 'material', label: 'Material', count: state.inventory.filter((i) => fitsAircraft(i, aircraft.value?.type ?? '')).length },
   ]
 })
@@ -30,7 +30,7 @@ const tabs = computed(() => {
 
     <nav class="tabs" aria-label="Bereiche des Flugzeugs">
       <RouterLink v-for="t in tabs" :key="t.to" :to="`${base}/${t.to}`" class="tab" active-class="active">
-        {{ t.label }}<span class="tab-count" :class="{ warn: t.warn }">{{ t.count }}</span>
+        {{ t.label }}<span class="tab-count">{{ t.count }}</span>
       </RouterLink>
     </nav>
 
@@ -57,5 +57,4 @@ const tabs = computed(() => {
 .tab.disabled { cursor: default; color: var(--faint); }
 .tab-count { font-size: 12px; color: var(--muted); background: #E9EDF2; border-radius: 999px; padding: 1px 7px; }
 .tab.active .tab-count { background: var(--accent-soft); color: var(--accent-ink); }
-.tab-count.warn { background: var(--orange-soft); color: var(--orange-ink); }
 </style>

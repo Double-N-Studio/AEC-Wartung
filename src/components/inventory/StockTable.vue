@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { addItemToOrders, openOrderFor, state } from '../../store'
+import { computed, ref, watch } from 'vue'
+import { addItemToOrders, countItem, openOrderFor, state } from '../../store'
 import type { InventoryItem } from '../../types'
 import { fmtDay } from '../../utils/date'
+import { stockLevel, unitOf, type StockLevel } from '../../utils/stock'
 import AppIcon from '../AppIcon.vue'
 import DropdownSelect from '../DropdownSelect.vue'
+import LevelPicker from '../LevelPicker.vue'
+import QtyStepper from '../QtyStepper.vue'
 
 /**
- * Bestandstabelle der Inventur.
+ * Bestand als Zählliste: gruppiert nach Leer / Fast leer / Vorhanden, gezählt wird direkt in der Zeile.
  * kinds: welche Arten angezeigt werden (mit Umschalter, wenn beide).
  * forWhat: wird bei "Auf Bestellliste" als Verwendungszweck gespeichert (z. B. Flugzeugtyp).
  */
@@ -19,25 +22,39 @@ const emit = defineEmits<{ open: [item: InventoryItem] }>()
 
 const kind = ref<'vs' | 'et'>(props.kinds[0])
 const query = ref('')
-const stock = ref('alle')
 const plane = ref('Alle')
-const STOCK = [{ value: 'alle', label: 'Alle' }, { value: 'vorhanden', label: 'Vorhanden' }, { value: 'leer', label: 'Leer' }]
 const PLANES = computed(() => [{ value: 'Alle', label: 'Alle' }, ...state.aircraft.map((a) => ({ value: a.type, label: a.type }))])
 
+const GROUPS: { level: StockLevel; title: string; dot: string }[] = [
+  { level: 'empty', title: 'Leer', dot: 'var(--today)' },
+  { level: 'low', title: 'Fast leer', dot: 'var(--amber)' },
+  { level: 'ok', title: 'Vorhanden', dot: 'var(--green)' },
+]
+
 const countOf = (k: 'vs' | 'et') => props.items.filter((i) => i.kind === k).length
-const stockText = (i: InventoryItem) => (i.mode === 'flag' ? (i.qty ? 'genug vorhanden' : 'leer') : `${i.qty} ${i.qty === 1 ? i.unit[0] : i.unit[1]}`)
 
 const rows = computed(() => {
   const q = query.value.trim().toLowerCase()
-  return props.items.filter((i) => {
-    if (i.kind !== kind.value) return false
-    if (q && !i.name.toLowerCase().includes(q)) return false
-    if (stock.value === 'leer' && i.qty > 0) return false
-    if (stock.value === 'vorhanden' && i.qty === 0) return false
-    if (props.planeFilter && kind.value === 'et' && plane.value !== 'Alle' && i.fits !== 'alle Flugzeuge' && !(i.fits ?? '').split(', ').includes(plane.value)) return false
-    return true
-  })
+  return props.items
+    .filter((i) => {
+      if (i.kind !== kind.value) return false
+      if (q && !i.name.toLowerCase().includes(q)) return false
+      if (props.planeFilter && kind.value === 'et' && plane.value !== 'Alle' && i.fits !== 'alle Flugzeuge' && !(i.fits ?? '').split(', ').includes(plane.value)) return false
+      return true
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
 })
+
+// Gruppe pro Artikel nur bei Filterwechsel neu bestimmen, nicht beim Zählen –
+// sonst springt die Zeile unter dem Finger in eine andere Gruppe.
+const levelOf = ref(new Map<string, StockLevel>())
+watch([kind, query, plane, () => props.items.length], () => {
+  levelOf.value = new Map(props.items.map((i) => [i.id, stockLevel(i)]))
+}, { immediate: true })
+
+const groups = computed(() =>
+  GROUPS.map((g) => ({ ...g, list: rows.value.filter((i) => (levelOf.value.get(i.id) ?? stockLevel(i)) === g.level) })).filter((g) => g.list.length),
+)
 </script>
 
 <template>
@@ -57,31 +74,33 @@ const rows = computed(() => {
           <input v-model="query" type="search" placeholder="Artikel suchen" class="input">
         </label>
         <DropdownSelect v-if="props.planeFilter && kind === 'et'" v-model="plane" label="Flugzeug" :options="PLANES" />
-        <DropdownSelect v-model="stock" label="Bestand" :options="STOCK" />
       </div>
     </div>
 
-    <div class="table" role="table" aria-label="Bestand">
-      <div class="row table-head" :class="kind" role="row">
-        <span role="columnheader">Artikel</span>
-        <span v-if="kind === 'et'" role="columnheader">Passt für</span>
-        <span role="columnheader">Lagerort</span>
-        <span role="columnheader">Bestand</span>
-        <span role="columnheader" class="right-align">Bestellung</span>
-      </div>
-      <div v-for="i in rows" :key="i.id" class="row table-row item" :class="kind" role="row">
-        <span role="cell"><button type="button" class="name" @click="emit('open', i)">{{ i.name }}</button></span>
-        <span v-if="kind === 'et'" role="cell" class="c-fits">{{ i.fits }}</span>
-        <span role="cell" class="c-loc">{{ i.location }}</span>
-        <span role="cell" class="c-qty">{{ stockText(i) }}</span>
-        <span role="cell" class="c-order">
-          <span v-if="openOrderFor(i.id)?.state === 'list'" class="state list"><span class="state-dot" />Auf Bestellliste</span>
-          <span v-else-if="openOrderFor(i.id)?.state === 'ordered'" class="state ordered"><span class="state-dot" />Bestellt · {{ fmtDay(openOrderFor(i.id)!.delivery!) }}</span>
-          <button v-else type="button" class="btn btn-sm" @click="addItemToOrders(i, props.forWhat)">Auf Bestellliste</button>
-        </span>
-      </div>
-      <p v-if="!rows.length" class="muted empty">Keine Artikel gefunden.</p>
+    <div v-for="g in groups" :key="g.level" class="group">
+      <h3 class="group-head"><span class="dot" :style="{ background: g.dot }" />{{ g.title }}<span class="count">{{ g.list.length }}</span></h3>
+      <ul class="rows">
+        <li v-for="i in g.list" :key="i.id" class="row">
+          <div class="info">
+            <button type="button" class="name" @click="emit('open', i)">{{ i.name }}</button>
+            <span class="meta">
+              <span class="meta-item"><AppIcon name="pin" :size="13" />{{ i.location }}</span>
+              <span v-if="i.kind === 'et' && i.fits" class="meta-item">Passt für {{ i.fits }}</span>
+            </span>
+          </div>
+          <div class="control">
+            <QtyStepper v-if="i.mode === 'count'" :model-value="i.qty" :label="`${i.qty} ${unitOf(i, i.qty)}`" boxed @update:model-value="countItem(i, $event)" />
+            <LevelPicker v-else :model-value="i.qty" @update:model-value="countItem(i, $event)" />
+          </div>
+          <div class="order">
+            <span v-if="openOrderFor(i.id)?.state === 'list'" class="state list"><span class="state-dot" />Auf Bestellliste</span>
+            <span v-else-if="openOrderFor(i.id)?.state === 'ordered'" class="state ordered"><span class="state-dot" />Bestellt · {{ fmtDay(openOrderFor(i.id)!.delivery!) }}</span>
+            <button v-else type="button" class="btn btn-sm" @click="addItemToOrders(i, props.forWhat)">Auf Bestellliste</button>
+          </div>
+        </li>
+      </ul>
     </div>
+    <p v-if="!rows.length" class="muted empty">Keine Artikel gefunden.</p>
   </section>
 </template>
 
@@ -92,34 +111,33 @@ const rows = computed(() => {
 .search { position: relative; }
 .search .input { width: 220px; height: 40px; padding-left: 36px; font-size: 13.5px; }
 .search-icon { position: absolute; left: 12px; top: 12px; color: var(--muted); pointer-events: none; }
-.table { border-top: 1px solid var(--border); }
-.row { display: grid; align-items: center; }
-.row.vs { grid-template-columns: minmax(0, 32fr) minmax(0, 30fr) minmax(0, 18fr) minmax(0, 20fr); }
-.row.et { grid-template-columns: minmax(0, 26fr) minmax(0, 22fr) minmax(0, 22fr) minmax(0, 12fr) minmax(0, 18fr); }
-.table-head { height: 38px; position: static; }
-.row > span { padding: 8px 12px; }
-.row > span:first-child { padding-left: 10px; }
-.table-head > span:first-child { padding-left: 16px; }
-.right-align { text-align: right; }
-.item { min-height: 54px; }
-.name { padding: 8px 6px; border: 0; border-radius: 8px; background: transparent; font-size: 14px; font-weight: 600; color: var(--accent-ink); text-align: left; }
-.name:hover { background: var(--subtle); }
-.c-fits, .c-loc { font-size: 13px; color: var(--text-2); line-height: 1.35; }
-.c-qty { font-size: 14px; font-weight: 600; white-space: nowrap; }
-.c-order { display: flex; justify-content: flex-end; padding-right: 16px !important; }
+.group-head {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 14px; font-weight: 700;
+  background: var(--subtle); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-height: 60px; padding: 9px 16px; border-bottom: 1px solid var(--border-soft); }
+.row:last-child { border-bottom: 0; }
+.info { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.name { align-self: flex-start; padding: 2px 0; border: 0; background: transparent; font-size: 14.5px; font-weight: 600; color: var(--accent-ink); text-align: left; }
+.name:hover { text-decoration: underline; }
+.meta { display: flex; flex-wrap: wrap; column-gap: 12px; row-gap: 2px; font-size: 12.5px; color: var(--muted); }
+.meta-item { display: inline-flex; align-items: center; gap: 5px; }
+.control { flex: 0 0 224px; }
+.order { flex: 0 0 176px; display: flex; justify-content: flex-end; }
 .state { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-size: 12.5px; font-weight: 600; }
 .state-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .state.list { color: var(--orange-ink); }
 .state.ordered { color: var(--green-ink); }
-.empty { padding: 32px 16px; text-align: center; }
+.empty { padding: 32px 16px; text-align: center; border-top: 1px solid var(--border); }
 @media (max-width: 900px) {
-  .table-head { display: none; }
-  .row.vs, .row.et { grid-template-columns: 1fr auto; padding: 6px 0; }
-  .row > span { padding: 2px 12px; }
-  .c-fits, .c-loc { grid-column: 1 / -1; padding-left: 16px !important; }
-  .c-qty { grid-row: 1; grid-column: 2; text-align: right; }
-  .c-order { grid-column: 1 / -1; justify-content: flex-start; padding-left: 16px !important; padding-bottom: 8px !important; }
   .search, .search .input { width: 100%; }
   .right { width: 100%; }
+}
+@media (max-width: 640px) {
+  .row { gap: 10px; }
+  .control { flex: 1 1 100%; }
+  .order { flex: 1 1 100%; justify-content: flex-start; }
 }
 </style>

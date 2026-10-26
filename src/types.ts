@@ -108,6 +108,7 @@ export interface InventoryItem {
   name: string
   location: string
   mode: 'count' | 'flag'
+  /** Stückzahl; bei mode 'flag' der Füllstand (siehe FLAG in utils/stock.ts) */
   qty: number
   unit: [string, string]
   fits?: string

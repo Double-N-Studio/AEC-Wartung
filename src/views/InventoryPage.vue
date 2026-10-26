@@ -24,11 +24,13 @@ function openOrder(o: Order) {
   <div class="page">
     <header>
       <h1 class="page-title">Inventur</h1>
-      <p class="page-sub">Verbrauchsstoffe aus dem Lager und Ersatzteile der Flugzeuge</p>
+      <p class="page-sub">Direkt in der Liste zählen. Was leer ist, steht oben.</p>
     </header>
 
-    <OrderBoard :orders="state.orders" @open="openOrder" @add="creating = true" />
-    <StockTable :items="state.inventory" @open="openItemId = $event.id" />
+    <div class="with-aside">
+      <OrderBoard class="aside" :orders="state.orders" @open="openOrder" @add="creating = true" />
+      <StockTable class="main" :items="state.inventory" @open="openItemId = $event.id" />
+    </div>
 
     <ItemModal v-if="openItem" :item="openItem" @close="openItemId = null" />
     <FreeOrderModal v-if="openFree" :order="openFree" @close="openFreeId = null" />

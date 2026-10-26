@@ -9,7 +9,7 @@ const FAQ = [
   { q: 'Welche Aufgaben kann ich als Neuling oder Flugschüler übernehmen?', a: 'Alle Arbeitspakete mit dem grünen Badge „Einsteiger“. Auf dem Board eines Flugzeugs kannst du danach filtern.' },
   { q: 'Wer zeichnet meine Arbeit ab?', a: 'Die Werkstattleitung des Tages. Sie prüft die Arbeit und zeichnet sie am Tablet ab.' },
   { q: 'Wo finde ich Waschbenzin, Fett, Pinsel und Co.?', a: 'In der „Inventur“ einfach suchen – dort steht, in welchem Schrank oder Regal es liegt. Das gilt auch für Ersatzteile der Flugzeuge.' },
-  { q: 'Etwas ist leer – was mache ich?', a: 'In der „Inventur“ den Bestand auf 0 bzw. „Leer“ setzen und auf „Auf Bestellliste“ tippen. Dann wird es nachbestellt.' },
+  { q: 'Etwas ist leer – was mache ich?', a: 'In der „Inventur“ direkt in der Liste den Bestand auf 0 bzw. „Leer“ oder „Fast leer“ setzen und auf „Auf Bestellliste“ tippen. Dann wird es nachbestellt.' },
   { q: 'Ich habe einen Schaden entdeckt – was nun?', a: 'Sag der Werkstattleitung Bescheid. Sie erfasst den Befund mit Foto im Reiter „Mängel/Befunde“ des Flugzeugs.' },
   { q: 'Wo finde ich Wartungshandbücher und Wägeberichte?', a: 'Beim jeweiligen Flugzeug im Reiter „Dokumente“.' },
   { q: 'Warum kann ich zu Hause nichts bearbeiten?', a: 'Ohne Login kannst du alles ansehen, aber nichts ändern. Bearbeiten geht am Werkstatt-Tablet oder mit einem Werkstattleiter-Zugang.' },

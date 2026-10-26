@@ -4,6 +4,7 @@ import type { Order } from '../../types'
 import { fmtDay } from '../../utils/date'
 import AppIcon from '../AppIcon.vue'
 
+/** Bestellliste als Seitenspalte neben dem Bestand. */
 const props = defineProps<{ orders: Order[] }>()
 const emit = defineEmits<{ open: [order: Order]; add: [] }>()
 
@@ -15,10 +16,11 @@ const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung c
 </script>
 
 <template>
-  <section class="orders" aria-label="Bestellliste">
-    <div v-for="g in groups" :key="g.title" class="card group">
+  <section class="card orders" aria-labelledby="orders-h">
+    <h2 id="orders-h" class="section-title">Bestellliste</h2>
+    <div v-for="g in groups" :key="g.title" class="group">
       <div class="head">
-        <h2 class="title"><span class="dot" :style="{ background: g.dot }" />{{ g.title }}</h2>
+        <h3 class="title"><span class="dot" :style="{ background: g.dot }" />{{ g.title }}<span class="count">{{ g.list.length }}</span></h3>
         <button v-if="g.canAdd" type="button" class="add" aria-label="Auf Bestellliste" title="Auf Bestellliste" @click="emit('add')">
           <AppIcon name="plus" :stroke="2.2" />
         </button>
@@ -37,10 +39,11 @@ const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung c
 </template>
 
 <style scoped>
-.orders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
-.group { min-width: 0; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.orders { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.group { display: flex; flex-direction: column; gap: 8px; }
 .head { display: flex; align-items: center; gap: 8px; min-height: 36px; }
 .title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+.title .count { background: var(--gray-soft); }
 .dot { width: 10px; height: 10px; border-radius: 50%; }
 .add {
   margin-left: auto; width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border-strong);
@@ -55,5 +58,4 @@ const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung c
 .text .muted { font-size: 12px; }
 .comment { margin-top: 2px; font-size: 12px; font-style: italic; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .empty { font-size: 13px; padding: 6px 2px; }
-@media (max-width: 900px) { .orders { grid-template-columns: minmax(0, 1fr); } }
 </style>

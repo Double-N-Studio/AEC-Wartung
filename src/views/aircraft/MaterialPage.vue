@@ -30,8 +30,10 @@ function openOrder(o: Order) {
 <template>
   <p class="muted note">Ersatzteile und Bestellungen für {{ aircraft.type }} – dieselben Daten wie in der <RouterLink to="/inventur">Inventur</RouterLink>.</p>
 
-  <OrderBoard :orders="orders" @open="openOrder" @add="creating = true" />
-  <StockTable :items="items" :kinds="['et']" :plane-filter="false" :for-what="aircraft.type" @open="openItemId = $event.id" />
+  <div class="with-aside">
+    <OrderBoard class="aside" :orders="orders" @open="openOrder" @add="creating = true" />
+    <StockTable class="main" :items="items" :kinds="['et']" :plane-filter="false" :for-what="aircraft.type" @open="openItemId = $event.id" />
+  </div>
 
   <ItemModal v-if="openItem" :item="openItem" :for-what="aircraft.type" @close="openItemId = null" />
   <FreeOrderModal v-if="openFree" :order="openFree" @close="openFreeId = null" />

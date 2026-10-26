@@ -35,9 +35,18 @@ const todaysLeader: PersonKey = 'MA'
 
     <p class="desc">{{ task.desc }}</p>
 
-    <div v-if="task.doc || defect" class="links">
-      <RouterLink v-if="task.doc" :to="`/flugzeug/${task.aircraftId}/dokumente`"><AppIcon name="file" :size="16" />{{ task.doc }}</RouterLink>
-      <RouterLink v-if="defect" :to="`/flugzeug/${task.aircraftId}/maengel`"><AppIcon name="alert" :size="16" />{{ defect.title }}</RouterLink>
+    <RouterLink v-if="defect" :to="{ path: `/flugzeug/${task.aircraftId}/maengel`, query: { befund: defect.id } }" class="origin">
+      <span class="origin-icon"><AppIcon :name="defect.source === 'vf' ? 'cloud' : 'camera'" :size="18" :stroke="1.9" /></span>
+      <span class="origin-text">
+        <span class="origin-label">Entstanden aus {{ defect.source === 'vf' ? 'Mangel (Vereinsflieger)' : 'Befund' }}</span>
+        <strong>{{ defect.title }}</strong>
+      </span>
+      <span class="pill" :class="defect.status === 'open' ? 'pill-gray' : 'pill-green'">{{ defect.status === 'open' ? 'Offen' : 'Erledigt' }}</span>
+      <AppIcon name="chevronRight" :size="16" class="muted" />
+    </RouterLink>
+
+    <div v-if="task.doc" class="links">
+      <RouterLink :to="`/flugzeug/${task.aircraftId}/dokumente`"><AppIcon name="file" :size="16" />{{ task.doc }}</RouterLink>
     </div>
 
     <div v-if="task.checklist.length" class="checklist" role="group" aria-label="Checkliste">
@@ -78,6 +87,17 @@ const todaysLeader: PersonKey = 'MA'
 .tile > span:first-child { font-size: 12px; color: var(--muted); }
 .deadline { color: var(--orange-ink); }
 .desc { font-size: 15px; line-height: 1.55; }
+.origin {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--subtle); color: var(--text); text-decoration: none;
+}
+.origin:hover { border-color: var(--border-strong); }
+.origin-icon {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; background: var(--accent-soft); color: var(--accent-ink);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.origin-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 14px; }
+.origin-label { font-size: 12px; font-weight: 600; color: var(--muted); }
 .links { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; }
 .links a { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; }
 .checklist { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }

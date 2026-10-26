@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
-import { addItemToOrders, logCount, openOrderFor, setQty } from '../../store'
+import { addItemToOrders, countItem, openOrderFor } from '../../store'
 import type { InventoryItem } from '../../types'
 import { fmtDate, fmtDay } from '../../utils/date'
+import { unitOf } from '../../utils/stock'
 import AppModal from '../../components/AppModal.vue'
 import HistoryList from '../../components/HistoryList.vue'
+import LevelPicker from '../../components/LevelPicker.vue'
 import QtyStepper from '../../components/QtyStepper.vue'
 import OrderActions, { type Delivery } from './OrderActions.vue'
 import OrderSection from './OrderSection.vue'
@@ -14,12 +16,11 @@ const emit = defineEmits<{ close: [] }>()
 
 const order = computed(() => openOrderFor(props.item.id))
 const delivery = reactive<Delivery>({ active: false, qty: 1 })
-const unit = (n: number) => (n === 1 ? props.item.unit[0] : props.item.unit[1])
+const unit = (n: number) => unitOf(props.item, n)
 const qty = computed({
   get: () => props.item.qty,
-  set: (v: number) => { setQty(props.item, v); logCount(props.item) },
+  set: (v: number) => countItem(props.item, v),
 })
-const setFlag = (full: boolean) => { setQty(props.item, full ? 1 : 0); logCount(props.item) }
 const history = computed(() => [...(order.value?.history ?? []), ...props.item.history])
 </script>
 
@@ -36,10 +37,7 @@ const history = computed(() => [...(order.value?.history ?? []), ...props.item.h
     <div class="stock">
       <span class="field-label">Bestand</span>
       <QtyStepper v-if="item.mode === 'count'" v-model="qty" :label="`${item.qty} ${unit(item.qty)}`" big />
-      <div v-else class="segmented" role="group" aria-label="Bestand">
-        <button type="button" class="seg-lg" :aria-pressed="item.qty > 0" @click="setFlag(true)">Genug vorhanden</button>
-        <button type="button" class="seg-lg" :aria-pressed="item.qty === 0" @click="setFlag(false)">Leer</button>
-      </div>
+      <LevelPicker v-else :model-value="item.qty" big @update:model-value="countItem(item, $event)" />
     </div>
 
     <dl v-if="item.kind === 'et'" class="facts">
@@ -64,7 +62,6 @@ const history = computed(() => [...(order.value?.history ?? []), ...props.item.h
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border);
 }
-.seg-lg { height: 40px !important; padding: 0 16px !important; font-size: 14px !important; }
 .facts { display: grid; grid-template-columns: 120px minmax(0, 1fr); row-gap: 8px; column-gap: 16px; margin: 0; font-size: 14px; }
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; font-weight: 600; }

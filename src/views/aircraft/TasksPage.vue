@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { state } from '../../store'
 import type { Level, Task, TaskStatus } from '../../types'
 import { LEVEL_KEYS, LEVELS } from '../../utils/levels'
@@ -30,8 +30,16 @@ const chips = computed(() => [
 ])
 
 const checked = (t: Task) => t.checklist.filter((c) => c.done).length
+const defectOf = (t: Task) => (t.defectId ? state.defects.find((d) => d.id === t.defectId) : undefined)
 
+// ?paket=<id> öffnet ein Arbeitspaket direkt (Link aus dem Mangel/Befund).
+const router = useRouter()
 const openId = ref<string | null>(null)
+watch(() => route.query.paket, (id) => { if (typeof id === 'string') openId.value = id }, { immediate: true })
+const closeTask = () => {
+  openId.value = null
+  if (route.query.paket) router.replace({ query: {} })
+}
 const openTask = computed(() => state.tasks.find((t) => t.id === openId.value) ?? null)
 const creating = ref(false)
 </script>
@@ -65,6 +73,10 @@ const creating = ref(false)
             <AppIcon v-else name="check" :size="18" :stroke="2.4" class="done-icon" />
           </span>
           <span v-if="t.desc" class="task-desc">{{ t.desc }}</span>
+          <span v-if="defectOf(t)" class="task-origin">
+            <AppIcon :name="defectOf(t)!.source === 'vf' ? 'cloud' : 'camera'" :size="14" :stroke="1.9" />
+            <span class="task-origin-text"><b>{{ defectOf(t)!.source === 'vf' ? 'Mangel' : 'Befund' }}:</b> {{ defectOf(t)!.title }}</span>
+          </span>
           <!-- Checklisten-Fortschritt erst ab "In Arbeit"; offene Karten zeigen die Dauer. -->
           <span v-if="t.status === 'offen' || (t.status === 'arbeit' && (t.checklist.length || t.deadline))" class="task-meta">
             <span v-if="t.status === 'offen'"><AppIcon name="clock" :size="14" />{{ t.duration }}</span>
@@ -82,7 +94,7 @@ const creating = ref(false)
     </section>
   </div>
 
-  <TaskModal v-if="openTask" :task="openTask" @close="openId = null" />
+  <TaskModal v-if="openTask" :task="openTask" @close="closeTask" />
   <NewTaskModal v-if="creating" :aircraft-id="aircraftId" @close="creating = false" />
 </template>
 
@@ -118,6 +130,13 @@ const creating = ref(false)
   font-size: 12.5px; line-height: 1.4; color: var(--text-2);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+.task-origin {
+  display: flex; align-items: center; gap: 6px; min-width: 0; padding: 5px 8px; border-radius: 8px;
+  background: var(--accent-tint); border: 1px solid var(--accent-soft); font-size: 12px; color: var(--accent-ink);
+}
+.task-origin svg { flex-shrink: 0; }
+.task-origin-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-origin b { font-weight: 700; }
 .task-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: var(--muted); }
 .task-meta > span { display: inline-flex; align-items: center; gap: 5px; }
 .deadline { color: var(--orange-ink); font-weight: 600; }

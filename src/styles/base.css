@@ -22,6 +22,7 @@
   --warn-soft: #FFF4E5;
   --warn-border: #F2C68A;
   --today: #C2410C;
+  --amber: #D97706;
   --gray-soft: #EEF1F4;
   --shadow-pop: 0 8px 24px rgba(23, 32, 43, 0.14);
   --shadow-modal: 0 24px 64px rgba(23, 32, 43, 0.28);
@@ -71,6 +72,12 @@ h1, h2, h3, p { margin: 0; }
 .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
 .page-sub { font-size: 14px; color: var(--muted); }
 .section-title { font-size: 17px; font-weight: 700; }
+
+/* Inhalt mit Seitenspalte rechts. Im DOM steht die Seitenspalte zuerst: Durch row-reverse
+   landet sie rechts und rutscht beim Umbrechen (schmale Breite) über den Inhalt statt darunter. */
+.with-aside { display: flex; flex-direction: row-reverse; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+.with-aside > .main { flex: 999 1 560px; min-width: 0; }
+.with-aside > .aside { flex: 1 1 300px; min-width: 0; }
 .muted { color: var(--muted); }
 
 /* ---------- Pills / Segmented ---------- */

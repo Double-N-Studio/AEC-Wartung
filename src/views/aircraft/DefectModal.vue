@@ -50,7 +50,9 @@ function saveNote() {
       </select>
       <span class="muted">Arbeitspaket</span>
       <span>
-        <RouterLink v-if="task" :to="`/flugzeug/${defect.aircraftId}/arbeitspakete`" class="strong">{{ task.title }} · {{ STATUS_TEXT[task.status] }}</RouterLink>
+        <RouterLink v-if="task" :to="{ path: `/flugzeug/${defect.aircraftId}/arbeitspakete`, query: { paket: task.id } }" class="strong task-link">
+          <AppIcon name="wrench" :size="15" />{{ task.title }}<span class="pill pill-gray">{{ STATUS_TEXT[task.status] }}</span>
+        </RouterLink>
         <button v-else type="button" class="btn btn-sm" @click="createTaskFromDefect(defect)">Arbeitspaket erstellen</button>
       </span>
     </div>
@@ -81,6 +83,7 @@ function saveNote() {
 .facts { display: grid; grid-template-columns: 130px minmax(0, 1fr); row-gap: 10px; column-gap: 16px; align-items: center; font-size: 14px; }
 .owner { height: 40px; max-width: 220px; font-weight: 600; }
 .strong { font-weight: 600; text-decoration: none; }
+.task-link { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
 .save { align-self: flex-start; }
 @media (max-width: 760px) {
   .facts { grid-template-columns: 110px minmax(0, 1fr); }

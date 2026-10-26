@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { state } from '../../store'
+import type { Defect } from '../../types'
 import { fmtDate } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
 import DropdownSelect from '../../components/DropdownSelect.vue'
@@ -21,7 +22,17 @@ const openCount = computed(() => mine.value.filter((d) => d.status === 'open').l
 const doneCount = computed(() => mine.value.filter((d) => d.status === 'done').length)
 const rows = computed(() => mine.value.filter((d) => d.status === tab.value && (source.value === 'alle' || d.source === source.value)))
 
+const STATUS_TEXT = { offen: 'Offen', arbeit: 'In Arbeit', erledigt: 'Erledigt' }
+const taskOf = (d: Defect) => (d.taskId ? state.tasks.find((t) => t.id === d.taskId) : undefined)
+
+// ?befund=<id> öffnet einen Mangel/Befund direkt (Link aus dem Arbeitspaket).
+const router = useRouter()
 const openId = ref<string | null>(null)
+watch(() => route.query.befund, (id) => { if (typeof id === 'string') openId.value = id }, { immediate: true })
+const closeDefect = () => {
+  openId.value = null
+  if (route.query.befund) router.replace({ query: {} })
+}
 const openDefect = computed(() => state.defects.find((d) => d.id === openId.value) ?? null)
 const creating = ref(false)
 </script>
@@ -52,7 +63,10 @@ const creating = ref(false)
         <span role="columnheader" aria-label="Öffnen" />
       </div>
       <button v-for="d in rows" :key="d.id" type="button" class="row table-row item" role="row" @click="openId = d.id">
-        <span role="cell" class="c-title"><strong>{{ d.title }}</strong><span class="desc">{{ d.desc }}</span></span>
+        <span role="cell" class="c-title">
+          <strong>{{ d.title }}</strong><span class="desc">{{ d.desc }}</span>
+          <span v-if="taskOf(d)" class="linked"><AppIcon name="wrench" :size="13" />Arbeitspaket · {{ STATUS_TEXT[taskOf(d)!.status] }}</span>
+        </span>
         <span role="cell" class="c-src">
           <AppIcon :name="d.source === 'vf' ? 'cloud' : 'camera'" :size="15" :stroke="1.9" />
           {{ d.source === 'vf' ? 'Vereinsflieger' : `Befund · ${d.photos === 1 ? '1 Foto' : `${d.photos} Fotos`}` }}
@@ -69,7 +83,7 @@ const creating = ref(false)
     </div>
   </section>
 
-  <DefectModal v-if="openDefect" :defect="openDefect" @close="openId = null" />
+  <DefectModal v-if="openDefect" :defect="openDefect" @close="closeDefect" />
   <NewDefectModal v-if="creating" :aircraft-id="aircraftId" @close="creating = false; tab = 'open'" />
 </template>
 
@@ -92,6 +106,7 @@ const creating = ref(false)
 .item > span { padding: 10px 12px; }
 .c-title { display: flex; flex-direction: column; gap: 3px; padding-left: 16px !important; min-width: 0; }
 .c-title strong { font-size: 14px; }
+.linked { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--accent-ink); }
 .desc { font-size: 12.5px; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .c-src { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); }
 .c-stack { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }

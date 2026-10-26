@@ -13,7 +13,7 @@ export const PEOPLE: Record<PersonKey, Person> = {
 }
 
 /** Personen, die Werkstattleitung übernehmen können. */
-export const LEADERS: PersonKey[] = ['MA', 'HE']
+export const LEADERS: PersonKey[] = ['MA', 'HE', 'LO']
 
 export const DEVICE_USER = 'Werkstatt-Tablet'
 

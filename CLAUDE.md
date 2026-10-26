@@ -63,8 +63,11 @@ public/docs/                    Vorschaubilder der Dokumente
 - Keine Helfer-Zuteilung bei Arbeitspaketen; wer startet, ergibt sich aus dem angemeldeten Konto und steht nur im Verlauf.
 - Arbeitspakete haben keine Bereiche (Rumpf, Fläche …), nur Eignungsstufen.
 - Inventur: nur Verbrauchsstoffe oder Ersatzteile (kein „Alle“), „leer“ meldet man durch Bestand 0, Statusanzeigen sind Text, keine Buttons.
+- Inventur als Zählliste: Gruppen Leer / Fast leer / Vorhanden (alphabetisch), gezählt wird direkt in der Zeile (Stepper bzw. Genug / Fast leer / Leer, beide gleich breit). „Fast leer“ gibt es nur bei Artikeln ohne Stückzahl (`FLAG` in `utils/stock.ts`). Lagerorte sind nur Freitext, nie Gruppen. Bestellliste steht als Seitenspalte rechts (schmal: oben).
 - Der Button „Auf Bestellliste“ ist immer weiß (sekundär).
-- Kalender: Flugzeuge sind der Titel eines Samstags, die Werkstattleitung steht als Untertitel ohne Avatar. „Leitung offen“ ist kein Warnstatus (keine gelbe Fläche, kein Warnsymbol).
+- Kalender heißt „Werkstatt-Termin“: Flugzeuge sind der Titel eines Samstags, die Werkstattleitung steht als Untertitel ohne Avatar. „Leitung offen“ ist kein Warnstatus (keine gelbe Fläche, kein Warnsymbol).
+- Mängel/Befunde-Reiter: Zähler ohne gelbe Markierung (offene Mängel sind Dauerzustand).
+- Arbeitspaket ↔ Mangel/Befund: Kanban-Karte zeigt den Ursprung („Befund: …“), Popups verlinken gegenseitig direkt auf den Eintrag (`?befund=` / `?paket=`).
 - Kanban: Checklisten-Fortschritt (z. B. 2/4) erst ab „In Arbeit“, nicht bei „Offen“.
 - Kanban-Karten: Eignungs-Tag rechts neben dem Titel, darunter die Beschreibung (max. 2 Zeilen); Mindesthöhe, damit Karten ohne Beschreibung keine dünnen Streifen werden.
 - Neue Bestellung über den „+“-Button auf der Karte „Muss bestellt werden“ (gleiches Design wie im Kanban), nicht oben rechts auf der Seite.
