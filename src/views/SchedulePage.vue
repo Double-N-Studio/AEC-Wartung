@@ -6,7 +6,6 @@ import { LEADERS, PEOPLE } from '../mock/people'
 import { addDays, daysBetween, fmtDay, fmtLong, MONTHS, parse, toIso, TODAY } from '../utils/date'
 import AppIcon from '../components/AppIcon.vue'
 import AppModal from '../components/AppModal.vue'
-import PersonAvatar from '../components/PersonAvatar.vue'
 
 /* ---------- Saisonplan (Gantt) ---------- */
 const SEASON_START = '2026-11-02'
@@ -198,13 +197,12 @@ const leaderModel = computed({
       </div>
     </Teleport>
 
-    <AppModal v-if="openDay" :title="fmtLong(openDay)" kicker="Werkstatttag · 9–17 Uhr" :width="500" @close="openDay = null">
+    <AppModal v-if="openDay" :title="fmtLong(openDay)" icon="calendar" subtitle="Werkstatttag · 9–17 Uhr" :width="500" @close="openDay = null">
       <div v-if="dayInfo(openDay).closed" class="closed-box">Werkstatt geschlossen · {{ dayInfo(openDay).reason }}</div>
-      <div v-else class="day-body">
-        <div class="field">
-          <span class="field-label">Werkstattleitung</span>
-          <div v-if="leaderOf(openDay)" class="leader-row"><PersonAvatar :person="leaderOf(openDay)!" :size="40" /><strong>{{ PEOPLE[leaderOf(openDay)!].name }}</strong></div>
-          <div v-else class="empty-box">Noch niemand eingetragen</div>
+      <template v-else>
+        <div class="day-tiles">
+          <div class="day-tile"><span>Flugzeuge</span><strong>{{ dayInfo(openDay).planes || '–' }}</strong></div>
+          <div class="day-tile"><span>Werkstattleitung</span><strong>{{ leaderOf(openDay) ? PEOPLE[leaderOf(openDay)!].name : 'Noch offen' }}</strong></div>
         </div>
         <div class="field">
           <label for="day-leader">Werkstattleitung festlegen</label>
@@ -213,11 +211,7 @@ const leaderModel = computed({
             <option v-for="k in LEADERS" :key="k" :value="k">{{ PEOPLE[k].name }}</option>
           </select>
         </div>
-        <div class="field">
-          <span class="field-label">Flugzeuge an diesem Tag</span>
-          <span>{{ dayInfo(openDay).planes || '–' }}</span>
-        </div>
-      </div>
+      </template>
       <template #footer>
         <button type="button" class="btn btn-primary" @click="openDay = null">Fertig</button>
       </template>
@@ -292,9 +286,9 @@ const leaderModel = computed({
 .list-item.today { border: 2px solid var(--accent); background: var(--accent-tint); }
 .list-date { display: flex; align-items: center; gap: 8px; }
 
-.day-body { display: flex; flex-direction: column; gap: 16px; }
-.leader-row { display: flex; align-items: center; gap: 12px; font-size: 16px; }
-.empty-box { padding: 12px 14px; border-radius: 10px; background: var(--subtle); color: var(--text-2); font-size: 14px; }
+.day-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.day-tile { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.day-tile > span { font-size: 12px; color: var(--muted); }
 .closed-box { padding: 14px 16px; border-radius: 12px; background: var(--bg); font-size: 14px; font-weight: 600; color: var(--text-2); }
 
 @media (max-width: 640px) {

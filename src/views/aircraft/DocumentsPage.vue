@@ -41,7 +41,7 @@ function submit() {
     </button>
   </div>
 
-  <AppModal v-if="viewing" :title="viewing.title" :kicker="viewing.meta" :width="780" @close="viewId = null">
+  <AppModal v-if="viewing" :title="viewing.title" icon="file" :subtitle="viewing.meta" :width="780" @close="viewId = null">
     <div class="viewer">
       <img v-if="viewing.image" :src="viewing.image" :alt="viewing.title" class="viewer-img">
       <div v-else class="viewer-img placeholder big"><AppIcon name="file" :size="48" :stroke="1.5" /><span>Scan_2027-01-16.pdf</span></div>
@@ -51,7 +51,7 @@ function submit() {
     </template>
   </AppModal>
 
-  <AppModal v-if="adding" title="Dokument hinzufügen" :kicker="aircraftLabel(aircraftId)":width="560" @close="adding = false">
+  <AppModal v-if="adding" title="Dokument hinzufügen" icon="upload" :subtitle="aircraftLabel(aircraftId)":width="560" @close="adding = false">
     <form id="add-doc" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="ad-title">Titel</label>

@@ -19,7 +19,7 @@ function submit() {
 </script>
 
 <template>
-  <AppModal title="Befund erfassen" :kicker="aircraftLabel(props.aircraftId)":width="600" @close="emit('close')">
+  <AppModal title="Befund erfassen" icon="alert" :subtitle="aircraftLabel(props.aircraftId)":width="600" @close="emit('close')">
     <form id="new-defect" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="nd-title">Kurzbeschreibung</label>

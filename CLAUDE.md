@@ -51,7 +51,7 @@ public/docs/                    Vorschaubilder der Dokumente
 - **Datenmodell geändert?** `STORAGE_KEY` in `store.ts` hochzählen, sonst laden Browser alte, inkompatible Demo-Daten.
 - **Alle Flugzeuge haben denselben Inhalt wie die ASG32.** `initialState()` kopiert die ASG32-Datensätze pro Flugzeug mit eigenen IDs (`<flugzeug>-<id>`). Neue Datensätze für ein Flugzeug daher in den ASG32-Listen pflegen.
 - **Inventur und Material-Reiter teilen sich die Daten.** Der Material-Reiter filtert nur (`fitsAircraft`, `order.forWhat === type`).
-- **Popups** immer über `AppModal` (Escape, Klick daneben, Bottom-Sheet auf dem Handy). Popover, die aus scrollbaren Bereichen herausragen müssen, per `<Teleport to="body">`.
+- **Popups** immer über `AppModal` (Escape, Klick daneben, Bottom-Sheet auf dem Handy). Aufbau: blauer Kopf mit Typ-Symbol (`icon`), Titel, `subtitle` und Status-Chips (`#status`, Klassen `pill pill-…`); Inhalt mit eingeklapptem `HistoryList` am Ende; die Hauptaktion steht immer in der Fußleiste (`#footer` rechts, Info in `#meta` links), nie im Inhalt. Popover, die aus scrollbaren Bereichen herausragen müssen, per `<Teleport to="body">`.
 - **Farben und Abstände** über die CSS-Variablen aus `base.css`, keine neuen Hex-Werte in Komponenten, wenn es ein Token gibt.
 - **Responsiv:** Breakpoints `900px` (Seitenleiste wird Menü, Tabellen werden Karten) und `640px` (Handy). Neue Seiten in beiden Breiten prüfen.
 - **Statische Assets:** Bilder in Templates per `import` aus `src/assets` einbinden; dynamische Pfade (z. B. Dokument-Vorschauen) relativ ohne führenden `/`, weil `base: './'` gilt.

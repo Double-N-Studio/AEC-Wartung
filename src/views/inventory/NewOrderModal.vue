@@ -39,7 +39,7 @@ function submit() {
 </script>
 
 <template>
-  <AppModal title="Auf Bestellliste" kicker="Auch für Dinge, die nicht in der Inventur stehen." :width="560" @close="emit('close')">
+  <AppModal title="Auf Bestellliste" icon="box" subtitle="Auch für Dinge, die nicht in der Inventur stehen." :width="560" @close="emit('close')">
     <form id="new-order" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="no-name">Was wird gebraucht?</label>
