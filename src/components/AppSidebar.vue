@@ -28,9 +28,6 @@ function onReset() {
       <RouterLink to="/inventur" class="nav-item" active-class="active" @click="emit('navigate')">
         <AppIcon name="box" :size="20" :stroke="1.8" /> Inventur
       </RouterLink>
-      <RouterLink v-if="can('admin')" to="/verwaltung" class="nav-item" active-class="active" @click="emit('navigate')">
-        <AppIcon name="settings" :size="20" :stroke="1.8" /> Verwaltung
-      </RouterLink>
     </div>
 
     <div class="group">
@@ -50,9 +47,14 @@ function onReset() {
 
     <div class="spacer" />
 
-    <RouterLink to="/faq" class="nav-item" active-class="active" @click="emit('navigate')">
-      <AppIcon name="help" :size="20" :stroke="1.8" /> FAQ
-    </RouterLink>
+    <div class="group bottom">
+      <RouterLink v-if="can('admin')" to="/verwaltung" class="nav-item" active-class="active" @click="emit('navigate')">
+        <AppIcon name="settings" :size="20" :stroke="1.8" /> Verwaltung
+      </RouterLink>
+      <RouterLink to="/faq" class="nav-item" active-class="active" @click="emit('navigate')">
+        <AppIcon name="help" :size="20" :stroke="1.8" /> FAQ
+      </RouterLink>
+    </div>
     <AccountSwitcher />
     <button type="button" class="reset" @click="onReset"><AppIcon name="refresh" :size="14" /> Demo zurücksetzen</button>
   </nav>
@@ -84,7 +86,7 @@ function onReset() {
 .nav-plane.active span { color: inherit; }
 .nav-plane.disabled { cursor: default; }
 .spacer { flex-grow: 1; }
-.spacer + .nav-item { margin-bottom: -12px; }
+.bottom { margin-bottom: -12px; }
 .reset {
   margin-top: -12px; align-self: center; display: inline-flex; align-items: center; gap: 6px;
   height: 32px; padding: 0 10px; border: 0; background: transparent; font-size: 12px; color: var(--muted);
