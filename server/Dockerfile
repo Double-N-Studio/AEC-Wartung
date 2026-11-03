@@ -2,7 +2,8 @@
 FROM node:24-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# --ignore-scripts: better-sqlite3 bringt fertige Binaries mit, npm würde sonst node-gyp anwerfen.
+RUN npm ci --ignore-scripts
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build && npm prune --omit=dev
