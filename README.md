@@ -31,6 +31,8 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 
 **Rollen und Anmeldung:** Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (ohne Passwort), damit jede Änderung einen Namen hat. Werkstattleiter, Admins und das Werkstatt-Tablet melden sich mit E-Mail und Passwort an: Werkstattleiter zeichnen ab und planen die Tage, Admins verwalten Konten und Saison. Ohne Namen kann man alles ansehen, aber nichts ändern. In der Demo gilt jedes Passwort; die Testkonten stehen im Anmelde-Popup.
 
+**Speichern:** Anzeige „Gespeichert“ / „Speichert …“ / „Offline · n Änderungen warten“; ohne Netz arbeitet man weiter, die Änderungen gehen beim Wiederverbinden raus. Ändert jemand gleichzeitig dieselbe Karte, warnt das Formular. In der Demo: „Offline testen“ unten links, zweiter Tab als zweites Gerät.
+
 **FAQ** für Neue und Flugschüler
 
 ## Loslegen

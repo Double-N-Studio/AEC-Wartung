@@ -31,6 +31,7 @@ Vor jedem Commit `npm run build` laufen lassen – es gibt keine Tests, die Typp
 src/
   main.ts, App.vue, router.ts   Einstieg, Layout (Seitenleiste / Handy-Menü), Routen
   store.ts                      gemeinsamer Zustand + alle Aktionen, persistiert in localStorage
+  sync.ts                       Speicherstatus, Offline-Warteschlange, Änderungen anderer Geräte (Mockup: andere Tabs)
   types.ts                      Datenmodell
   mock/data.ts                  Ausgangsdaten (initialState)
   mock/people.ts                Testkonten (Personen + Werkstatt-Tablet), Rollen-Bezeichnungen
@@ -51,6 +52,7 @@ public/docs/                    Vorschaubilder der Dokumente
 - **Rollen:** Admin, Werkstattleiter, Mitglied, nicht eingetragen (nur ansehen). Mitglieder geben nur Vor- und Nachnamen ein (`enterName`, ohne Passwort; gleicher Name = dasselbe Konto); Sonderkonten (Admin, Werkstattleiter, Werkstatt-Tablet, siehe `needsPassword`) melden sich mit E-Mail und Passwort an (`login`). `currentUser()` liefert ein Sonderkonto nur nach der Anmeldung. Rechte nur über `can('edit' | 'lead' | 'admin')` aus dem Store prüfen, nie über die Rolle direkt. `edit` = alle Angemeldeten, `lead` = abzeichnen und Werkstatttage planen, `admin` = Konten, Saison, Werkstattzeiträume. Admin und Werkstattleiter haben vorerst dieselben Rechte. Ohne Recht wird ein Bedienelement ausgeblendet oder als Text angezeigt, nicht nur deaktiviert.
 - **Personen sind Konto-IDs** (`UserId`) in allen Feldern (`who`, `doneBy`, `owner` …); angezeigt wird über `userName()`. Entfernte Konten bleiben mit `removed` erhalten, damit der Verlauf lesbar bleibt. `SYSTEM` steht für Einträge aus Vereinsflieger.
 - **Bearbeiten/Löschen** im Popup-Kopf über `#tools` (Stift, Mülleimer), Löschen immer mit `ConfirmModal`. Formulare zum Anlegen und Bearbeiten sind dieselbe Komponente (`TaskFormModal`, `DefectFormModal`, `ItemFormModal`).
+- **Speichern und Konflikte:** Der Store meldet jede Änderung an `sync.ts` (`noteChange`); offline zählen sie als wartend und gehen beim Wiederverbinden raus. Änderungen anderer Geräte kommen über `applyRemote`, das Datensätze per ID abgleicht, damit offene Popups ihre Objekte behalten. Formulare mit Speichern-Button zeigen per `useChangedElsewhere` + `ConflictNote`, wenn jemand anderes denselben Datensatz geändert hat. Mit Backend ersetzen API-Aufrufe genau diese Stellen. In der Demo simuliert „Offline testen“ unten links den Verbindungsabbruch; ein zweiter Tab spielt ein zweites Gerät.
 - **Datenmodell geändert?** `STORAGE_KEY` in `store.ts` hochzählen, sonst laden Browser alte, inkompatible Demo-Daten.
 - **Alle Flugzeuge haben denselben Inhalt wie die ASG32.** `initialState()` kopiert die ASG32-Datensätze pro Flugzeug mit eigenen IDs (`<flugzeug>-<id>`). Neue Datensätze für ein Flugzeug daher in den ASG32-Listen pflegen. Die Kanban-Vorlagen (`templates`) entstehen aus den ASG32-Karten und gelten für alle Flugzeuge; die Saison 2025/26 im Archiv wird daraus generiert (`previousSeason`).
 - **Inventur und Material-Reiter teilen sich die Daten.** Der Material-Reiter filtert nur (`fitsAircraft`, `order.forWhat === type`).

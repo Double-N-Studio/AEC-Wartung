@@ -2,6 +2,8 @@
 import { useRoute } from 'vue-router'
 import { activeAircraft, can, resetDemo, state } from '../store'
 import AccountMenu from './account/AccountMenu.vue'
+import SyncStatus from './SyncStatus.vue'
+import { setSimulateOffline, sync } from '../sync'
 import AppIcon from './AppIcon.vue'
 import logoUrl from '../assets/aec-logo.png'
 
@@ -51,8 +53,14 @@ function onReset() {
         <AppIcon name="help" :size="20" :stroke="1.8" /> FAQ
       </RouterLink>
     </div>
+    <SyncStatus class="sync-line" />
     <AccountMenu />
-    <button type="button" class="reset" @click="onReset"><AppIcon name="refresh" :size="14" /> Demo zurücksetzen</button>
+    <div class="demo">
+      <button type="button" class="reset" @click="onReset"><AppIcon name="refresh" :size="14" /> Demo zurücksetzen</button>
+      <button type="button" class="reset" :aria-pressed="sync.simulateOffline" @click="setSimulateOffline(!sync.simulateOffline)">
+        <AppIcon name="cloud" :size="14" /> {{ sync.simulateOffline ? 'Wieder online' : 'Offline testen' }}
+      </button>
+    </div>
   </nav>
 </template>
 
@@ -83,8 +91,10 @@ function onReset() {
 .nav-empty { padding: 0 12px; font-size: 13px; color: var(--muted); }
 .spacer { flex-grow: 1; }
 .bottom { margin-bottom: -12px; }
+.sync-line { margin: -10px 12px -12px; }
+.demo { margin-top: -12px; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 4px; }
 .reset {
-  margin-top: -12px; align-self: center; display: inline-flex; align-items: center; gap: 6px;
+  align-self: center; display: inline-flex; align-items: center; gap: 6px;
   height: 32px; padding: 0 10px; border: 0; background: transparent; font-size: 12px; color: var(--muted);
 }
 .reset:hover { color: var(--text); }

@@ -1,9 +1,10 @@
-import { reactive, watch } from 'vue'
+import { nextTick, reactive, watch } from 'vue'
 import type { Aircraft, AppState, Defect, DocumentItem, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskNote, TaskTemplate, User, UserId } from './types'
 import { initialState } from './mock/data'
 import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
 import { addDays, daysBetween, fmtDate, fmtDay, now, today } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
+import { applyRemote, isOffline, noteChange } from './sync'
 
 const STORAGE_KEY = 'aec-winterwartung-demo-v16'
 const SESSION_KEY = 'aec-winterwartung-sitzung'
@@ -20,13 +21,45 @@ function load(): AppState {
 
 export const state = reactive<AppState>(load())
 
+/** Eingespielte Änderungen eines anderen Geräts nicht gleich wieder als eigene senden. */
+let applyingRemote = false
+
 watch(state, (value) => {
+  if (applyingRemote) return
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
   } catch {
     // Speichern ist optional.
   }
+  noteChange()
 }, { deep: true })
+
+/*
+ * Andere Browser-Tabs spielen andere Geräte: ihre Änderungen kommen an, solange beide online sind.
+ * Ein Tab, der offline arbeitet, setzt OFFLINE_KEY; seine Änderungen kommen erst nach dem Wiederverbinden an.
+ */
+const OFFLINE_KEY = `${STORAGE_KEY}-offline`
+watch(isOffline, (off) => {
+  try {
+    if (off) localStorage.setItem(OFFLINE_KEY, '1')
+    else localStorage.removeItem(OFFLINE_KEY)
+  } catch {
+    // Ohne localStorage gibt es keine anderen Geräte.
+  }
+}, { immediate: true })
+
+window.addEventListener('storage', (e) => {
+  if ((e.key !== STORAGE_KEY && e.key !== OFFLINE_KEY) || isOffline()) return
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw || localStorage.getItem(OFFLINE_KEY)) return
+    applyingRemote = true
+    applyRemote(state as unknown as Record<string, unknown>, JSON.parse(raw))
+    nextTick(() => { applyingRemote = false })
+  } catch {
+    applyingRemote = false
+  }
+})
 
 export function resetDemo() {
   Object.assign(state, initialState())

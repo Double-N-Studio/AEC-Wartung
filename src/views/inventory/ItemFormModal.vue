@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
-import { aircraftTypes, createItem, itemInput, linkOrderToItem, updateItem } from '../../store'
+import { aircraftTypes, createItem, itemInput, linkOrderToItem, updateItem, userName } from '../../store'
+import { useChangedElsewhere } from '../../sync'
 import type { InventoryItem, Order } from '../../types'
 import { FLAG } from '../../utils/stock'
 import AppModal from '../../components/AppModal.vue'
+import ConflictNote from '../../components/ConflictNote.vue'
 import LevelPicker from '../../components/LevelPicker.vue'
 
 /**
@@ -16,6 +18,11 @@ const emit = defineEmits<{ close: []; saved: [item: InventoryItem] }>()
 const ALL = 'alle Flugzeuge'
 const presetValues = Object.fromEntries(Object.entries(props.item ? {} : props.preset ?? {}).filter(([, v]) => v !== undefined))
 const form = reactive({ ...itemInput(props.item), ...presetValues })
+const { changed, reset } = useChangedElsewhere(() => props.item?.id)
+function reload() {
+  Object.assign(form, itemInput(props.item))
+  reset()
+}
 const fitsList = computed(() => (form.fits && form.fits !== ALL ? form.fits.split(', ') : []))
 // Typen bereits ausgemusterter Flugzeuge bleiben wählbar, solange der Artikel sie noch nennt.
 const types = computed(() => [...new Set([...aircraftTypes(), ...fitsList.value])])
@@ -53,6 +60,7 @@ function submit() {
     :subtitle="props.item ? props.item.name : props.order ? `Für die Bestellung „${props.order.name}“` : 'Neuer Artikel in der Inventur'"
   >
     <form id="item-form" class="form" @submit.prevent="submit">
+      <ConflictNote v-if="changed" :who="userName(props.item?.history[0]?.who)" @reload="reload" />
       <div class="field">
         <label for="if-name">Name</label>
         <input id="if-name" v-model="form.name" class="input" required placeholder="z. B. Schleifpapier P1000">

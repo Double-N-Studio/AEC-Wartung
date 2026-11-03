@@ -7,6 +7,8 @@ import NameModal from './components/account/NameModal.vue'
 import LoginModal from './components/account/LoginModal.vue'
 import { authDialog } from './components/account/authDialog'
 import { currentUser, session } from './store'
+import SyncStatus from './components/SyncStatus.vue'
+import { isOffline } from './sync'
 import logoUrl from './assets/aec-logo.png'
 
 const drawerOpen = ref(false)
@@ -25,6 +27,7 @@ if (!session.chosen) authDialog.value = 'name'
       </button>
       <img :src="logoUrl" alt="Aero-Club Bad Nauheim" class="topbar-logo">
       <span class="topbar-title">Winterwartung</span>
+      <SyncStatus class="topbar-sync" />
     </header>
 
     <div class="sidebar-wrap" :class="{ open: drawerOpen }">
@@ -33,6 +36,9 @@ if (!session.chosen) authDialog.value = 'name'
     <div v-if="drawerOpen" class="backdrop" @click="drawerOpen = false" />
 
     <main class="content">
+      <p v-if="isOffline()" class="guest-note offline-note">
+        <AppIcon name="alert" :size="16" /><span>Keine Verbindung. Du kannst weiterarbeiten – deine Änderungen werden gesendet, sobald wieder Netz da ist.</span>
+      </p>
       <p v-if="!currentUser()" class="guest-note">
         <AppIcon name="eye" :size="16" /><span>Du siehst alles, kannst aber nichts ändern.</span>
         <button type="button" class="link-btn" @click="authDialog = 'name'">Namen eingeben</button>
@@ -58,6 +64,7 @@ if (!session.chosen) authDialog.value = 'name'
   background: var(--gray-soft); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--text-2);
 }
 .guest-note .link-btn { font-size: 13px; white-space: nowrap; }
+.offline-note { background: var(--warn-soft); border-bottom-color: var(--warn-soft); color: var(--orange-ink); }
 .tablet-note { background: var(--accent-tint); border-bottom-color: var(--accent-soft); color: var(--accent-ink); }
 
 @media (max-width: 900px) {
@@ -68,6 +75,7 @@ if (!session.chosen) authDialog.value = 'name'
   }
   .topbar-logo { height: 30px; width: auto; }
   .topbar-title { font-size: 16px; font-weight: 700; }
+  .topbar-sync { margin-left: auto; }
   .sidebar-wrap {
     position: fixed; top: 0; bottom: 0; left: 0; z-index: 60;
     transform: translateX(-100%); transition: transform 0.2s ease, box-shadow 0.2s ease;

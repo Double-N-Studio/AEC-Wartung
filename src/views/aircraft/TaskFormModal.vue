@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
-import { aircraftLabel, createTask, state, taskInput, updateTask } from '../../store'
+import { aircraftLabel, createTask, state, taskInput, updateTask, userName } from '../../store'
+import { useChangedElsewhere } from '../../sync'
 import type { Task } from '../../types'
 import { DURATIONS, LEVEL_KEYS, LEVELS } from '../../utils/levels'
 import AppModal from '../../components/AppModal.vue'
+import ConflictNote from '../../components/ConflictNote.vue'
 import LevelBars from '../../components/LevelBars.vue'
 
 /** Kanban-Karte anlegen oder (mit task) bearbeiten. */
@@ -11,6 +13,11 @@ const props = defineProps<{ aircraftId: string; task?: Task }>()
 const emit = defineEmits<{ close: [] }>()
 
 const form = reactive(taskInput(props.task))
+const { changed, reset } = useChangedElsewhere(() => props.task?.id)
+function reload() {
+  Object.assign(form, taskInput(props.task))
+  reset()
+}
 const openDefects = computed(() => state.defects.filter((d) =>
   d.aircraftId === props.aircraftId && (d.id === props.task?.defectId || (d.status === 'open' && !d.taskId))))
 const docs = computed(() => state.documents.filter((d) => d.aircraftId === props.aircraftId))
@@ -30,6 +37,7 @@ function submit() {
     :subtitle="aircraftLabel(props.aircraftId)"
   >
     <form id="task-form" class="form" @submit.prevent="submit">
+      <ConflictNote v-if="changed" :who="userName(props.task?.history[0]?.who)" @reload="reload" />
       <div class="field">
         <label for="nt-title">Titel</label>
         <input id="nt-title" v-model="form.title" class="input" required placeholder="z. B. Höhenruder-Anschlüsse schmieren">
