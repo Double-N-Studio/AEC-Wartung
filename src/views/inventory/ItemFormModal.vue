@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
-import { createItem, itemInput, linkOrderToItem, state, updateItem } from '../../store'
+import { aircraftTypes, createItem, itemInput, linkOrderToItem, updateItem } from '../../store'
 import type { InventoryItem, Order } from '../../types'
 import { FLAG } from '../../utils/stock'
 import AppModal from '../../components/AppModal.vue'
@@ -16,8 +16,9 @@ const emit = defineEmits<{ close: []; saved: [item: InventoryItem] }>()
 const ALL = 'alle Flugzeuge'
 const presetValues = Object.fromEntries(Object.entries(props.item ? {} : props.preset ?? {}).filter(([, v]) => v !== undefined))
 const form = reactive({ ...itemInput(props.item), ...presetValues })
-const types = computed(() => state.aircraft.map((a) => a.type))
 const fitsList = computed(() => (form.fits && form.fits !== ALL ? form.fits.split(', ') : []))
+// Typen bereits ausgemusterter Flugzeuge bleiben wählbar, solange der Artikel sie noch nennt.
+const types = computed(() => [...new Set([...aircraftTypes(), ...fitsList.value])])
 
 function toggleType(type: string) {
   const set = new Set(fitsList.value)

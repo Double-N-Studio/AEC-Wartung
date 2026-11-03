@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { cancelOrder, can, setOrderComment, setOrderDelivery, setOrderFor, state } from '../../store'
+import { aircraftTypes, cancelOrder, can, setOrderComment, setOrderDelivery, setOrderFor } from '../../store'
 import type { InventoryItem, Order } from '../../types'
 import { fmtDate } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
@@ -51,7 +51,8 @@ const cancelText = computed(() => props.order.state === 'ordered' ? 'Bestellung 
           <label :for="`for-${order.id}`">Für</label>
           <select :id="`for-${order.id}`" v-model="forWhat" class="select">
             <option value="Lager">Lager (allgemein)</option>
-            <option v-for="a in state.aircraft" :key="a.id" :value="a.type">{{ a.type }}</option>
+            <option v-for="t in aircraftTypes()" :key="t" :value="t">{{ t }}</option>
+            <option v-if="order.forWhat !== 'Lager' && !aircraftTypes().includes(order.forWhat)" :value="order.forWhat">{{ order.forWhat }}</option>
           </select>
         </div>
         <div v-if="order.state === 'ordered' && step.step !== 'deliver'" class="field">

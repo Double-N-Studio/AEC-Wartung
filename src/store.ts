@@ -5,7 +5,7 @@ import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
 import { addDays, fmtDate, fmtDay, NOW, TODAY } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v12'
+const STORAGE_KEY = 'aec-winterwartung-demo-v13'
 const SESSION_KEY = 'aec-winterwartung-sitzung'
 
 function load(): AppState {
@@ -145,6 +145,12 @@ export function aircraftLabel(id: string) {
   return a ? `${a.type} · ${a.reg}` : ''
 }
 
+/** Flugzeuge im Verein (ohne ausgemusterte). */
+export const activeAircraft = () => state.aircraft.filter((a) => !a.retired)
+
+/** Flugzeugtypen im Verein, je Typ einmal – für Ersatzteile und Bestellungen. */
+export const aircraftTypes = () => [...new Set(activeAircraft().map((a) => a.type))]
+
 /** Ersatzteil passt zu diesem Flugzeugtyp? */
 export function fitsAircraft(item: InventoryItem, type: string) {
   return item.kind === 'et' && (item.fits === 'alle Flugzeuge' || (item.fits ?? '').split(', ').includes(type))
@@ -178,7 +184,7 @@ export function setAircraftPeriod(aircraft: Aircraft, start: string, end: string
 
 /** Flugzeuge, die an diesem Tag in der Werkstatt sind – aus den Zeiträumen, nicht von Hand gepflegt. */
 export function planesOn(date: string) {
-  return state.aircraft
+  return activeAircraft()
     .filter((a) => a.start <= date && date <= a.end)
     .sort((a, b) => a.start.localeCompare(b.start))
     .map((a) => a.type)
@@ -206,6 +212,63 @@ export function setDayClosed(date: string, closed: boolean, reason = '') {
   day.closed = closed
   day.reason = closed ? reason.trim() || 'geschlossen' : undefined
   dayLog(date, closed ? `Werkstatt geschlossen: ${day.reason}` : 'Werkstatt wieder geöffnet')
+}
+
+/* ---------- Flugzeuge ---------- */
+
+export interface AircraftInput {
+  type: string
+  reg: string
+  serial: string
+  /** Werkstattzeitraum, jeweils ein Samstag */
+  start: string
+  end: string
+  retired: boolean
+}
+
+export const aircraftInput = (a?: Aircraft): AircraftInput => ({
+  type: a?.type ?? '',
+  reg: a?.reg ?? '',
+  serial: a?.serial ?? '',
+  start: a?.start ?? state.season.start,
+  end: a?.end ?? addDays(state.season.start, 21),
+  retired: !!a?.retired,
+})
+
+function applyAircraftInput(a: Aircraft, input: AircraftInput) {
+  a.type = input.type.trim()
+  a.reg = input.reg.trim().toUpperCase()
+  a.serial = input.serial.trim() || undefined
+  a.start = input.start
+  a.end = input.end
+  a.retired = input.retired || undefined
+}
+
+export function createAircraft(input: AircraftInput): Aircraft {
+  const a: Aircraft = { id: nextId('a'), type: '', reg: '', start: '', end: '' }
+  applyAircraftInput(a, input)
+  state.aircraft.push(a)
+  return a
+}
+
+/** Neuer Typname gilt auch für Ersatzteile und Bestellungen, solange kein anderes Flugzeug den alten Typ hat. */
+export function updateAircraft(a: Aircraft, input: AircraftInput) {
+  const oldType = a.type
+  applyAircraftInput(a, input)
+  if (a.type === oldType || state.aircraft.some((x) => x !== a && x.type === oldType)) return
+  for (const i of state.inventory) {
+    if (i.fits && i.fits !== 'alle Flugzeuge') i.fits = i.fits.split(', ').map((t) => (t === oldType ? a.type : t)).join(', ')
+  }
+  for (const o of state.orders) if (o.forWhat === oldType) o.forWhat = a.type
+}
+
+/** Für versehentlich angelegte Flugzeuge: löscht Kanban-Karten, Mängel, Fristen und Dokumente mit. Sonst ausmustern. */
+export function deleteAircraft(a: Aircraft) {
+  state.tasks = state.tasks.filter((t) => t.aircraftId !== a.id)
+  state.defects = state.defects.filter((d) => d.aircraftId !== a.id)
+  state.deadlines = state.deadlines.filter((d) => d.aircraftId !== a.id)
+  state.documents = state.documents.filter((d) => d.aircraftId !== a.id)
+  remove(state.aircraft, a)
 }
 
 /* ---------- Konten ---------- */

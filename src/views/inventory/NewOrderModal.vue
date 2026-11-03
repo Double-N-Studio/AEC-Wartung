@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { addFreeOrder, addItemToOrders, openOrderFor, state } from '../../store'
+import { addFreeOrder, addItemToOrders, aircraftTypes, openOrderFor, state } from '../../store'
 import type { InventoryItem } from '../../types'
 import { similarByName } from '../../utils/similar'
 import AppModal from '../../components/AppModal.vue'
@@ -70,7 +70,7 @@ function submit() {
         <label for="no-for">Für</label>
         <select id="no-for" v-model="form.forWhat" class="select">
           <option value="Lager">Lager (allgemein)</option>
-          <option v-for="a in state.aircraft" :key="a.id" :value="a.type">{{ a.type }}</option>
+          <option v-for="t in aircraftTypes()" :key="t" :value="t">{{ t }}</option>
         </select>
       </div>
       <div class="field">

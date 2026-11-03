@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { fitsAircraft, state, userName } from '../../store'
 
 const route = useRoute()
-const aircraft = computed(() => state.aircraft.find((a) => a.id === route.params.id && a.hasDetails))
+const aircraft = computed(() => state.aircraft.find((a) => a.id === route.params.id))
 const base = computed(() => `/flugzeug/${route.params.id}`)
 
 const tasks = computed(() => state.tasks.filter((t) => t.aircraftId === aircraft.value?.id))
@@ -24,7 +24,7 @@ const tabs = computed(() => {
 <template>
   <div v-if="aircraft" class="page aircraft">
     <header class="titles">
-      <div class="name"><h1 class="page-title">{{ aircraft.type }}</h1><span class="reg">{{ aircraft.reg }}</span></div>
+      <div class="name"><h1 class="page-title">{{ aircraft.type }}</h1><span class="reg">{{ aircraft.reg }}</span><span v-if="aircraft.retired" class="pill pill-gray">Ausgemustert</span></div>
       <span v-if="aircraft.manager" class="muted meta">Flugzeugpate: {{ userName(aircraft.manager) }}</span>
     </header>
 

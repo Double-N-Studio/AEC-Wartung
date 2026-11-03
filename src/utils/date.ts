@@ -50,6 +50,8 @@ export function daysBetween(fromIso: string, toIsoStr: string): number {
   return Math.round((parse(toIsoStr).getTime() - parse(fromIso).getTime()) / 86400000)
 }
 
+export const isSaturday = (iso: string) => !!iso && parse(iso).getDay() === 6
+
 export function addDays(iso: string, n: number): string {
   const d = parse(iso)
   d.setDate(d.getDate() + n)

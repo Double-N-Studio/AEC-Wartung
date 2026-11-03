@@ -3,11 +3,12 @@ import { computed, reactive, ref } from 'vue'
 import { can, createUser, currentUser, removeUser, setSeason, state, updateUser } from '../store'
 import type { Role, User } from '../types'
 import { ROLE_LABELS } from '../mock/people'
-import { fmtDate, parse } from '../utils/date'
+import { fmtDate, isSaturday } from '../utils/date'
 import AppIcon from '../components/AppIcon.vue'
 import AppModal from '../components/AppModal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import PersonAvatar from '../components/PersonAvatar.vue'
+import AircraftSection from './admin/AircraftSection.vue'
 
 const ROLES: Role[] = ['admin', 'wl', 'user']
 const ROLE_TEXT: Record<Role, string> = {
@@ -48,9 +49,8 @@ function openSeason() {
   Object.assign(season, state.season)
   seasonOpen.value = true
 }
-const isSat = (iso: string) => !!iso && parse(iso).getDay() === 6
 const seasonError = computed(() => {
-  if (!isSat(season.start) || !isSat(season.end)) return 'Beginn und Ende müssen Samstage sein.'
+  if (!isSaturday(season.start) || !isSaturday(season.end)) return 'Beginn und Ende müssen Samstage sein.'
   if (season.end < season.start) return 'Das Ende liegt vor dem Beginn.'
   return ''
 })
@@ -65,7 +65,7 @@ function saveSeason() {
   <div class="page">
     <header>
       <h1 class="page-title">Verwaltung</h1>
-      <p class="page-sub">Konten und Saison. Mitglieder tragen sich selbst mit Vor- und Nachnamen ein; Werkstattleitung, Admins und das Tablet melden sich mit Passwort an. Die Werkstattzeiträume der Flugzeuge änderst du im Zeitplan über den Stift.</p>
+      <p class="page-sub">Saison, Flugzeuge und Konten. Mitglieder tragen sich selbst mit Vor- und Nachnamen ein; Werkstattleitung, Admins und das Tablet melden sich mit Passwort an. Die Werkstattzeiträume der Flugzeuge änderst du im Zeitplan über den Stift.</p>
     </header>
 
     <p v-if="!can('admin')" class="card denied">Dieser Bereich ist nur für Admins.</p>
@@ -82,6 +82,8 @@ function saveSeason() {
           <dt>Letzter Werkstatttag</dt><dd>Sa {{ fmtDate(state.season.end) }}</dd>
         </dl>
       </section>
+
+      <AircraftSection />
 
       <section class="card list" aria-labelledby="users-h">
         <div class="box-head pad">

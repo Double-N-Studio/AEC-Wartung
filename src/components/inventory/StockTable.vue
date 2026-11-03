@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { addItemToOrders, can, countItem, openOrderFor, state } from '../../store'
+import { addItemToOrders, aircraftTypes, can, countItem, openOrderFor } from '../../store'
 import type { InventoryItem } from '../../types'
 import { fmtDay } from '../../utils/date'
 import { stockLevel, stockText, unitOf, type StockLevel } from '../../utils/stock'
@@ -23,7 +23,7 @@ const emit = defineEmits<{ open: [item: InventoryItem]; add: [] }>()
 const kind = ref<'vs' | 'et'>(props.kinds[0])
 const query = ref('')
 const plane = ref('Alle')
-const PLANES = computed(() => [{ value: 'Alle', label: 'Alle' }, ...state.aircraft.map((a) => ({ value: a.type, label: a.type }))])
+const PLANES = computed(() => [{ value: 'Alle', label: 'Alle' }, ...aircraftTypes().map((t) => ({ value: t, label: t }))])
 
 const GROUPS: { level: StockLevel; title: string; dot: string }[] = [
   { level: 'empty', title: 'Leer', dot: 'var(--today)' },

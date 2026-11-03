@@ -27,7 +27,7 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 - Bestellliste: muss bestellt werden → bestellt → geliefert (mit gelieferter Menge)
 - Bestellungen auch ohne Artikel, z. B. für einmalige Besorgungen
 
-**Verwaltung** (Admin): Konten mit Rollen, Saison
+**Verwaltung** (Admin): Saison, Flugzeuge (anlegen, bearbeiten, ausmustern), Konten mit Rollen
 
 **Rollen und Anmeldung:** Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (ohne Passwort), damit jede Änderung einen Namen hat. Werkstattleiter, Admins und das Werkstatt-Tablet melden sich mit E-Mail und Passwort an: Werkstattleiter zeichnen ab und planen die Tage, Admins verwalten Konten und Saison. Ohne Namen kann man alles ansehen, aber nichts ändern. In der Demo gilt jedes Passwort; die Testkonten stehen im Anmelde-Popup.
 

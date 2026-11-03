@@ -69,7 +69,7 @@ public/docs/                    Vorschaubilder der Dokumente
 - Abzeichnen: als angemeldete Person, am Werkstatt-Tablet als Werkstattleitung des Tages. Abgezeichnete Karten sind gesperrt, bis die Werkstattleitung die Abzeichnung zurücknimmt.
 - Eine erledigte Kanban-Karte schließt den verknüpften Mangel/Befund nicht automatisch.
 - Mängel aus Vereinsflieger lassen sich in der App nicht bearbeiten oder löschen (nur eigene Befunde). Rückschreiben nach Vereinsflieger kommt als letzter Schritt.
-- Flugzeuge sind fest. Welche Flugzeuge an einem Samstag in der Werkstatt sind, ergibt sich aus ihren Zeiträumen (`planesOn`); Admins ändern die Zeiträume im Saisonplan über den Stift per Ziehen.
+- Flugzeuge pflegen Admins in der Verwaltung (anlegen, bearbeiten, ausmustern, löschen); nichts davon ist fest im Code, damit andere Vereine die App mit eigenem Backend nutzen können. Ausgemusterte Flugzeuge (`retired`) behalten ihre Daten, fehlen aber in Seitenleiste, Saisonplan und Auswahllisten (`activeAircraft`, `aircraftTypes`). Welche Flugzeuge an einem Samstag in der Werkstatt sind, ergibt sich aus ihren Zeiträumen (`planesOn`); Admins ändern die Zeiträume im Saisonplan über den Stift per Ziehen.
 - Arbeitspakete haben keine Bereiche (Rumpf, Fläche …), nur Eignungsstufen.
 - Inventur: nur Verbrauchsstoffe oder Ersatzteile (kein „Alle“), „leer“ meldet man durch Bestand 0, Statusanzeigen sind Text, keine Buttons.
 - Inventur als Zählliste: Gruppen Leer / Fast leer / Vorhanden (alphabetisch), gezählt wird direkt in der Zeile (Stepper bzw. Genug / Fast leer / Leer, beide gleich breit). „Fast leer“ gibt es nur bei Artikeln ohne Stückzahl (`FLAG` in `utils/stock.ts`). Lagerorte sind nur Freitext, nie Gruppen. Bestellliste steht als Seitenspalte rechts (schmal: oben).

@@ -137,12 +137,12 @@ function baseState(): AppState {
     season: { label: '2026/27', start: '2026-11-07', end: '2027-03-27' },
 
     aircraft: [
-      { id: 'ask21', type: 'ASK21', reg: 'D-5071', hasDetails: true, manager: 'MA', start: '2026-11-07', end: '2026-12-05' },
-      { id: 'ask23', type: 'ASK23', reg: 'D-6987', hasDetails: true, start: '2026-11-14', end: '2026-12-12' },
-      { id: ASG, type: 'ASG32', reg: 'D-3362', hasDetails: true, serial: '32031', manager: 'LO', start: '2027-01-09', end: '2027-01-30' },
-      { id: 'arcus', type: 'Arcus-T', reg: 'D-KSBN', hasDetails: true, start: '2027-02-06', end: '2027-03-13' },
-      { id: 'discus', type: 'Discus-2b', reg: 'D-9596', hasDetails: true, start: '2026-12-05', end: '2027-01-09' },
-      { id: 'ls8', type: 'LS8', reg: 'D-0169', hasDetails: true, start: '2027-01-16', end: '2027-02-13' },
+      { id: 'ask21', type: 'ASK21', reg: 'D-5071', manager: 'MA', start: '2026-11-07', end: '2026-12-05' },
+      { id: 'ask23', type: 'ASK23', reg: 'D-6987', start: '2026-11-14', end: '2026-12-12' },
+      { id: ASG, type: 'ASG32', reg: 'D-3362', serial: '32031', manager: 'LO', start: '2027-01-09', end: '2027-01-30' },
+      { id: 'arcus', type: 'Arcus-T', reg: 'D-KSBN', start: '2027-02-06', end: '2027-03-13' },
+      { id: 'discus', type: 'Discus-2b', reg: 'D-9596', start: '2026-12-05', end: '2027-01-09' },
+      { id: 'ls8', type: 'LS8', reg: 'D-0169', start: '2027-01-16', end: '2027-02-13' },
     ],
 
     schedule: {

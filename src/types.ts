@@ -29,9 +29,9 @@ export interface Aircraft {
   id: string
   type: string
   reg: string
-  /** Nur Flugzeuge mit Detailseiten sind verlinkt. */
-  hasDetails: boolean
   serial?: string
+  /** Verkauft o. ä.: bleibt mit allen Daten erhalten, taucht aber in Seitenleiste, Saisonplan und Auswahllisten nicht mehr auf. */
+  retired?: boolean
   /** Flugzeugpate (Konto-ID) */
   manager?: UserId
   /** Werkstattzeitraum, jeweils ein Samstag */

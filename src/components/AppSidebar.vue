@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { can, resetDemo, state } from '../store'
+import { activeAircraft, can, resetDemo, state } from '../store'
 import AccountMenu from './account/AccountMenu.vue'
 import AppIcon from './AppIcon.vue'
 import logoUrl from '../assets/aec-logo.png'
@@ -32,17 +32,13 @@ function onReset() {
 
     <div class="group">
       <span class="group-label">FLUGZEUGE</span>
-      <template v-for="a in state.aircraft" :key="a.id">
-        <RouterLink
-          v-if="a.hasDetails" :to="`/flugzeug/${a.id}`" class="nav-plane"
-          :class="{ active: isAircraftActive(a.id) }" @click="emit('navigate')"
-        >
-          <strong>{{ a.type }}</strong><span>{{ a.reg }}</span>
-        </RouterLink>
-        <span v-else class="nav-plane disabled" :title="`${a.type}: im Mockup noch ohne Detailseiten`">
-          <strong>{{ a.type }}</strong><span>{{ a.reg }}</span>
-        </span>
-      </template>
+      <RouterLink
+        v-for="a in activeAircraft()" :key="a.id" :to="`/flugzeug/${a.id}`" class="nav-plane"
+        :class="{ active: isAircraftActive(a.id) }" @click="emit('navigate')"
+      >
+        <strong>{{ a.type }}</strong><span>{{ a.reg }}</span>
+      </RouterLink>
+      <span v-if="!activeAircraft().length" class="nav-empty">Noch keine Flugzeuge</span>
     </div>
 
     <div class="spacer" />
@@ -75,7 +71,7 @@ function onReset() {
   display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px;
   font-size: 15px; font-weight: 500; color: var(--text-2); text-decoration: none;
 }
-.nav-item:hover, .nav-plane:not(.disabled):hover { background: var(--subtle); color: var(--text); }
+.nav-item:hover, .nav-plane:hover { background: var(--subtle); color: var(--text); }
 .nav-item.active, .nav-plane.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
 .nav-plane {
   display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 10px;
@@ -84,7 +80,7 @@ function onReset() {
 .nav-plane strong { font-weight: 600; }
 .nav-plane span { font-size: 13px; color: var(--muted); }
 .nav-plane.active span { color: inherit; }
-.nav-plane.disabled { cursor: default; }
+.nav-empty { padding: 0 12px; font-size: 13px; color: var(--muted); }
 .spacer { flex-grow: 1; }
 .bottom { margin-bottom: -12px; }
 .reset {
