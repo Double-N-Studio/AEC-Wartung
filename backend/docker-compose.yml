@@ -5,6 +5,11 @@ services:
   app:
     image: ghcr.io/double-n-studio/aec-wartung-server:latest
     restart: unless-stopped
+    # APP_URL, ADMIN_NAME, ADMIN_EMAIL, NODE_ENV=production – data/ is not touched by the deploy rsync,
+    # so the file survives deploys. Optional, so the container still starts without it.
+    env_file:
+      - path: ./data/app.env
+        required: false
     ports:
       - '127.0.0.1:8081:3000'
     volumes:
