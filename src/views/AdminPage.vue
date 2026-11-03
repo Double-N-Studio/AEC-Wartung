@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { can, createUser, currentUser, removeUser, setSeason, state, updateUser } from '../store'
+import { can, createUser, currentUser, removeUser, state, updateUser } from '../store'
 import type { Role, User } from '../types'
 import { ROLE_LABELS } from '../mock/people'
-import { fmtDate, isSaturday } from '../utils/date'
 import AppIcon from '../components/AppIcon.vue'
 import AppModal from '../components/AppModal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import PersonAvatar from '../components/PersonAvatar.vue'
 import AircraftSection from './admin/AircraftSection.vue'
+import SeasonSection from './admin/SeasonSection.vue'
 
 const ROLES: Role[] = ['admin', 'wl', 'user']
 const ROLE_TEXT: Record<Role, string> = {
@@ -42,46 +42,19 @@ function confirmRemove() {
   editing.value = null
 }
 
-/* ---------- Saison ---------- */
-const seasonOpen = ref(false)
-const season = reactive({ label: '', start: '', end: '' })
-function openSeason() {
-  Object.assign(season, state.season)
-  seasonOpen.value = true
-}
-const seasonError = computed(() => {
-  if (!isSaturday(season.start) || !isSaturday(season.end)) return 'Beginn und Ende müssen Samstage sein.'
-  if (season.end < season.start) return 'Das Ende liegt vor dem Beginn.'
-  return ''
-})
-function saveSeason() {
-  if (seasonError.value || !season.label.trim()) return
-  setSeason(season)
-  seasonOpen.value = false
-}
 </script>
 
 <template>
   <div class="page">
     <header>
       <h1 class="page-title">Verwaltung</h1>
-      <p class="page-sub">Saison, Flugzeuge und Konten. Mitglieder tragen sich selbst mit Vor- und Nachnamen ein; Werkstattleitung, Admins und das Tablet melden sich mit Passwort an. Die Werkstattzeiträume der Flugzeuge änderst du im Zeitplan über den Stift.</p>
+      <p class="page-sub">Saison, Kanban-Vorlagen, Flugzeuge und Konten. Mitglieder tragen sich selbst mit Vor- und Nachnamen ein; Werkstattleitung, Admins und das Tablet melden sich mit Passwort an. Die Werkstattzeiträume der Flugzeuge änderst du im Zeitplan über den Stift.</p>
     </header>
 
     <p v-if="!can('admin')" class="card denied">Dieser Bereich ist nur für Admins.</p>
 
     <template v-else>
-      <section class="card box" aria-labelledby="season-h">
-        <div class="box-head">
-          <h2 id="season-h" class="section-title">Saison</h2>
-          <button type="button" class="btn btn-sm" @click="openSeason"><AppIcon name="pen" :size="15" />Bearbeiten</button>
-        </div>
-        <dl class="facts">
-          <dt>Bezeichnung</dt><dd>{{ state.season.label }}</dd>
-          <dt>Erster Werkstatttag</dt><dd>Sa {{ fmtDate(state.season.start) }}</dd>
-          <dt>Letzter Werkstatttag</dt><dd>Sa {{ fmtDate(state.season.end) }}</dd>
-        </dl>
-      </section>
+      <SeasonSection />
 
       <AircraftSection />
 
@@ -147,43 +120,15 @@ function saveSeason() {
       @confirm="confirmRemove" @close="removing = null"
     />
 
-    <AppModal v-if="seasonOpen" title="Saison bearbeiten" icon="calendar" :width="520" @close="seasonOpen = false">
-      <form id="season-form" class="form" @submit.prevent="saveSeason">
-        <div class="field">
-          <label for="sf-label">Bezeichnung</label>
-          <input id="sf-label" v-model="season.label" class="input" required placeholder="z. B. 2027/28">
-        </div>
-        <div class="two">
-          <div class="field">
-            <label for="sf-start">Erster Werkstatttag</label>
-            <input id="sf-start" v-model="season.start" type="date" class="input" required>
-          </div>
-          <div class="field">
-            <label for="sf-end">Letzter Werkstatttag</label>
-            <input id="sf-end" v-model="season.end" type="date" class="input" required>
-          </div>
-        </div>
-        <p v-if="seasonError" class="error">{{ seasonError }}</p>
-      </form>
-      <template #meta>Bestimmt den Saisonplan und die Monate im Kalender.</template>
-      <template #footer>
-        <button type="button" class="btn btn-ghost" @click="seasonOpen = false">Abbrechen</button>
-        <button type="submit" form="season-form" class="btn btn-primary" :disabled="!!seasonError">Speichern</button>
-      </template>
-    </AppModal>
   </div>
 </template>
 
 <style scoped>
 .denied { padding: 24px; font-size: 14px; color: var(--text-2); }
-.box { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
 .box-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .box-head.pad { padding: 14px 16px; border-bottom: 1px solid var(--border); }
 .section-title { display: flex; align-items: center; gap: 8px; }
 .section-title .count { background: var(--gray-soft); }
-.facts { display: grid; grid-template-columns: 180px minmax(0, 1fr); row-gap: 8px; column-gap: 16px; margin: 0; font-size: 14px; }
-.facts dt { color: var(--muted); }
-.facts dd { margin: 0; font-weight: 600; }
 .rows { list-style: none; margin: 0; padding: 0; }
 .row {
   width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 16px;
@@ -209,12 +154,5 @@ function saveSeason() {
 .role input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }
 .role > span { display: flex; flex-direction: column; gap: 2px; }
 .role .muted { font-size: 12.5px; line-height: 1.4; }
-.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .small { font-size: 12.5px; }
-.error { font-size: 13px; font-weight: 600; color: var(--red-ink); }
-@media (max-width: 640px) {
-  .facts { grid-template-columns: 1fr; row-gap: 2px; }
-  .facts dd { margin-bottom: 8px; }
-  .two { grid-template-columns: 1fr; }
-}
 </style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { aircraftInput, createAircraft, deleteAircraft, people, state, updateAircraft, userName } from '../../store'
+import { aircraftInput, createAircraft, deleteAircraft, people, state, templatesFor, updateAircraft, userName } from '../../store'
 import type { Aircraft } from '../../types'
 import { fmtDay, isSaturday } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
@@ -12,8 +12,10 @@ const list = computed(() => [...state.aircraft].sort((a, b) => Number(!!a.retire
 
 const editing = ref<Aircraft | 'new' | null>(null)
 const form = reactive(aircraftInput())
+const withCards = ref(true)
 function open(a: Aircraft | 'new') {
   Object.assign(form, aircraftInput(a === 'new' ? undefined : a))
+  withCards.value = true
   editing.value = a
 }
 
@@ -33,7 +35,7 @@ const duplicateReg = computed(() => state.aircraft.some((a) => a !== editing.val
 
 function save() {
   if (!form.type.trim() || !form.reg.trim() || error.value || duplicateReg.value) return
-  if (editing.value === 'new') createAircraft(form)
+  if (editing.value === 'new') createAircraft(form, withCards.value)
   else if (editing.value) updateAircraft(editing.value, form)
   editing.value = null
 }
@@ -119,7 +121,11 @@ function confirmRemove() {
         </div>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
-      <label v-if="editing !== 'new'" class="check-row">
+      <label v-if="editing === 'new'" class="check-row">
+        <input v-model="withCards" type="checkbox">
+        <span><strong>Kanban-Karten aus den Vorlagen anlegen</strong><span class="muted">{{ templatesFor(form.type.trim()).length }} Vorlagen gelten für {{ form.type.trim() || 'dieses Flugzeug' }}.</span></span>
+      </label>
+      <label v-else class="check-row">
         <input v-model="form.retired" type="checkbox">
         <span><strong>Ausgemustert</strong><span class="muted">Verkauft o. ä. Kanban, Mängel und Dokumente bleiben erhalten; das Flugzeug verschwindet aus Seitenleiste und Saisonplan.</span></span>
       </label>

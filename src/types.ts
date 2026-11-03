@@ -75,11 +75,36 @@ export interface Task {
   deadline?: string
   docId?: string
   defectId?: string
+  /** Aus dieser Vorlage angelegt (Saisonstart oder neues Flugzeug). */
+  templateId?: string
   doneBy?: UserId
   doneAt?: string
   signedBy?: UserId
   signedAt?: string
   history: HistoryEntry[]
+}
+
+/** Vorlage für Kanban-Karten; daraus entstehen zu Saisonbeginn die Karten jedes Flugzeugs. */
+export interface TaskTemplate {
+  id: string
+  /** Flugzeugtyp, leer = alle Flugzeuge */
+  aircraftType: string
+  level: Level
+  title: string
+  desc: string
+  duration: string
+  checklist: string[]
+  /** Dokumente gehören zum einzelnen Flugzeug; verknüpft wird das Dokument mit diesem Titel. */
+  docTitle?: string
+}
+
+/** Abgeschlossene Saison, nur noch zum Nachlesen. */
+export interface ArchivedSeason extends Season {
+  aircraft: Pick<Aircraft, 'id' | 'type' | 'reg' | 'start' | 'end'>[]
+  tasks: Task[]
+  schedule: Record<string, ScheduleDay>
+  closedAt: string
+  closedBy: UserId
 }
 
 export type Priority = 'Sehr niedrig' | 'Niedrig' | 'Normal' | 'Hoch'
@@ -154,6 +179,9 @@ export interface AppState {
   aircraft: Aircraft[]
   schedule: Record<string, ScheduleDay>
   tasks: Task[]
+  templates: TaskTemplate[]
+  /** Frühere Saisons, neueste zuerst */
+  archive: ArchivedSeason[]
   defects: Defect[]
   deadlines: Deadline[]
   documents: DocumentItem[]

@@ -1,4 +1,4 @@
-import type { Aircraft, AppState, Task } from '../types'
+import type { Aircraft, AppState, ArchivedSeason, Task } from '../types'
 import { addDays, TODAY } from '../utils/date'
 import { initialUsers, SYSTEM, TABLET } from './people'
 
@@ -27,6 +27,12 @@ export function initialState(): AppState {
   const s = baseState()
   const own = <T extends { aircraftId: string }>(list: T[]) => list.filter((x) => x.aircraftId === ASG)
   const pre = (id: string, ref?: string) => (ref ? `${id}-${ref}` : undefined)
+  // Vorlagen = Karten der ASG32, gültig für alle Flugzeuge; jede Karte merkt sich ihre Vorlage.
+  s.templates = own(s.tasks).map((t) => ({
+    id: `v-${t.id}`, aircraftType: '', level: t.level, title: t.title, desc: t.desc, duration: t.duration,
+    checklist: t.checklist.map((c) => c.text), docTitle: s.documents.find((d) => d.id === t.docId)?.title,
+  }))
+  own(s.tasks).forEach((t) => { t.templateId = `v-${t.id}` })
   for (const a of s.aircraft.filter((x) => x.id !== ASG)) {
     s.tasks.push(...own(s.tasks).map((t) => ({ ...structuredClone(t), id: `${a.id}-${t.id}`, aircraftId: a.id, defectId: pre(a.id, t.defectId), docId: pre(a.id, t.docId) })))
     s.defects.push(...own(s.defects).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id, taskId: pre(a.id, d.taskId) })))
@@ -43,7 +49,31 @@ export function initialState(): AppState {
     else tasks.forEach((t) => resetTask(t))
     if (a.id !== ASG) tasks.forEach((t) => { t.history[t.history.length - 1] = { ...created, at: a.start < TODAY ? a.start : TODAY } })
   }
+  s.archive = [previousSeason(s)]
   return s
+}
+
+/** Vorjahr zum Nachlesen: gleiche Flugzeuge und Vorlagen 52 Wochen früher, alles erledigt und abgezeichnet. */
+function previousSeason(s: AppState): ArchivedSeason {
+  const back = (iso: string) => addDays(iso, -364)
+  const aircraft = s.aircraft.map(({ id, type, reg, start, end }) => ({ id, type, reg, start: back(start), end: back(end) }))
+  const tasks: Task[] = []
+  for (const a of aircraft) {
+    const days: string[] = []
+    for (let d = a.start; d <= a.end; d = addDays(d, 7)) days.push(d)
+    s.templates.forEach((v, i) => {
+      const t: Task = {
+        id: `alt-${a.id}-${v.id}`, aircraftId: a.id, templateId: v.id, status: 'offen', level: v.level, title: v.title, desc: v.desc,
+        duration: v.duration, checklist: v.checklist.map((text) => ({ text, done: false })), history: [],
+      }
+      const day = days[Math.floor((i * days.length) / s.templates.length)]
+      finishAt(t, HELPERS[i % HELPERS.length], `${day}T${String(10 + (i % 7)).padStart(2, '0')}:15`, i % 2 ? 'HE' : 'MA')
+      t.history[t.history.length - 1] = { ...created, at: a.start }
+      tasks.push(t)
+    })
+  }
+  const schedule = Object.fromEntries(Object.entries(s.schedule).map(([d, day]) => [back(d), { leader: day.leader, closed: day.closed, reason: day.reason }]))
+  return { label: '2025/26', start: back(s.season.start), end: back(s.season.end), aircraft, tasks, schedule, closedAt: addDays(s.season.start, -30), closedBy: 'MA' }
 }
 
 const HELPERS = ['JO', 'LE']
@@ -166,6 +196,9 @@ function baseState(): AppState {
       '2027-03-06': { leader: 'HE' },
       '2027-03-13': { leader: 'MA' },
     },
+
+    templates: [],
+    archive: [],
 
     tasks: [
       // Flügel

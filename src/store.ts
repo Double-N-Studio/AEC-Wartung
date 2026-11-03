@@ -1,11 +1,11 @@
 import { reactive, watch } from 'vue'
-import type { Aircraft, AppState, Defect, DocumentItem, HistoryEntry, InventoryItem, Order, Role, Season, Task, User, UserId } from './types'
+import type { Aircraft, AppState, Defect, DocumentItem, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskTemplate, User, UserId } from './types'
 import { initialState } from './mock/data'
 import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
-import { addDays, fmtDate, fmtDay, NOW, TODAY } from './utils/date'
+import { addDays, daysBetween, fmtDate, fmtDay, NOW, TODAY } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v13'
+const STORAGE_KEY = 'aec-winterwartung-demo-v14'
 const SESSION_KEY = 'aec-winterwartung-sitzung'
 
 function load(): AppState {
@@ -214,6 +214,104 @@ export function setDayClosed(date: string, closed: boolean, reason = '') {
   dayLog(date, closed ? `Werkstatt geschlossen: ${day.reason}` : 'Werkstatt wieder geöffnet')
 }
 
+/** Neue Saison: laufende archivieren, Karten aus den Vorlagen neu anlegen, Zeiträume um dieselbe Wochenzahl verschieben. */
+export function startSeason(input: Season, carryOver: boolean) {
+  const oldStart = state.season.start
+  state.archive.unshift(JSON.parse(JSON.stringify({
+    ...state.season,
+    aircraft: state.aircraft.map(({ id, type, reg, start, end }) => ({ id, type, reg, start, end })),
+    tasks: state.tasks,
+    schedule: state.schedule,
+    closedAt: TODAY,
+    closedBy: actor(),
+  })))
+  // Eigene Karten (z. B. aus Mängeln), die noch nicht erledigt sind, gehen in die neue Saison mit.
+  const keep = (t: Task) => carryOver && !t.templateId && t.status !== 'erledigt'
+  for (const t of state.tasks) {
+    if (keep(t)) continue
+    const defect = state.defects.find((d) => d.taskId === t.id)
+    if (defect) delete defect.taskId
+  }
+  state.tasks = state.tasks.filter(keep)
+  state.schedule = {}
+  setSeason(input)
+  const weeks = Math.round(daysBetween(oldStart, state.season.start) / 7)
+  for (const a of activeAircraft()) {
+    const len = daysBetween(a.start, a.end)
+    a.start = addDays(a.start, weeks * 7)
+    if (a.start < state.season.start || a.start > state.season.end) a.start = state.season.start
+    a.end = addDays(a.start, len)
+    if (a.end > state.season.end) a.end = state.season.end
+    cardsFromTemplates(a)
+  }
+}
+
+/* ---------- Kanban-Vorlagen ---------- */
+
+export const templatesFor = (type: string) => state.templates.filter((v) => !v.aircraftType || v.aircraftType === type)
+
+/** Karten aus allen Vorlagen anlegen, die bei diesem Flugzeug noch fehlen. */
+export function cardsFromTemplates(a: Aircraft) {
+  const used = new Set(state.tasks.filter((t) => t.aircraftId === a.id).map((t) => t.templateId))
+  for (const v of templatesFor(a.type)) {
+    if (used.has(v.id)) continue
+    state.tasks.push({
+      id: nextId('t'), aircraftId: a.id, templateId: v.id, status: 'offen', level: v.level, title: v.title, desc: v.desc || '–',
+      duration: v.duration, checklist: v.checklist.map((text) => ({ text, done: false })),
+      docId: v.docTitle ? state.documents.find((d) => d.aircraftId === a.id && d.title === v.docTitle)?.id : undefined,
+      history: [{ text: 'Aus Vorlage angelegt', who: actor(), at: TODAY }],
+    })
+  }
+}
+
+export interface TemplateInput {
+  aircraftType: string
+  level: TaskTemplate['level']
+  title: string
+  desc: string
+  duration: string
+  /** Ein Schritt pro Zeile */
+  checklist: string
+  docTitle: string
+}
+
+export const templateInput = (v?: TaskTemplate): TemplateInput => ({
+  aircraftType: v?.aircraftType ?? '',
+  level: v?.level ?? 'ein',
+  title: v?.title ?? '',
+  desc: v?.desc ?? '',
+  duration: v?.duration ?? '~1 h',
+  checklist: v?.checklist.join('\n') ?? '',
+  docTitle: v?.docTitle ?? '',
+})
+
+function applyTemplateInput(v: TaskTemplate, input: TemplateInput) {
+  Object.assign(v, {
+    aircraftType: input.aircraftType,
+    level: input.level,
+    title: input.title.trim(),
+    desc: input.desc.trim(),
+    duration: input.duration,
+    checklist: input.checklist.split('\n').map((t) => t.trim()).filter(Boolean),
+    docTitle: input.docTitle.trim() || undefined,
+  })
+}
+
+/** Vorlagen wirken erst beim nächsten Saisonstart oder neuen Flugzeug; bestehende Karten bleiben, wie sie sind. */
+export function createTemplate(input: TemplateInput) {
+  const v: TaskTemplate = { id: nextId('v'), aircraftType: '', level: 'ein', title: '', desc: '', duration: '', checklist: [] }
+  applyTemplateInput(v, input)
+  state.templates.push(v)
+}
+
+export function updateTemplate(v: TaskTemplate, input: TemplateInput) {
+  applyTemplateInput(v, input)
+}
+
+export function deleteTemplate(v: TaskTemplate) {
+  remove(state.templates, v)
+}
+
 /* ---------- Flugzeuge ---------- */
 
 export interface AircraftInput {
@@ -248,10 +346,12 @@ function applyAircraftInput(a: Aircraft, input: AircraftInput) {
   a.retired = input.retired || undefined
 }
 
-export function createAircraft(input: AircraftInput): Aircraft {
+/** withCards: gleich die Kanban-Karten aus den Vorlagen anlegen. */
+export function createAircraft(input: AircraftInput, withCards = false): Aircraft {
   const a: Aircraft = { id: nextId('a'), type: '', reg: '', start: '', end: '' }
   applyAircraftInput(a, input)
   state.aircraft.push(a)
+  if (withCards) cardsFromTemplates(state.aircraft[state.aircraft.length - 1])
   return a
 }
 

@@ -3,6 +3,7 @@ import SchedulePage from './views/SchedulePage.vue'
 import InventoryPage from './views/InventoryPage.vue'
 import FaqPage from './views/FaqPage.vue'
 import AdminPage from './views/AdminPage.vue'
+import TemplatesPage from './views/admin/TemplatesPage.vue'
 import AircraftLayout from './views/aircraft/AircraftLayout.vue'
 import TasksPage from './views/aircraft/TasksPage.vue'
 import DocumentsPage from './views/aircraft/DocumentsPage.vue'
@@ -19,6 +20,7 @@ export const router = createRouter({
     { path: '/inventur', component: InventoryPage },
     { path: '/faq', component: FaqPage },
     { path: '/verwaltung', component: AdminPage },
+    { path: '/verwaltung/vorlagen', component: TemplatesPage },
     {
       path: '/flugzeug/:id',
       component: AircraftLayout,
