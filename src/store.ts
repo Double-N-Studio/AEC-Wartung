@@ -1,11 +1,11 @@
 import { reactive, watch } from 'vue'
-import type { Aircraft, AppState, Defect, DocumentItem, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskTemplate, User, UserId } from './types'
+import type { Aircraft, AppState, Defect, DocumentItem, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskNote, TaskTemplate, User, UserId } from './types'
 import { initialState } from './mock/data'
 import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
 import { addDays, daysBetween, fmtDate, fmtDay, NOW, TODAY } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v14'
+const STORAGE_KEY = 'aec-winterwartung-demo-v15'
 const SESSION_KEY = 'aec-winterwartung-sitzung'
 
 function load(): AppState {
@@ -463,6 +463,18 @@ export function unsignTask(task: Task) {
   delete task.signedBy
   delete task.signedAt
   log(task.history, 'Abzeichnung zurückgenommen', NOW)
+}
+
+export function addTaskNote(task: Task, text: string, photos: number) {
+  if (!text.trim() && !photos) return
+  task.notes ??= []
+  task.notes.push({ id: nextId('n'), text: text.trim(), photos, who: actor(), at: NOW })
+  log(task.history, photos ? `Notiz mit ${photos === 1 ? '1 Foto' : `${photos} Fotos`}` : 'Notiz hinzugefügt', NOW)
+}
+
+export function deleteTaskNote(task: Task, note: TaskNote) {
+  if (task.notes) remove(task.notes, note)
+  log(task.history, 'Notiz gelöscht', NOW)
 }
 
 export interface TaskInput {

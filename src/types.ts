@@ -63,6 +63,15 @@ export interface ChecklistItem {
   done: boolean
 }
 
+/** Notiz an einer Kanban-Karte, z. B. was beim Arbeiten aufgefallen ist. Fotos sind im Mockup Platzhalter. */
+export interface TaskNote {
+  id: string
+  text: string
+  photos: number
+  who: UserId
+  at: string
+}
+
 export interface Task {
   id: string
   aircraftId: string
@@ -72,6 +81,7 @@ export interface Task {
   desc: string
   duration: string
   checklist: ChecklistItem[]
+  notes?: TaskNote[]
   deadline?: string
   docId?: string
   defectId?: string

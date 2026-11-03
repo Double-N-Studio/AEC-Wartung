@@ -140,7 +140,11 @@ function applyAsg(t: Task) {
   if (doneDay1[t.id]) finishAt(t, doneDay1[t.id][0], `${day1}T${doneDay1[t.id][1]}`, 'HE')
   else if (t.id === 'an2') finishAt(t, 'LE', `${TODAY}T09:20`, 'MA')
   else if (t.id === 'ru3') { startAt(t, 'HE', day1); tick(t, 1) }
-  else if (t.id === 'ru4') { startAt(t, 'JO', day1); tick(t, 1) }
+  else if (t.id === 'ru4') {
+    startAt(t, 'JO', day1)
+    tick(t, 1)
+    t.notes = [{ id: 'n1', text: 'Linkes Radlager hat deutlich Spiel, daher das Klackern. Ersatzlager muss bestellt werden.', photos: 2, who: 'JO', at: `${day1}T15:20` }]
+  }
   else if (t.id === 'ru8') { startAt(t, 'JO', day1); tick(t, 1) }
   else if (t.id === 'hl3') startAt(t, 'LE', `${TODAY}T09:40`)
   else if (t.id === 'fl3') { startAt(t, 'LO', `${TODAY}T09:50`); tick(t, 1) }

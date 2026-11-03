@@ -11,6 +11,7 @@ import AppModal from '../../components/AppModal.vue'
 import ConfirmModal from '../../components/ConfirmModal.vue'
 import HistoryList from '../../components/HistoryList.vue'
 import LevelBadge from '../../components/LevelBadge.vue'
+import TaskNotes from './TaskNotes.vue'
 
 const props = defineProps<{ task: Task }>()
 const emit = defineEmits<{ close: []; edit: [] }>()
@@ -72,6 +73,7 @@ function remove() {
       </label>
     </div>
 
+    <TaskNotes :task="task" :editable="editable" />
     <HistoryList :entries="task.history" />
 
     <template #meta>

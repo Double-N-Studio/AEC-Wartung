@@ -108,10 +108,11 @@ const form = ref<Task | 'new' | null>(null)
             <span class="task-origin-text"><b>{{ defectOf(t)!.source === 'vf' ? 'Mangel' : 'Befund' }}:</b> {{ defectOf(t)!.title }}</span>
           </span>
           <!-- Checklisten-Fortschritt erst ab "In Arbeit"; offene Karten zeigen die Dauer. -->
-          <span v-if="t.status === 'offen' || (t.status === 'arbeit' && (t.checklist.length || t.deadline))" class="task-meta">
+          <span v-if="t.status === 'offen' || t.notes?.length || (t.status === 'arbeit' && (t.checklist.length || t.deadline))" class="task-meta">
             <span v-if="t.status === 'offen'"><AppIcon name="clock" :size="14" />{{ t.duration }}</span>
-            <span v-else-if="t.checklist.length"><AppIcon name="list" :size="14" />{{ checked(t) }}/{{ t.checklist.length }}</span>
-            <span v-if="t.deadline" class="deadline"><AppIcon name="calendar" :size="14" />Frist {{ fmtDay(t.deadline) }}</span>
+            <span v-else-if="t.status === 'arbeit' && t.checklist.length"><AppIcon name="list" :size="14" />{{ checked(t) }}/{{ t.checklist.length }}</span>
+            <span v-if="t.deadline && t.status !== 'erledigt'" class="deadline"><AppIcon name="calendar" :size="14" />Frist {{ fmtDay(t.deadline) }}</span>
+            <span v-if="t.notes?.length" :title="`${t.notes.length} Notizen`"><AppIcon name="note" :size="14" />{{ t.notes.length }}</span>
           </span>
           <span v-if="t.status === 'erledigt'" class="task-done">
             <span>Erledigt: <b>{{ userName(t.doneBy) }}</b> · {{ fmtWhen(t.doneAt!) }}</span>
