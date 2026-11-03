@@ -65,9 +65,10 @@ export function httpBackend(base: string): Backend {
       await call('DELETE', '/session')
     },
 
-    async sendPasswordLink(userId) {
+    async passwordToken(userId) {
       const { status, data } = await call('POST', `/users/${encodeURIComponent(userId)}/password-link`)
-      if (status >= 300) throw new Error(message(data, 'Link konnte nicht gesendet werden'))
+      if (status !== 200) throw new Error(message(data, 'Link konnte nicht erstellt werden'))
+      return (data as { token: string }).token
     },
 
     async setPassword(token, password) {

@@ -2,7 +2,7 @@
 
 What the frontend expects from the server. The frontend side is `src/api/http.ts`; the demo replays the same contract in `src/api/mock.ts`. With `VITE_API_URL=/api` (e.g. in `.env.local`) the app talks to the backend; without it, the demo runs. `npm run dev` proxies `/api` to `http://localhost:3000`.
 
-The frontend assumes the API is on the **same origin** (relative `VITE_API_URL`, cookie session). Serving it from another origin would need CORS with credentials and `SameSite=None` cookies; the plan is to let nginx serve `dist/` and `/api` from the same host instead.
+The frontend assumes the API is on the **same origin** (relative `VITE_API_URL`, cookie session). Serving it from another origin would need CORS with credentials and `SameSite=None` cookies, so the server serves both: the image (`server/Dockerfile`) contains the frontend built with `VITE_API_URL=/api` and serves it from `WEB_DIR` next to `/api`. GitHub Pages keeps the demo.
 
 ## Core idea
 
@@ -35,7 +35,7 @@ All under `VITE_API_URL`, JSON, session via cookie (`credentials: 'include'`). O
 | `POST /session/name` | `{ name }` | `200 { user }` (account found or created) · `409` name belongs to a special account |
 | `POST /session/login` | `{ email, password }` | `200 { user }` · `401` |
 | `DELETE /session` | – | `204` |
-| `POST /users/:id/password-link` | – | `204` – sends the e-mail with the link (admins only) |
+| `POST /users/:id/password-link` | – | `200 { token }` – new token for the set-password link (admins only) · `404` account unknown |
 | `POST /password` | `{ token, password }` | `204` · `400` link expired or already used |
 | `PUT /files/:id` | raw body, `Content-Type`, `X-File-Name` (URL-encoded) | `204` · `413` too large |
 | `GET /files/:id` | – | the file |
@@ -84,12 +84,15 @@ Further rules the server should enforce:
 - **Signed-off cards are locked:** if the old record has `signedBy`, only `lead` may change it, and only to remove `signedBy`/`signedAt` plus a history entry.
 - **Who and when:** new history entries (`history`, `notes`) carry the signed-in account in `who`. Exception: on the workshop tablet `signedBy` is the workshop lead of the day (`schedule[today].leader`, see `signer()`); if no lead is set for the day, the tablet's own account. Timestamps come from the device and may lie in the past after working offline.
 - An admin must not change their own role or mark their own account `removed`.
+- **Deleting an aircraft:** the batch only deletes the aircraft, its `tasks` and `documents`. The server then deletes its `defects` (both kinds) and `deadlines` itself, as a revision of its own (`rev + 2` in the response, so the device reloads). Nothing is sent to Vereinsflieger.
 - Accounts are never deleted, only marked `removed: true`. Removed accounts can no longer sign in.
 
 ## Accounts and sign-in
 
 - **Members** (`role: 'user'`, no `email`): `POST /session/name` with "First Last". Same name (case-insensitive) = same account, otherwise the server creates `{ id, name, role: 'user' }`. If the name belongs to a special account, respond `409`. Afterwards the device reloads so the account appears in `users`.
-- **Special accounts** (admin, workshop lead, workshop tablet with `device: true`; rule in `needsPassword`): sign in with e-mail and password. When an admin creates a special account (record in `users` with `email`), the server sends the e-mail with the link `<app URL>/#/passwort?token=…` on its own. "Send link to set password" in the admin area calls `password-link` again. Passwords are never part of `users`.
+- **Special accounts** (admin, workshop lead, workshop tablet with `device: true`; rule in `needsPassword`): sign in with e-mail and password. The e-mail is only the sign-in name (unique, case-insensitive): **the server sends no e-mails**, and there is no "forgot password" for now.
+- **Setting the password:** an admin gets a token via `POST /users/:id/password-link` (right after creating the account, or later for a new password); the frontend builds the link `<app URL>/#/passwort?token=…` and the admin passes it on. A token works once and for 7 days; a new token makes the account's older ones invalid. `POST /password` sets the password and invalidates the token, but does not end existing sessions. Store only a hash of the token. Passwords (hashed, e.g. scrypt) are never part of `users`.
+- The frontend sends a new account's batch before asking for its token; if the account still isn't known, answer `404`.
 - Sessions should be long-lived: the tablet stays signed in for the whole season, members enter their name only once.
 
 ## Files
@@ -98,8 +101,10 @@ Photos and PDFs first go into the device's IndexedDB and an outbox (`src/api/fil
 
 ## Vereinsflieger
 
+**Not connected yet** – there is no data from Vereinsflieger for now: no `defects` with `source: 'vf'`, empty `deadlines`, `vereinsflieger: { lastSync: '' }`, and `POST /vereinsflieger/sync` answers `422 { error: 'Vereinsflieger ist noch nicht angebunden' }`. Later:
+
 The server syncs periodically and on `POST /vereinsflieger/sync`, writing the defects (`defects` with `source: 'vf'`, `reportedBy: 'system'`), `deadlines` and `vereinsflieger: { lastSync, error? }`. On failure `lastSync` stays as it was and `error` gets a short text. Credentials live only on the server. Writing back to Vereinsflieger comes later.
 
 ## First start
 
-The server needs an initial state: `season` (label, first and last workshop Saturday), `vereinsflieger: { lastSync: '' }`, a first admin account with a link to set the password, and empty lists. Everything else (aircraft, templates, accounts) admins maintain in the app. The demo data lives in `src/mock/data.ts` (`initialState()`) in case it's useful to import for trying things out.
+The server needs an initial state: `season` (label, first and last workshop Saturday), `vereinsflieger: { lastSync: '' }`, a first admin account, and empty lists. For the first admin the server prints the set-password link to its log (`APP_URL` from the environment + `/#/passwort?token=…`), since there are no e-mails. Everything else (aircraft, templates, accounts) admins maintain in the app. The demo data lives in `src/mock/data.ts` (`initialState()`) in case it's useful to import for trying things out.

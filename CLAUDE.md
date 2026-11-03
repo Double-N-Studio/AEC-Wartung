@@ -5,7 +5,7 @@ Notes for working on this repo.
 ## What this is
 
 Web app for the winter maintenance of the club gliders of Aero-Club Bad Nauheim.
-The frontend is ready for a backend (contract in `docs/backend.md`, server scaffold in `server/`). Without `VITE_API_URL` it runs as a **demo** against a fake server in the browser – that's what's on GitHub Pages as a clickable preview for the board.
+The frontend is ready for a backend (contract in `docs/backend.md`, server scaffold in `server/`). Without `VITE_API_URL` it runs as a **demo** against a fake server in the browser – that's what's on GitHub Pages as a clickable preview for the board. The real app (built with `VITE_API_URL=/api`) is served by the server on the Hetzner VPS.
 In the demo all data is sample data; "today" is fixed to **2027-01-16** (`VITE_DEMO_DATE` in `.env`). Without that entry the real date applies. In code always use `today()` / `now()` from `src/utils/date.ts`, never `new Date()` directly.
 
 ## Commands
@@ -25,7 +25,7 @@ Run `npm run build` before every commit – there are no tests, the type check i
 
 - Vue 3 with `<script setup lang="ts">`, Vue Router (hash mode), Vite, TypeScript (pinned to 5.9 because `vue-tsc` doesn't support TS 7 yet)
 - No UI framework, no state library: own CSS and a reactive store
-- Deployment: GitHub Pages via `.github/workflows/deploy.yml` on push to `main`; backend via `.github/workflows/deploy-server.yml` (see `server/README.md`)
+- Deployment: demo on GitHub Pages via `.github/workflows/deploy.yml` on push to `main`; app image (backend + frontend) to the VPS via `.github/workflows/deploy-server.yml` (see `server/README.md`)
 
 ## Structure
 
@@ -68,14 +68,14 @@ server/                         backend (Hono + SQLite), Docker image, VPS notes
 - **Responsive:** breakpoints `900px` (sidebar becomes a menu, tables become cards) and `640px` (phone). Check new pages at both widths.
 - **Static assets:** include images in templates via `import` from `src/assets`; dynamic paths (e.g. document previews) relative without a leading `/`, because `base: './'` applies.
 - **Files** (photos, documents) go through `src/api/files.ts`: records only store a `FileRef`, the content comes from `uploadFile` / `fileUrl` / `downloadFile`. New files first live in the device's IndexedDB and an outbox that is uploaded before every batch (`flushFiles`); in the demo IndexedDB itself is the storage. Photos are downscaled before upload (`compressImage`); photos in the sample data have no file and appear as placeholders.
-- **Demo parts** (test accounts in the login popup, "Demo zurücksetzen", "Offline testen") only show with `DEMO` from `api/backend.ts`. The demo checks no password and sends no e-mails. The server holds the session; the device remembers the last known one under its own localStorage key, which survives "Demo zurücksetzen".
+- **Demo parts** (test accounts in the login popup, "Demo zurücksetzen", "Offline testen") only show with `DEMO` from `api/backend.ts`. The demo checks no password. The server holds the session; the device remembers the last known one under its own localStorage key, which survives "Demo zurücksetzen".
 
 ## Product decisions from feedback
 
 - "Meine Sachen" (only for people, not on the tablet): own cards in progress, assigned defects/findings, own open orders and findings; for workshop leads and admins additionally all finished cards waiting for sign-off. Links open the popups directly (`?paket=`, `?befund=`, `?artikel=`, `?bestellung=`).
 - The start page is the schedule; work happens only on Saturdays.
 - The tab is called "Kanban", an entry "Kanban-Karte" (also for defects/findings); in code it stays `Task`.
-- Accounts: the link only goes to club members, so no club code. Special accounts set their password via an e-mail link (`#/passwort?token=…`); admins can resend it in the admin area. Every action needs a name; members enter first and last name on first open (required, no name list), only special accounts have a password. What happens on the tablet shows as "Werkstatt-Tablet" in the history; the app encourages using your own phone.
+- Accounts: the link only goes to club members, so no club code. The e-mail of special accounts is only their sign-in name, the app sends no e-mails and has no "forgot password": admins create a set-password link (`#/passwort?token=…`) in the admin area (right after creating the account, or anew later) and pass it on themselves. Every action needs a name; members enter first and last name on first open (required, no name list), only special accounts have a password. What happens on the tablet shows as "Werkstatt-Tablet" in the history; the app encourages using your own phone.
 - No helper assignment on work packages; who starts follows from the signed-in account and only appears in the history. The workshop tablet is its own account (device, role workshop lead); helpers' names aren't asked for there.
 - Sign-off: as the signed-in person, on the workshop tablet as the workshop lead of the day. Signed-off cards are locked until the workshop lead withdraws the sign-off.
 - Kanban cards have notes with photos (`notes`), e.g. what came up while working. Own notes can be deleted, workshop leads can delete all; after sign-off that's locked too. The card shows the count.

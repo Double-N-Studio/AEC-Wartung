@@ -47,7 +47,7 @@ const close = () => { authDialog.value = session.chosen ? null : 'name' }
       </div>
       <p v-if="failed === 'wrong'" class="error">E-Mail oder Passwort stimmt nicht.</p>
       <p v-else-if="failed === 'offline'" class="error">Keine Verbindung zum Server. Bitte gleich noch einmal versuchen.</p>
-      <p class="muted small">Passwort vergessen? Ein Admin schickt dir einen neuen Link.</p>
+      <p class="muted small">Passwort vergessen? Ein Admin kann dir einen neuen Link geben.</p>
     </form>
 
     <div v-if="DEMO" class="demo">

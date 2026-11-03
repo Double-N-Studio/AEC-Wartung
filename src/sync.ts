@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import type { AppState } from './types'
 import { backend, type Batch, type PushResult } from './api/backend'
 import { flushFiles } from './api/files'
@@ -87,7 +87,7 @@ function capture() {
 
 /* ---------- Sending ---------- */
 
-let flushing = false
+let sending: Promise<void> | null = null
 let retryTimer: ReturnType<typeof setTimeout> | undefined
 let retryDelay = 3000
 
@@ -117,10 +117,15 @@ function rejected(batch: Batch, result: Exclude<PushResult, { ok: true }>) {
   else notify(`${what}: nicht gespeichert (${result.message}).`)
 }
 
-/** Send the queue in order. Rejected batches are dropped; afterwards the server state is loaded. */
-async function flush() {
-  if (flushing || !canSend() || !queue.length) return
-  flushing = true
+/** Send the queue in order (one run at a time; calls during a run wait for it). */
+function flush(): Promise<void> {
+  if (!sending) sending = send().finally(() => { sending = null })
+  return sending
+}
+
+/** Rejected batches are dropped; afterwards the server state is loaded. */
+async function send() {
+  if (!canSend() || !queue.length) return
   sync.saving = true
   let reload = false
   try {
@@ -145,7 +150,6 @@ async function flush() {
   } catch {
     unreachable()
   } finally {
-    flushing = false
     sync.saving = false
   }
   if (reload) await refresh()
@@ -206,6 +210,15 @@ export async function connect(state: AppState) {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void refresh() })
   await refresh()
   await flush()
+}
+
+/** Send what is pending now; true if the server has everything (e.g. a new account before its password link). */
+export async function whenSaved() {
+  await nextTick() // the watcher turns the last action into a batch first
+  await flush()
+  // A run that was already going may have ended before this batch was queued.
+  if (queue.length && sync.reachable) await flush()
+  return queue.length === 0
 }
 
 /** After actions the server performs itself (create account, Vereinsflieger), or in the demo after resetting. */

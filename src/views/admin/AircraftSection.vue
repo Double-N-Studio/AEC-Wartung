@@ -46,7 +46,7 @@ const removeText = computed(() => {
   if (!a) return ''
   const tasks = state.tasks.filter((t) => t.aircraftId === a.id).length
   const defects = state.defects.filter((d) => d.aircraftId === a.id).length
-  return `${a.type} · ${a.reg} wird mit ${tasks} Kanban-Karten, ${defects} Mängeln/Befunden, allen Fristen und Dokumenten gelöscht. Verkaufte Flugzeuge besser ausmustern – dann bleibt alles erhalten.`
+  return `${a.type} · ${a.reg} wird mit ${tasks} Kanban-Karten, ${defects} Mängeln/Befunden, allen Fristen und Dokumenten gelöscht; in Vereinsflieger ändert sich nichts. Verkaufte Flugzeuge besser ausmustern – dann bleibt alles erhalten.`
 })
 function confirmRemove() {
   if (removing.value) deleteAircraft(removing.value)

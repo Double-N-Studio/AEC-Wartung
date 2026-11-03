@@ -49,11 +49,11 @@ export interface Backend {
   login(email: string, password: string): Promise<{ ok: true; user: User } | { ok: false }>
   logout(): Promise<void>
   /**
-   * Send the set-password link by e-mail to a special account (admin). New special accounts get it
-   * from the server automatically. Passwords are never part of the state.
+   * New token for the set-password link of a special account (admin); earlier tokens of the account stop working.
+   * The app sends no e-mails, the admin passes the link on. Passwords are never part of the state.
    */
-  sendPasswordLink(userId: UserId): Promise<void>
-  /** Set the password via the link from the e-mail (#/passwort?token=…); false if the link has expired. */
+  passwordToken(userId: UserId): Promise<string>
+  /** Set the password via the link from the admin (#/passwort?token=…); false if the link has expired or was used. */
   setPassword(token: string, password: string): Promise<boolean>
 
   putFile(ref: FileRef, blob: Blob): Promise<void>

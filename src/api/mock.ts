@@ -101,6 +101,13 @@ export function mockBackend(): Backend {
       server.rev += 1
       for (const c of batch.changes) server.meta[`${c.coll}/${c.id}`] = { rev: server.rev, clientId: batch.clientId }
       server.seen = [batch.id, ...server.seen].slice(0, 200)
+      // Deleted aircraft: the server removes their defects and deadlines as a revision of its own.
+      const gone = batch.changes.filter((c) => c.coll === 'aircraft' && c.value === null).map((c) => c.id)
+      if (gone.length) {
+        server.state.defects = server.state.defects.filter((d) => !gone.includes(d.aircraftId))
+        server.state.deadlines = server.state.deadlines.filter((d) => !gone.includes(d.aircraftId))
+        server.rev += 1
+      }
       write(server)
       return { ok: true, rev: server.rev }
     },
@@ -148,9 +155,10 @@ export function mockBackend(): Backend {
       writeSession({ userId: null, auth: null })
     },
 
-    // The demo sends no e-mails and knows no passwords.
-    async sendPasswordLink() {
+    // The demo knows no passwords: every token works.
+    async passwordToken() {
       await latency()
+      return newId()
     },
     async setPassword() {
       await latency()

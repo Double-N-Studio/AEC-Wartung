@@ -3,6 +3,10 @@
 Backend of the winter maintenance app: Hono on Node 24, SQLite via Drizzle. So far only the scaffold with
 `GET /api/health`; what the frontend expects in endpoints and data model is in `../docs/backend.md`.
 
+The server also delivers the frontend: the image builds the app with `VITE_API_URL=/api` (without `.env`,
+so the real date applies) and serves it from `WEB_DIR`, so app and API share one origin. Without
+`WEB_DIR` (local development) Vite serves the frontend and proxies `/api` here.
+
 ## Development
 
 ```bash
@@ -30,9 +34,9 @@ Hetzner CX23 "nuno-vps" (178.105.54.205), shared with other projects (camper, Gi
 
 ## Deployment
 
-`.github/workflows/deploy-server.yml` builds the image to `ghcr.io/double-n-studio/aec-wartung-server`,
+`.github/workflows/deploy-server.yml` builds the image (context: repo root, `server/Dockerfile`) to `ghcr.io/double-n-studio/aec-wartung-server`,
 copies `server/` via rsync to `/srv/wartung` and runs `docker compose up -d`. Runs on push to `main`
-when something under `server/` changed, and checks `/api/health` at the end.
+when the server or the frontend changed, and checks `/api/health` and the start page at the end.
 
 One-time setup on the VPS (as root): `bash server/setup/deploy-user.sh "<public key>"`;
 the private key goes into the repo as the secret `DEPLOY_SSH_KEY`.

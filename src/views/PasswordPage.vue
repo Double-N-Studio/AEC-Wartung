@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { setPassword } from '../store'
 import { authDialog } from '../components/account/authDialog'
 
-/** Target of the link from the e-mail (#/passwort?token=…): special accounts set their password here. */
+/** Target of the link an admin passes on (#/passwort?token=…): special accounts set their password here. */
 const route = useRoute()
 const router = useRouter()
 const token = computed(() => String(route.query.token ?? ''))
@@ -23,7 +23,7 @@ async function submit() {
   busy.value = true
   try {
     if (await setPassword(token.value, form.password)) done.value = true
-    else error.value = 'Der Link ist abgelaufen oder wurde schon benutzt. Ein Admin kann dir einen neuen schicken.'
+    else error.value = 'Der Link ist abgelaufen oder wurde schon benutzt. Ein Admin kann dir einen neuen geben.'
   } catch {
     error.value = 'Keine Verbindung zum Server. Bitte gleich noch einmal versuchen.'
   }
@@ -45,7 +45,7 @@ function toLogin() {
 
     <section class="card box">
       <template v-if="!token">
-        <p>Dieser Link ist unvollständig. Öffne ihn bitte direkt aus der E-Mail.</p>
+        <p>Dieser Link ist unvollständig. Öffne bitte den ganzen Link, den du vom Admin bekommen hast.</p>
       </template>
       <template v-else-if="done">
         <p>Dein Passwort ist gespeichert. Du kannst dich jetzt anmelden.</p>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { can, createUser, currentUser, needsPassword, removeUser, sendPasswordLink, state, updateUser } from '../store'
+import { computed, nextTick, reactive, ref } from 'vue'
+import { can, createUser, currentUser, needsPassword, passwordLink, removeUser, state, updateUser } from '../store'
 import { notify } from '../notify'
 import type { Role, User } from '../types'
 import { ROLE_LABELS } from '../mock/people'
@@ -27,26 +27,49 @@ const form = reactive({ name: '', role: 'user' as Role, email: '' })
 function openUser(u: User | 'new') {
   Object.assign(form, u === 'new' ? { name: '', role: 'user', email: '' } : { name: u.name, role: u.role, email: u.email ?? '' })
   editing.value = u
+  link.value = null
 }
 // Workshop leads, admins and devices log in with e-mail and password.
 const withLogin = computed(() => form.role !== 'user' || (editing.value !== 'new' && !!editing.value?.device))
 function saveUser() {
   if (!form.name.trim() || (withLogin.value && !form.email.trim())) return
-  if (editing.value === 'new') createUser(form.name, form.role, form.email)
-  else if (editing.value) updateUser(editing.value, form.name, form.role, form.email)
+  if (editing.value === 'new') {
+    const user = createUser(form.name, form.role, form.email)
+    // Special accounts need a password: the popup stays open with the link to pass on.
+    if (needsPassword(user)) {
+      openUser(user)
+      void makeLink(user)
+      return
+    }
+  } else if (editing.value) updateUser(editing.value, form.name, form.role, form.email)
   editing.value = null
 }
 const editingSelf = computed(() => editing.value !== 'new' && editing.value?.id === currentUser()?.id)
-const linkSending = ref(false)
-async function sendLink(u: User) {
-  linkSending.value = true
+
+/* ---------- Password link: the app sends no e-mails, the admin passes the link on ---------- */
+const link = ref<{ userId: string; url: string } | null>(null)
+const linkBusy = ref(false)
+const linkInput = ref<HTMLInputElement | null>(null)
+async function makeLink(u: User) {
+  linkBusy.value = true
   try {
-    await sendPasswordLink(u)
-    notify(`Link zum Passwort-Setzen an ${u.email} geschickt.`, 'info')
+    link.value = { userId: u.id, url: await passwordLink(u) }
+    await nextTick()
+    linkInput.value?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   } catch {
-    notify('Link konnte nicht gesendet werden. Bitte später erneut versuchen.')
+    notify('Link konnte nicht erstellt werden. Bitte mit Verbindung erneut versuchen.')
   }
-  linkSending.value = false
+  linkBusy.value = false
+}
+async function copyLink() {
+  if (!link.value) return
+  try {
+    await navigator.clipboard.writeText(link.value.url)
+    notify('Link kopiert.', 'info')
+  } catch {
+    // No clipboard access (e.g. plain http): select it so it can be copied by hand.
+    linkInput.value?.select()
+  }
 }
 const removing = ref<User | null>(null)
 function confirmRemove() {
@@ -124,12 +147,20 @@ function confirmRemove() {
         <div v-if="withLogin" class="field">
           <label for="uf-email">E-Mail für die Anmeldung</label>
           <input id="uf-email" v-model="form.email" type="email" class="input" required placeholder="name@example.org">
-          <span class="muted small">Den Link zum Passwort-Setzen bekommt {{ form.name.trim() || 'die Person' }} per E-Mail.</span>
+          <span class="muted small">Nur der Anmeldename – die App verschickt keine E-Mails. Den Link zum Passwort-Setzen gibst du {{ form.name.trim() || 'der Person' }} selbst weiter.</span>
+        </div>
+        <div v-if="link && editing !== 'new' && link.userId === editing.id" class="field">
+          <label for="uf-link">Link zum Passwort-Setzen</label>
+          <div class="link-row">
+            <input id="uf-link" ref="linkInput" class="input" readonly :value="link.url" @focus="linkInput?.select()">
+            <button type="button" class="btn btn-sm" @click="copyLink">Kopieren</button>
+          </div>
+          <span class="muted small">Schick ihn {{ editing.name }}, z. B. per Messenger. Er gilt einmal und 7 Tage lang; ein neuer Link ersetzt ihn.</span>
         </div>
       </form>
       <template v-if="editing !== 'new' && needsPassword(editing) && editing.email" #meta>
-        <button type="button" class="link-btn" :disabled="linkSending" @click="sendLink(editing)">
-          <AppIcon name="shield" :size="15" />{{ linkSending ? 'Sendet …' : 'Link zum Passwort-Setzen senden' }}
+        <button type="button" class="link-btn" :disabled="linkBusy" @click="makeLink(editing)">
+          <AppIcon name="shield" :size="15" />{{ linkBusy ? 'Erstellt …' : link?.userId === editing.id ? 'Neuen Link erstellen' : 'Link zum Passwort-Setzen erstellen' }}
         </button>
       </template>
       <template #footer>
@@ -180,4 +211,7 @@ function confirmRemove() {
 .role > span { display: flex; flex-direction: column; gap: 2px; }
 .role .muted { font-size: 12.5px; line-height: 1.4; }
 .small { font-size: 12.5px; }
+.link-row { display: flex; gap: 8px; align-items: center; }
+.link-row .input { flex: 1; min-width: 0; font-size: 13px; }
+.link-row .btn { height: 44px; flex-shrink: 0; }
 </style>

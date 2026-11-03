@@ -1,7 +1,7 @@
-name: Deploy server
+name: Deploy to VPS
 
-# Builds the backend image, pushes it to GHCR, copies server/ to the VPS and restarts Compose.
-# Runs only when something under server/ changed.
+# Builds the app image (backend + frontend), pushes it to GHCR, copies server/ to the VPS and restarts Compose.
+# Runs when the server or the frontend changed. GitHub Pages keeps the demo (deploy.yml).
 # Secret DEPLOY_SSH_KEY: private key of the "deploy" user (see server/setup/deploy-user.sh).
 
 on:
@@ -9,6 +9,14 @@ on:
     branches: [main]
     paths:
       - 'server/**'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - '.dockerignore'
       - '.github/workflows/deploy-server.yml'
   workflow_dispatch:
 
@@ -38,7 +46,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
-          context: server
+          context: .
+          file: server/Dockerfile
           push: true
           tags: |
             ${{ env.IMAGE }}:latest
@@ -70,3 +79,4 @@ jobs:
         run: |
           sleep 3
           curl --fail --silent https://wartung.nuno-ferreira.de/api/health
+          curl --fail --silent https://wartung.nuno-ferreira.de/ | grep -q '<div id="app">'

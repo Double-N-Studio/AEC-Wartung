@@ -1,0 +1,9 @@
+# Build context of server/Dockerfile is the repo root.
+**/node_modules
+**/dist
+server/data
+.env
+.env.*
+.git
+.github
+.claude

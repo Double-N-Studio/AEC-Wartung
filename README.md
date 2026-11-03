@@ -31,7 +31,7 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 
 **Verwaltung** (Admin): Saison (neue Saison aus Kanban-Vorlagen starten, frühere Saisons nachlesen), Kanban-Vorlagen, Flugzeuge (anlegen, bearbeiten, ausmustern), Konten mit Rollen
 
-**Rollen und Anmeldung:** Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (ohne Passwort), damit jede Änderung einen Namen hat. Werkstattleiter, Admins und das Werkstatt-Tablet melden sich mit E-Mail und Passwort an: Werkstattleiter und Admins zeichnen ab und planen die Tage (auf den Flugzeugseiten gleiche Rechte); nur Admins haben die Verwaltung (Konten, Saison, Flugzeuge, Vorlagen) und ändern Werkstattzeiträume. Ohne Namen kann man alles ansehen, aber nichts ändern. In der Demo gilt jedes Passwort; die Testkonten stehen im Anmelde-Popup.
+**Rollen und Anmeldung:** Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (ohne Passwort), damit jede Änderung einen Namen hat. Werkstattleiter, Admins und das Werkstatt-Tablet melden sich mit E-Mail und Passwort an: Werkstattleiter und Admins zeichnen ab und planen die Tage (auf den Flugzeugseiten gleiche Rechte); nur Admins haben die Verwaltung (Konten, Saison, Flugzeuge, Vorlagen) und ändern Werkstattzeiträume. Ohne Namen kann man alles ansehen, aber nichts ändern. Die E-Mail ist nur der Anmeldename, die App verschickt keine E-Mails: Den Link zum Passwort-Setzen erstellt ein Admin in der Verwaltung und gibt ihn selbst weiter. In der Demo gilt jedes Passwort; die Testkonten stehen im Anmelde-Popup.
 
 **Speichern:** Anzeige „Gespeichert“ / „Speichert …“ / „Offline · n Änderungen warten“; ohne Netz arbeitet man weiter, die Änderungen gehen beim Wiederverbinden raus. Ändert jemand gleichzeitig dieselbe Karte, warnt das Formular. In der Demo: „Offline testen“ unten links, zweiter Tab als zweites Gerät.
 
@@ -59,6 +59,7 @@ Die Seite läuft dann unter http://localhost:5173.
 Jeder Push auf `main` baut die Seite über GitHub Actions (`.github/workflows/deploy.yml`) und veröffentlicht sie auf GitHub Pages.
 Einmalig im Repository unter *Settings → Pages* als Quelle „GitHub Actions“ auswählen.
 Durch Hash-Routing und relative Pfade funktioniert die Seite unter jedem Repo-Namen.
+Das ist die Demo mit Beispieldaten. Die echte App (mit Backend) liefert der Server auf dem Hetzner-VPS aus, siehe `server/README.md`.
 
 ## Technik
 

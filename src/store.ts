@@ -6,7 +6,7 @@ import { needsPassword, SYSTEM, TABLET } from './mock/people'
 import { addDays, daysBetween, fmtDay, now, today } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 import { newId } from './utils/id'
-import { connect, discardQueue, isOffline, refresh } from './sync'
+import { connect, discardQueue, isOffline, refresh, whenSaved } from './sync'
 
 /**
  * Shared state. Actions only change it synchronously; sync.ts works out what changed
@@ -106,13 +106,19 @@ export function logout() {
   })
 }
 
-/** Admin sends a special account the link to set a password (again). Throws without a connection. */
-export async function sendPasswordLink(user: User) {
+/**
+ * Admin creates the link with which a special account sets its password, to pass on (no e-mails);
+ * earlier links of the account stop working. Throws without a connection.
+ */
+export async function passwordLink(user: User) {
   requireOnline()
-  await backend.sendPasswordLink(user.id)
+  // The server must know the account first – e.g. right after creating it.
+  if (!(await whenSaved())) throw new Error('Konto noch nicht gespeichert')
+  const token = await backend.passwordToken(user.id)
+  return `${location.origin}${location.pathname}#/passwort?token=${encodeURIComponent(token)}`
 }
 
-/** Set the password via the link from the e-mail. false: link expired or already used. Throws without a connection. */
+/** Set the password via the link from the admin. false: link expired or already used. Throws without a connection. */
 export async function setPassword(token: string, password: string) {
   requireOnline()
   return backend.setPassword(token, password)
@@ -382,11 +388,12 @@ export function updateAircraft(a: Aircraft, input: AircraftInput) {
   for (const o of state.orders) if (o.forWhat === oldType) o.forWhat = a.type
 }
 
-/** For aircraft created by mistake: also deletes Kanban cards, defects, deadlines and documents. Otherwise retire. */
+/**
+ * For aircraft created by mistake: also deletes Kanban cards and documents. Otherwise retire.
+ * Defects and deadlines are deleted by the server (partly from Vereinsflieger, which stays untouched); the device reloads.
+ */
 export function deleteAircraft(a: Aircraft) {
   state.tasks = state.tasks.filter((t) => t.aircraftId !== a.id)
-  state.defects = state.defects.filter((d) => d.aircraftId !== a.id)
-  state.deadlines = state.deadlines.filter((d) => d.aircraftId !== a.id)
   state.documents = state.documents.filter((d) => d.aircraftId !== a.id)
   remove(state.aircraft, a)
 }
