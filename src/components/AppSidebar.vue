@@ -41,7 +41,7 @@ function onReset() {
         v-for="a in activeAircraft()" :key="a.id" :to="`/flugzeug/${a.id}`" class="nav-plane"
         :class="{ active: isAircraftActive(a.id) }" @click="emit('navigate')"
       >
-        <strong>{{ a.type }}</strong><span>{{ a.reg }}</span>
+        <AppIcon name="glider" :size="22" class="plane-icon" />{{ a.type }}
       </RouterLink>
       <span v-if="!activeAircraft().length" class="nav-empty">Noch keine Flugzeuge</span>
     </div>
@@ -85,12 +85,11 @@ function onReset() {
 .nav-item:hover, .nav-plane:hover { background: var(--subtle); color: var(--text); }
 .nav-item.active, .nav-plane.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
 .nav-plane {
-  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 10px;
-  font-size: 14px; color: var(--text); text-decoration: none;
+  display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none;
 }
-.nav-plane strong { font-weight: 600; }
-.nav-plane span { font-size: 13px; color: var(--muted); }
-.nav-plane.active span { color: inherit; }
+.plane-icon { flex-shrink: 0; color: var(--muted); }
+.nav-plane.active .plane-icon { color: inherit; }
 .nav-empty { padding: 0 12px; font-size: 13px; color: var(--muted); }
 .spacer { flex-grow: 1; }
 .bottom { margin-bottom: -12px; }
