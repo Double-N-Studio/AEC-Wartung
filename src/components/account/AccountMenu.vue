@@ -1,22 +1,30 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { currentUser, session, state, switchUser } from '../store'
-import type { User, UserId } from '../types'
-import { ROLE_LABELS } from '../mock/people'
-import AppIcon from './AppIcon.vue'
-import PersonAvatar from './PersonAvatar.vue'
+import { currentUser, logout, needsPassword } from '../../store'
+import { ROLE_LABELS } from '../../mock/people'
+import AppIcon from '../AppIcon.vue'
+import PersonAvatar from '../PersonAvatar.vue'
+import { authDialog } from './authDialog'
 
-/** Konto unten in der Seitenleiste. Im Mockup lässt sich das Testkonto frei wechseln (statt Login). */
+/** Konto unten in der Seitenleiste: Namen eingeben, anmelden oder abmelden. */
 const open = ref(false)
 const root = ref<HTMLElement | null>(null)
 const me = computed(() => currentUser())
-const accounts = computed(() => state.users.filter((u) => !u.removed))
+const special = computed(() => !!me.value && needsPassword(me.value))
+const subline = computed(() => {
+  if (!me.value) return 'Nur ansehen'
+  if (me.value.device) return 'Gerät · angemeldet'
+  return special.value ? `${ROLE_LABELS[me.value.role]} · angemeldet` : 'Mitglied'
+})
 
-function pick(id: UserId | null) {
-  switchUser(id)
+function show(dialog: 'name' | 'login') {
   open.value = false
+  authDialog.value = dialog
 }
-const roleText = (u: User) => (u.device ? `Gerät · ${ROLE_LABELS[u.role]}` : ROLE_LABELS[u.role])
+function signOut() {
+  open.value = false
+  logout()
+}
 
 const onDoc = (e: MouseEvent) => { if (root.value && !root.value.contains(e.target as Node)) open.value = false }
 const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') open.value = false }
@@ -32,31 +40,28 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" class="account">
-    <div v-if="open" class="menu" role="listbox" aria-label="Testkonto wechseln">
-      <span class="menu-label">Testkonto wechseln</span>
-      <button type="button" role="option" class="option" :aria-selected="!me" @click="pick(null)">
-        <span class="icon guest"><AppIcon name="eye" :size="16" /></span>
-        <span class="text"><strong>Nicht angemeldet</strong><span>Nur lesen</span></span>
-        <AppIcon v-if="!me" name="check" :size="16" :stroke="2.6" class="check" />
+    <div v-if="open" class="menu" role="menu" aria-label="Konto">
+      <button v-if="!special" type="button" role="menuitem" class="option" @click="show('name')">
+        <span class="icon"><AppIcon name="user" :size="16" /></span>
+        <span class="text"><strong>{{ me ? 'Name ändern' : 'Namen eingeben' }}</strong><span>Ohne Passwort, für Mitglieder</span></span>
       </button>
-      <button
-        v-for="u in accounts" :key="u.id" type="button" role="option" class="option"
-        :aria-selected="session.userId === u.id" @click="pick(u.id)"
-      >
-        <span v-if="u.device" class="icon"><AppIcon name="tablet" :size="16" /></span>
-        <PersonAvatar v-else :person="u.id" :size="30" />
-        <span class="text"><strong>{{ u.name }}</strong><span>{{ roleText(u) }}</span></span>
-        <AppIcon v-if="session.userId === u.id" name="check" :size="16" :stroke="2.6" class="check" />
+      <button v-if="!me" type="button" role="menuitem" class="option" @click="show('login')">
+        <span class="icon"><AppIcon name="shield" :size="16" /></span>
+        <span class="text"><strong>Anmelden</strong><span>Werkstattleitung, Admin, Tablet</span></span>
+      </button>
+      <button v-if="me" type="button" role="menuitem" class="option" @click="signOut">
+        <span class="icon guest"><AppIcon name="eye" :size="16" /></span>
+        <span class="text"><strong>Abmelden</strong><span>Danach nur ansehen</span></span>
       </button>
     </div>
 
-    <button type="button" class="current" :aria-expanded="open" aria-label="Testkonto wechseln" @click="open = !open">
+    <button type="button" class="current" :aria-expanded="open" aria-haspopup="menu" aria-label="Konto" @click="open = !open">
       <span v-if="!me" class="icon big guest"><AppIcon name="eye" :size="20" :stroke="1.8" /></span>
       <span v-else-if="me.device" class="icon big"><AppIcon name="tablet" :size="20" :stroke="1.8" /></span>
       <PersonAvatar v-else :person="me.id" :size="36" />
       <span class="text">
-        <strong>{{ me?.name ?? 'Nicht angemeldet' }}</strong>
-        <span>{{ me ? ROLE_LABELS[me.role] : 'Nur lesen' }}</span>
+        <strong>{{ me?.name ?? 'Nicht eingetragen' }}</strong>
+        <span>{{ subline }}</span>
       </span>
       <AppIcon name="swap" :size="16" class="swap" />
     </button>
@@ -86,13 +91,10 @@ onBeforeUnmount(() => {
   max-height: 70vh; overflow-y: auto; padding: 6px;
   background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: var(--shadow-pop);
 }
-.menu-label { display: block; padding: 6px 8px 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .option {
   width: 100%; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 6px 8px;
   border: 0; border-radius: 8px; background: transparent; text-align: left;
 }
 .option:hover { background: var(--subtle); }
-.option[aria-selected='true'] { background: var(--accent-tint); }
 .option .text strong { font-size: 13.5px; }
-.check { color: var(--accent); flex-shrink: 0; }
 </style>

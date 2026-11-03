@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { can, resetDemo, state } from '../store'
-import AccountSwitcher from './AccountSwitcher.vue'
+import AccountMenu from './account/AccountMenu.vue'
 import AppIcon from './AppIcon.vue'
 import logoUrl from '../assets/aec-logo.png'
 
@@ -55,7 +55,7 @@ function onReset() {
         <AppIcon name="help" :size="20" :stroke="1.8" /> FAQ
       </RouterLink>
     </div>
-    <AccountSwitcher />
+    <AccountMenu />
     <button type="button" class="reset" @click="onReset"><AppIcon name="refresh" :size="14" /> Demo zurücksetzen</button>
   </nav>
 </template>

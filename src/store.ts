@@ -5,8 +5,8 @@ import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
 import { addDays, fmtDate, fmtDay, NOW, TODAY } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v9'
-const SESSION_KEY = 'aec-winterwartung-konto'
+const STORAGE_KEY = 'aec-winterwartung-demo-v12'
+const SESSION_KEY = 'aec-winterwartung-sitzung'
 
 function load(): AppState {
   try {
@@ -34,29 +34,69 @@ export function resetDemo() {
 
 /* ---------- Konto und Rechte ---------- */
 
-function loadSession(): UserId | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY)
-    if (raw !== null) return JSON.parse(raw) as UserId | null
-  } catch {
-    // Ohne localStorage startet die Demo am Werkstatt-Tablet.
-  }
-  return TABLET
+/**
+ * Mitglieder geben nur Vor- und Nachnamen ein (ohne Passwort), Sonderkonten (Werkstattleitung, Admin, Tablet) melden sich an.
+ * chosen: Auswahl schon einmal getroffen – sonst fragt die App beim Öffnen „Wer bist du?“.
+ */
+interface Session {
+  userId: UserId | null
+  auth: 'name' | 'password' | null
+  chosen: boolean
 }
 
-/** Angemeldetes Konto dieses Browsers; null = nicht angemeldet. Im Mockup frei umschaltbar. */
-export const session = reactive<{ userId: UserId | null }>({ userId: loadSession() })
-
-watch(() => session.userId, (id) => {
+function loadSession(): Session {
   try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(id))
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (raw !== null) return JSON.parse(raw) as Session
+  } catch {
+    // Ohne localStorage fragt die App bei jedem Öffnen nach dem Namen.
+  }
+  return { userId: null, auth: null, chosen: false }
+}
+
+/** Wer in diesem Browser eingetragen bzw. angemeldet ist. */
+export const session = reactive<Session>(loadSession())
+
+watch(session, (value) => {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(value))
   } catch {
     // Speichern ist optional.
   }
-})
+}, { deep: true })
 
-export function switchUser(id: UserId | null) {
-  session.userId = id
+/** Sonderkonten brauchen ein Passwort, Mitglieder nicht. */
+export const needsPassword = (u: User) => !!u.device || u.role !== 'user'
+
+/** Mitglied ohne Passwort im Browser eintragen. */
+function chooseName(id: UserId) {
+  Object.assign(session, { userId: id, auth: 'name', chosen: true })
+}
+
+/**
+ * Mitglied gibt Vor- und Nachnamen ein (keine Namensliste). Gleicher Name = dasselbe Konto, sonst wird eines angelegt.
+ * 'login': Der Name gehört einem Sonderkonto, das sich mit Passwort anmelden muss.
+ */
+export function enterName(first: string, last: string): 'ok' | 'login' {
+  const name = `${first.trim()} ${last.trim()}`.replace(/\s+/g, ' ')
+  const same = state.users.find((u) => !u.removed && u.name.toLowerCase() === name.toLowerCase())
+  if (same && needsPassword(same)) return 'login'
+  chooseName(same?.id ?? createUser(name, 'user').id)
+  return 'ok'
+}
+
+/** Anmeldung für Sonderkonten. Im Mockup wird das Passwort nicht geprüft. */
+export function login(email: string, password: string) {
+  const mail = email.trim().toLowerCase()
+  const u = state.users.find((x) => !x.removed && needsPassword(x) && x.email?.toLowerCase() === mail)
+  if (!u || !password) return false
+  Object.assign(session, { userId: u.id, auth: 'password', chosen: true })
+  return true
+}
+
+/** Abmelden bzw. Namen vergessen – danach nur ansehen. */
+export function logout() {
+  Object.assign(session, { userId: null, auth: null, chosen: true })
 }
 
 export const userById = (id: UserId | null | undefined) => state.users.find((u) => u.id === id)
@@ -66,10 +106,11 @@ export function userName(id: UserId | null | undefined) {
   return userById(id)?.name ?? 'Unbekannt'
 }
 
-/** Angemeldetes Konto, solange es nicht entfernt wurde. */
+/** Eingetragenes Konto, solange es nicht entfernt wurde. Sonderkonten zählen nur nach der Anmeldung. */
 export function currentUser(): User | undefined {
   const u = userById(session.userId)
-  return u && !u.removed ? u : undefined
+  if (!u || u.removed) return undefined
+  return needsPassword(u) && session.auth !== 'password' ? undefined : u
 }
 
 /** Personen zur Auswahl (ohne Geräte und entfernte Konten). */
@@ -95,7 +136,7 @@ export function can(permission: Permission) {
   return !!u && PERMISSIONS[u.role].includes(permission)
 }
 
-const actor = () => session.userId ?? TABLET
+const actor = () => currentUser()?.id ?? TABLET
 
 /* ---------- Allgemein ---------- */
 
@@ -169,14 +210,20 @@ export function setDayClosed(date: string, closed: boolean, reason = '') {
 
 /* ---------- Konten ---------- */
 
-export function createUser(name: string, role: Role) {
+/** email: Anmeldename der Sonderkonten; Mitglieder brauchen keine. */
+export function createUser(name: string, role: Role, email = ''): User {
   const [bg, fg] = AVATAR_COLORS[state.users.length % AVATAR_COLORS.length]
-  state.users.push({ id: nextId('u'), name: name.trim(), role, bg, fg })
+  const user: User = { id: nextId('u'), name: name.trim(), role, bg, fg }
+  if (role !== 'user') user.email = email.trim()
+  state.users.push(user)
+  return user
 }
 
-export function updateUser(user: User, name: string, role: Role) {
+export function updateUser(user: User, name: string, role: Role, email = '') {
   user.name = name.trim()
   user.role = role
+  if (needsPassword(user)) user.email = email.trim()
+  else delete user.email
 }
 
 /** Entfernte Konten bleiben gespeichert, damit Namen im Verlauf erhalten bleiben. */

@@ -48,7 +48,7 @@ public/docs/                    Vorschaubilder der Dokumente
 
 - **Sprache:** Oberfläche, Kommentare und Commit-Nachrichten auf Deutsch; Bezeichner im Code auf Englisch.
 - **Zustand nur über den Store ändern.** Neue Aktionen gehören in `store.ts`, nicht in Komponenten – auch kein `v-model` direkt auf Store-Objekte. Änderungen an Kanban-Karten, Mängeln, Bestellungen, Artikeln und Werkstatttagen schreiben einen Eintrag in `history`; Freitext (Kommentare) wird beim Verlassen des Felds gespeichert, nicht pro Tastendruck.
-- **Rollen:** Admin, Werkstattleiter, Mitglied, nicht angemeldet. Rechte nur über `can('edit' | 'lead' | 'admin')` aus dem Store prüfen, nie über die Rolle direkt. `edit` = alle Angemeldeten, `lead` = abzeichnen und Werkstatttage planen, `admin` = Konten, Saison, Werkstattzeiträume. Admin und Werkstattleiter haben vorerst dieselben Rechte. Ohne Recht wird ein Bedienelement ausgeblendet oder als Text angezeigt, nicht nur deaktiviert.
+- **Rollen:** Admin, Werkstattleiter, Mitglied, nicht eingetragen (nur ansehen). Mitglieder geben nur Vor- und Nachnamen ein (`enterName`, ohne Passwort; gleicher Name = dasselbe Konto); Sonderkonten (Admin, Werkstattleiter, Werkstatt-Tablet, siehe `needsPassword`) melden sich mit E-Mail und Passwort an (`login`). `currentUser()` liefert ein Sonderkonto nur nach der Anmeldung. Rechte nur über `can('edit' | 'lead' | 'admin')` aus dem Store prüfen, nie über die Rolle direkt. `edit` = alle Angemeldeten, `lead` = abzeichnen und Werkstatttage planen, `admin` = Konten, Saison, Werkstattzeiträume. Admin und Werkstattleiter haben vorerst dieselben Rechte. Ohne Recht wird ein Bedienelement ausgeblendet oder als Text angezeigt, nicht nur deaktiviert.
 - **Personen sind Konto-IDs** (`UserId`) in allen Feldern (`who`, `doneBy`, `owner` …); angezeigt wird über `userName()`. Entfernte Konten bleiben mit `removed` erhalten, damit der Verlauf lesbar bleibt. `SYSTEM` steht für Einträge aus Vereinsflieger.
 - **Bearbeiten/Löschen** im Popup-Kopf über `#tools` (Stift, Mülleimer), Löschen immer mit `ConfirmModal`. Formulare zum Anlegen und Bearbeiten sind dieselbe Komponente (`TaskFormModal`, `DefectFormModal`, `ItemFormModal`).
 - **Datenmodell geändert?** `STORAGE_KEY` in `store.ts` hochzählen, sonst laden Browser alte, inkompatible Demo-Daten.
@@ -58,12 +58,13 @@ public/docs/                    Vorschaubilder der Dokumente
 - **Farben und Abstände** über die CSS-Variablen aus `base.css`, keine neuen Hex-Werte in Komponenten, wenn es ein Token gibt.
 - **Responsiv:** Breakpoints `900px` (Seitenleiste wird Menü, Tabellen werden Karten) und `640px` (Handy). Neue Seiten in beiden Breiten prüfen.
 - **Statische Assets:** Bilder in Templates per `import` aus `src/assets` einbinden; dynamische Pfade (z. B. Dokument-Vorschauen) relativ ohne führenden `/`, weil `base: './'` gilt.
-- **Bewusst ohne Funktion** (führen „ins Nichts“): Herunterladen, Foto aufnehmen (nur Platzhalter), Datei-Upload (simuliert). Statt Login wechselt man unten links das Testkonto (gespeichert unter eigenem localStorage-Schlüssel, übersteht „Demo zurücksetzen“).
+- **Bewusst ohne Funktion** (führen „ins Nichts“): Herunterladen, Foto aufnehmen (nur Platzhalter), Datei-Upload (simuliert). Anmeldung prüft im Mockup kein Passwort; das Login-Popup bietet die Demo-Konten zum Antippen an. Die Sitzung liegt unter eigenem localStorage-Schlüssel und übersteht „Demo zurücksetzen“.
 
 ## Produkt-Entscheidungen aus dem Feedback
 
 - Startseite ist der Zeitplan; gearbeitet wird nur samstags.
 - Der Reiter heißt „Kanban“, ein Eintrag „Kanban-Karte“ (auch bei Mängeln/Befunden); im Code bleibt es `Task`.
+- Konten: Der Link geht nur an Vereinsmitglieder, daher kein Vereinscode. Jede Aktion braucht einen Namen; Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (Pflicht, keine Namensliste), nur Sonderkonten haben ein Passwort. Was am Tablet passiert, steht als „Werkstatt-Tablet“ im Verlauf; die App ermuntert, das eigene Handy zu nehmen.
 - Keine Helfer-Zuteilung bei Arbeitspaketen; wer startet, ergibt sich aus dem angemeldeten Konto und steht nur im Verlauf. Das Werkstatt-Tablet ist ein eigenes Konto (Gerät, Rolle Werkstattleiter); Namen der Helfer werden dort nicht abgefragt.
 - Abzeichnen: als angemeldete Person, am Werkstatt-Tablet als Werkstattleitung des Tages. Abgezeichnete Karten sind gesperrt, bis die Werkstattleitung die Abzeichnung zurücknimmt.
 - Eine erledigte Kanban-Karte schließt den verknüpften Mangel/Befund nicht automatisch.
@@ -81,6 +82,6 @@ public/docs/                    Vorschaubilder der Dokumente
 - Neue Bestellung über den „+“-Button auf der Karte „Muss bestellt werden“ (gleiches Design wie im Kanban), nicht oben rechts auf der Seite.
 - Bestellliste: Bei ähnlichem Namen schlägt das Formular dezent „Meinst du …?“ (Textlink unter dem Feld) einen Inventur-Artikel vor, damit die Bestellung dem Artikel zugeordnet wird.
 - Tages-Popup im Kalender: Werkstattleitung über den Stift neben dem Namen ändern, dazu ein Kommentarfeld pro Tag. Keine „Abnahme“-Einträge und keine Saisonstart-Tage im Kalender.
-- Flugzeug-Seite: Kopf nur mit Typ, Kennzeichen und Pate; der Fortschritt (x von y erledigt) steht im Saisonplan (Gantt-Balken und Popover).
+- Flugzeug-Seite: Kopf nur mit Typ, Kennzeichen und Pate (`manager`, Konto-ID); der Fortschritt (x von y erledigt) steht im Saisonplan (Gantt-Balken und Popover).
 - Checkliste steuert den Status: erster Haken startet, alle Haken melden erledigt, ein entfernter Haken nimmt „Erledigt“ zurück – außer nach dem Abzeichnen.
 - Beispieldaten: abgeschlossene Flugzeuge (ASK21, ASK23, Discus-2b) komplett erledigt, ASG32 und LS8 gemischt, Arcus-T noch nichts erledigt (`initialState()`).

@@ -123,7 +123,7 @@ function applyLs8(t: Task) {
   if (id === 'an1') finishAt(t, 'LE', `${TODAY}T10:10`, 'MA')
   else if (id === 'hl1') finishAt(t, 'LO', `${TODAY}T10:55`)
   else if (id === 'ru1') { startAt(t, 'LE', `${TODAY}T10:30`); tick(t, 2) }
-  else if (id === 'fl1') startAt(t, 'NU', `${TODAY}T10:40`)
+  else if (id === 'fl1') startAt(t, 'JO', `${TODAY}T10:40`)
   else if (id === 'an4') startAt(t, 'LE', `${TODAY}T11:05`)
   else if (id === 'fl2') startAt(t, 'JO', `${TODAY}T11:20`)
 }
@@ -137,12 +137,12 @@ function baseState(): AppState {
     season: { label: '2026/27', start: '2026-11-07', end: '2027-03-27' },
 
     aircraft: [
-      { id: 'ask21', type: 'ASK21', reg: 'D-5071', hasDetails: true, sponsor: 'Matze', start: '2026-11-07', end: '2026-12-05' },
-      { id: 'ask23', type: 'ASK23', reg: 'D-6987', hasDetails: true, sponsor: 'Ello', start: '2026-11-14', end: '2026-12-12' },
-      { id: ASG, type: 'ASG32', reg: 'D-3362', hasDetails: true, serial: '32031', sponsor: 'Lorenz D.', start: '2027-01-09', end: '2027-01-30' },
-      { id: 'arcus', type: 'Arcus-T', reg: 'D-KSBN', hasDetails: true, sponsor: 'Huddel', start: '2027-02-06', end: '2027-03-13' },
-      { id: 'discus', type: 'Discus-2b', reg: 'D-9596', hasDetails: true, sponsor: 'Oli', start: '2026-12-05', end: '2027-01-09' },
-      { id: 'ls8', type: 'LS8', reg: 'D-0169', hasDetails: true, sponsor: 'Nuno', start: '2027-01-16', end: '2027-02-13' },
+      { id: 'ask21', type: 'ASK21', reg: 'D-5071', hasDetails: true, manager: 'MA', start: '2026-11-07', end: '2026-12-05' },
+      { id: 'ask23', type: 'ASK23', reg: 'D-6987', hasDetails: true, start: '2026-11-14', end: '2026-12-12' },
+      { id: ASG, type: 'ASG32', reg: 'D-3362', hasDetails: true, serial: '32031', manager: 'LO', start: '2027-01-09', end: '2027-01-30' },
+      { id: 'arcus', type: 'Arcus-T', reg: 'D-KSBN', hasDetails: true, start: '2027-02-06', end: '2027-03-13' },
+      { id: 'discus', type: 'Discus-2b', reg: 'D-9596', hasDetails: true, start: '2026-12-05', end: '2027-01-09' },
+      { id: 'ls8', type: 'LS8', reg: 'D-0169', hasDetails: true, start: '2027-01-16', end: '2027-02-13' },
     ],
 
     schedule: {
@@ -157,7 +157,7 @@ function baseState(): AppState {
       '2027-01-02': { closed: true, reason: 'Neujahr' },
       '2027-01-09': { leader: 'HE' },
       '2027-01-16': { leader: 'MA' },
-      '2027-01-23': { leader: 'LO', comment: 'Lorenz übernimmt Werkstattleitung. Einfache Aufgaben in Kanban abarbeiten bitte.\n\n– Matze', history: [{ text: 'Kommentar geändert', who: 'MA', at: '2027-01-14T19:30' }] },
+      '2027-01-23': { leader: 'LO', comment: 'Lorenz übernimmt Werkstattleitung. Einfache Aufgaben in Kanban abarbeiten bitte.\n\n– Matthias', history: [{ text: 'Kommentar geändert', who: 'MA', at: '2027-01-14T19:30' }] },
       '2027-01-30': { leader: 'HE' },
       '2027-02-06': { leader: 'MA' },
       '2027-02-13': { leader: null },
@@ -268,9 +268,9 @@ function baseState(): AppState {
 
     deadlines: [
       { id: 'f1', aircraftId: ASG, title: 'TÜV', device: 'Transportanhänger', deviceInfo: 'Kennzeichen FB-OM 320', contact: 'Segelflugreferent', due: '2027-01-31' },
-      { id: 'f2', aircraftId: ASG, title: 'Lufttüchtigkeitsprüfung', device: 'Luftfahrzeug', deviceInfo: 'Werknummer 32031', contact: 'Segelflugreferent', delegate: 'Matze', due: '2027-03-06' },
+      { id: 'f2', aircraftId: ASG, title: 'Lufttüchtigkeitsprüfung', device: 'Luftfahrzeug', deviceInfo: 'Werknummer 32031', contact: 'Segelflugreferent', delegate: 'Matthias Greiner', due: '2027-03-06' },
       { id: 'f3', aircraftId: ASG, title: 'Ablauf Gurte', device: 'Luftfahrzeug', deviceInfo: 'Werknummer 32031', contact: 'Segelflugreferent', due: '2028-10-24' },
-      { id: 'f4', aircraftId: ASG, title: 'Ablauf Kupplungen', device: 'Luftfahrzeug', deviceInfo: 'Werknummer 32031', contact: 'Segelflugreferent', delegate: 'Matze', startsLeft: 1199 },
+      { id: 'f4', aircraftId: ASG, title: 'Ablauf Kupplungen', device: 'Luftfahrzeug', deviceInfo: 'Werknummer 32031', contact: 'Segelflugreferent', delegate: 'Matthias Greiner', startsLeft: 1199 },
     ],
 
     documents: [
@@ -290,7 +290,7 @@ function baseState(): AppState {
       { id: 'v7', kind: 'vs', name: 'Härter', location: 'Gefahrstoffschrank, Mitte neben dem Lack', mode: 'flag', qty: 2, unit: ['', ''], history: [] },
       { id: 'v8', kind: 'vs', name: 'Politurfinish', location: 'Regal A, Fach 2', mode: 'flag', qty: 2, unit: ['', ''], history: [] },
       { id: 'v9', kind: 'vs', name: 'Polieraufsätze', location: 'Werkbank rechts, Schublade 1', mode: 'count', qty: 4, unit: ['Stk.', 'Stk.'], history: [] },
-      { id: 'e1', kind: 'et', name: 'Reifenschlauch 4.00-4', location: 'Ersatzteilschrank, Fach 3', mode: 'count', qty: 0, unit: ['Stk.', 'Stk.'], fits: 'ASK21, ASK23, LS8', history: [{ text: 'Gezählt: 0 Stk.', who: 'NU', at: '2027-01-16' }] },
+      { id: 'e1', kind: 'et', name: 'Reifenschlauch 4.00-4', location: 'Ersatzteilschrank, Fach 3', mode: 'count', qty: 0, unit: ['Stk.', 'Stk.'], fits: 'ASK21, ASK23, LS8', history: [{ text: 'Gezählt: 0 Stk.', who: 'LO', at: '2027-01-16' }] },
       { id: 'e2', kind: 'et', name: 'Bremsbeläge', location: 'Ersatzteilschrank, Fach 5', mode: 'count', qty: 0, unit: ['Satz', 'Satz'], fits: 'ASG32', history: [{ text: 'Gezählt: 0 Satz', who: 'HE', at: '2027-01-09' }] },
       { id: 'e3', kind: 'et', name: 'Dichtungssatz Wasserballast', location: 'Ersatzteilschrank, Fach 5', mode: 'count', qty: 0, unit: ['Satz', 'Satz'], fits: 'ASG32', history: [{ text: 'Gezählt: 0 Satz', who: 'HE', at: '2027-01-09' }] },
       { id: 'e4', kind: 'et', name: 'Ölfilter', location: 'Motorschrank', mode: 'count', qty: 2, unit: ['Stk.', 'Stk.'], fits: 'Arcus-T', history: [] },
@@ -304,7 +304,7 @@ function baseState(): AppState {
     orders: [
       { id: 'o1', itemId: 'v1', name: 'Waschbenzin', forWhat: 'Lager', state: 'list', reportedBy: 'HE', reportedAt: '2027-01-16', comment: '2 Kanister à 5 l. Nur im Gefahrstoffschrank lagern.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'HE', at: '2027-01-16' }] },
       { id: 'o2', name: 'Schleifpapier P800', forWhat: 'Lager', state: 'list', reportedBy: TABLET, reportedAt: '2027-01-16', comment: '50 Bogen, nass. Gerne gleich P1000 mitbestellen.', history: [{ text: 'Auf Bestellliste gesetzt', who: TABLET, at: '2027-01-16' }] },
-      { id: 'o3', itemId: 'e1', name: 'Reifenschlauch 4.00-4', forWhat: 'LS8', state: 'list', reportedBy: 'NU', reportedAt: '2027-01-16', comment: '1 Stück mit gewinkeltem Ventil.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'NU', at: '2027-01-16' }] },
+      { id: 'o3', itemId: 'e1', name: 'Reifenschlauch 4.00-4', forWhat: 'LS8', state: 'list', reportedBy: 'LO', reportedAt: '2027-01-16', comment: '1 Stück mit gewinkeltem Ventil.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'LO', at: '2027-01-16' }] },
       { id: 'o4', itemId: 'e3', name: 'Dichtungssatz Wasserballast', forWhat: 'ASG32', state: 'ordered', reportedBy: 'HE', reportedAt: '2027-01-09', delivery: '2027-01-20', comment: '1 Satz, bestellt am 12.01. von Heinrich.', history: [{ text: 'Bestellt', who: 'HE', at: '2027-01-12' }, { text: 'Auf Bestellliste gesetzt', who: 'HE', at: '2027-01-09' }] },
       { id: 'o5', itemId: 'e2', name: 'Bremsbeläge', forWhat: 'ASG32', state: 'ordered', reportedBy: 'HE', reportedAt: '2027-01-09', delivery: '2027-01-22', comment: '1 Satz, bestellt am 13.01. von Heinrich.', history: [{ text: 'Bestellt', who: 'HE', at: '2027-01-13' }, { text: 'Auf Bestellliste gesetzt', who: 'HE', at: '2027-01-09' }] },
     ],

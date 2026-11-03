@@ -11,24 +11,26 @@ import PersonAvatar from '../components/PersonAvatar.vue'
 
 const ROLES: Role[] = ['admin', 'wl', 'user']
 const ROLE_TEXT: Record<Role, string> = {
-  admin: 'Alle Rechte, auch Konten, Saison und Werkstattzeiträume.',
-  wl: 'Abzeichnen, Werkstatttage planen. Vorerst dieselben Rechte wie Admin.',
-  user: 'Karten bearbeiten, Mängel erfassen, zählen und bestellen.',
+  admin: 'Alle Rechte, auch Konten, Saison und Werkstattzeiträume. Meldet sich mit Passwort an.',
+  wl: 'Abzeichnen, Werkstatttage planen. Vorerst dieselben Rechte wie Admin. Meldet sich mit Passwort an.',
+  user: 'Karten bearbeiten, Mängel erfassen, zählen und bestellen. Gibt nur den Namen ein, kein Passwort.',
 }
 
 const accounts = computed(() => state.users.filter((u) => !u.removed))
 
 /* ---------- Konto anlegen / bearbeiten ---------- */
 const editing = ref<User | 'new' | null>(null)
-const form = reactive({ name: '', role: 'user' as Role })
+const form = reactive({ name: '', role: 'user' as Role, email: '' })
 function openUser(u: User | 'new') {
-  Object.assign(form, u === 'new' ? { name: '', role: 'user' } : { name: u.name, role: u.role })
+  Object.assign(form, u === 'new' ? { name: '', role: 'user', email: '' } : { name: u.name, role: u.role, email: u.email ?? '' })
   editing.value = u
 }
+// Werkstattleitung, Admins und Geräte melden sich mit E-Mail und Passwort an.
+const withLogin = computed(() => form.role !== 'user' || (editing.value !== 'new' && !!editing.value?.device))
 function saveUser() {
-  if (!form.name.trim()) return
-  if (editing.value === 'new') createUser(form.name, form.role)
-  else if (editing.value) updateUser(editing.value, form.name, form.role)
+  if (!form.name.trim() || (withLogin.value && !form.email.trim())) return
+  if (editing.value === 'new') createUser(form.name, form.role, form.email)
+  else if (editing.value) updateUser(editing.value, form.name, form.role, form.email)
   editing.value = null
 }
 const editingSelf = computed(() => editing.value !== 'new' && editing.value?.id === currentUser()?.id)
@@ -63,7 +65,7 @@ function saveSeason() {
   <div class="page">
     <header>
       <h1 class="page-title">Verwaltung</h1>
-      <p class="page-sub">Konten und Saison. Die Werkstattzeiträume der Flugzeuge änderst du im Zeitplan über den Stift.</p>
+      <p class="page-sub">Konten und Saison. Mitglieder tragen sich selbst mit Vor- und Nachnamen ein; Werkstattleitung, Admins und das Tablet melden sich mit Passwort an. Die Werkstattzeiträume der Flugzeuge änderst du im Zeitplan über den Stift.</p>
     </header>
 
     <p v-if="!can('admin')" class="card denied">Dieser Bereich ist nur für Admins.</p>
@@ -93,7 +95,7 @@ function saveSeason() {
               <PersonAvatar v-else :person="u.id" :size="36" />
               <span class="who">
                 <strong>{{ u.name }}<span v-if="u.id === currentUser()?.id" class="pill pill-gray">Du</span></strong>
-                <span class="muted">{{ u.device ? 'Gerät, z. B. in der Werkstatt' : 'Person' }}</span>
+                <span class="muted">{{ u.device ? 'Gerät, z. B. in der Werkstatt' : 'Person' }} · {{ u.email ?? 'ohne Passwort' }}</span>
               </span>
               <span class="pill" :class="u.role === 'user' ? 'pill-gray' : 'pill-accent-soft'">{{ ROLE_LABELS[u.role] }}</span>
               <AppIcon name="chevronRight" :size="16" class="muted" />
@@ -124,6 +126,11 @@ function saveSeason() {
             </label>
           </div>
           <span v-if="editingSelf" class="muted small">Die eigene Rolle kann nur ein anderer Admin ändern.</span>
+        </div>
+        <div v-if="withLogin" class="field">
+          <label for="uf-email">E-Mail für die Anmeldung</label>
+          <input id="uf-email" v-model="form.email" type="email" class="input" required placeholder="name@example.org">
+          <span class="muted small">Den Link zum Passwort-Setzen bekommt {{ form.name.trim() || 'die Person' }} per E-Mail.</span>
         </div>
       </form>
       <template #footer>

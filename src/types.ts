@@ -8,6 +8,8 @@ export interface User {
   id: UserId
   name: string
   role: Role
+  /** Anmeldename der Sonderkonten (Werkstattleitung, Admin, Tablet); Mitglieder geben nur ihren Namen ein. */
+  email?: string
   /** Geteiltes Gerät wie das Werkstatt-Tablet, keine Person. */
   device?: boolean
   /** Entfernte Konten bleiben für den Verlauf erhalten, tauchen aber in keiner Auswahl mehr auf. */
@@ -30,7 +32,8 @@ export interface Aircraft {
   /** Nur Flugzeuge mit Detailseiten sind verlinkt. */
   hasDetails: boolean
   serial?: string
-  sponsor?: string
+  /** Flugzeugpate (Konto-ID) */
+  manager?: UserId
   /** Werkstattzeitraum, jeweils ein Samstag */
   start: string
   end: string

@@ -16,18 +16,19 @@ export const AVATAR_COLORS: [string, string][] = [
   ['#E0F1F4', '#145F6B'], ['#EEE9DC', '#5E4F1F'], ['#E6E8EC', '#3A4452'], ['#E8E2F6', '#4B3592'],
 ]
 
-const user = (id: string, name: string, role: Role, color: number): User =>
-  ({ id, name, role, bg: AVATAR_COLORS[color][0], fg: AVATAR_COLORS[color][1] })
+const user = (id: string, name: string, role: Role, color: number): User => ({
+  id, name, role, bg: AVATAR_COLORS[color][0], fg: AVATAR_COLORS[color][1],
+  ...(role === 'user' ? {} : { email: `${name.toLowerCase().replace(/ /g, '.')}@example.org` }),
+})
 
-/** Testkonten des Mockups. */
+/** Testkonten des Mockups. Sonderkonten melden sich mit vorname.nachname@example.org und beliebigem Passwort an. */
 export function initialUsers(): User[] {
   return [
-    { ...user(TABLET, 'Werkstatt-Tablet', 'wl', 0), device: true },
-    user('MA', 'Matze', 'wl', 0),
-    user('HE', 'Heinrich', 'wl', 1),
-    user('LO', 'Lorenz', 'wl', 7),
-    user('NU', 'Nuno', 'admin', 7),
-    user('JO', 'Jonas', 'user', 2),
-    user('LE', 'Lena', 'user', 3),
+    { ...user(TABLET, 'Werkstatt-Tablet', 'wl', 0), email: 'werkstatt@example.org', device: true },
+    user('MA', 'Matthias Greiner', 'wl', 0),
+    user('HE', 'Heinrich Hoop', 'wl', 1),
+    user('LO', 'Lorenz Dierschke', 'wl', 7),
+    user('JO', 'Jonas Weber', 'user', 2),
+    user('LE', 'Lena Hoffmann', 'user', 3),
   ]
 }

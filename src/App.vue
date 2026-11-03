@@ -3,12 +3,18 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import AppIcon from './components/AppIcon.vue'
-import { currentUser } from './store'
+import NameModal from './components/account/NameModal.vue'
+import LoginModal from './components/account/LoginModal.vue'
+import { authDialog } from './components/account/authDialog'
+import { currentUser, session } from './store'
 import logoUrl from './assets/aec-logo.png'
 
 const drawerOpen = ref(false)
 const route = useRoute()
 watch(() => route.fullPath, () => { drawerOpen.value = false })
+
+// Beim ersten Besuch nach dem Namen fragen.
+if (!session.chosen) authDialog.value = 'name'
 </script>
 
 <template>
@@ -28,10 +34,17 @@ watch(() => route.fullPath, () => { drawerOpen.value = false })
 
     <main class="content">
       <p v-if="!currentUser()" class="guest-note">
-        <AppIcon name="eye" :size="16" />Nicht angemeldet – du kannst alles ansehen, aber nichts ändern.
+        <AppIcon name="eye" :size="16" /><span>Du siehst alles, kannst aber nichts ändern.</span>
+        <button type="button" class="link-btn" @click="authDialog = 'name'">Namen eingeben</button>
+      </p>
+      <p v-else-if="currentUser()!.device" class="guest-note tablet-note">
+        <AppIcon name="tablet" :size="16" /><span>Am Tablet wird alles als „{{ currentUser()!.name }}“ gespeichert. Mit deinem eigenen Handy steht dein Name dabei.</span>
       </p>
       <RouterView />
     </main>
+
+    <NameModal v-if="authDialog === 'name'" />
+    <LoginModal v-else-if="authDialog === 'login'" />
   </div>
 </template>
 
@@ -44,6 +57,8 @@ watch(() => route.fullPath, () => { drawerOpen.value = false })
   display: flex; align-items: center; gap: 8px; padding: 10px 32px;
   background: var(--gray-soft); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--text-2);
 }
+.guest-note .link-btn { font-size: 13px; white-space: nowrap; }
+.tablet-note { background: var(--accent-tint); border-bottom-color: var(--accent-soft); color: var(--accent-ink); }
 
 @media (max-width: 900px) {
   .shell { flex-direction: column; }

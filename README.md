@@ -29,7 +29,7 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 
 **Verwaltung** (Admin): Konten mit Rollen, Saison
 
-**Rollen:** ohne Login nur lesen; Mitglieder bearbeiten Karten, Befunde, Inventur und Bestellungen; Werkstattleiter (auch das Werkstatt-Tablet) zeichnen zusätzlich ab und planen die Tage; Admins verwalten Konten und Saison. In der Demo wechselt man das Testkonto unten links.
+**Rollen und Anmeldung:** Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (ohne Passwort), damit jede Änderung einen Namen hat. Werkstattleiter, Admins und das Werkstatt-Tablet melden sich mit E-Mail und Passwort an: Werkstattleiter zeichnen ab und planen die Tage, Admins verwalten Konten und Saison. Ohne Namen kann man alles ansehen, aber nichts ändern. In der Demo gilt jedes Passwort; die Testkonten stehen im Anmelde-Popup.
 
 **FAQ** für Neue und Flugschüler
 
@@ -69,6 +69,6 @@ Mehr zur Code-Struktur und zu den Konventionen steht in [CLAUDE.md](CLAUDE.md).
 
 - **Backend** auf einem kleinen VPS bei Hetzner statt Beispieldaten
 - **Anbindung an Vereinsflieger** für Fristen und Mängel
-- **Login** statt Testkonto-Wechsel, Rechte zusätzlich im Backend prüfen
+- **Echte Anmeldung** der Sonderkonten (Passwort, Link zum Passwort-Setzen), Rechte zusätzlich im Backend prüfen
 - **PWA** für die Nutzung am Tablet auch ohne Netz
 - echte Datei-Uploads und Fotos von der Kamera

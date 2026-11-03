@@ -12,7 +12,9 @@ const FAQ = [
   { q: 'Etwas ist leer – was mache ich?', a: 'In der „Inventur“ direkt in der Liste den Bestand auf 0 bzw. „Leer“ oder „Fast leer“ setzen und auf „Auf Bestellliste“ tippen. Dann wird es nachbestellt.' },
   { q: 'Ich habe einen Schaden entdeckt – was nun?', a: 'Sag der Werkstattleitung Bescheid. Sie erfasst den Befund mit Foto im Reiter „Mängel/Befunde“ des Flugzeugs.' },
   { q: 'Wo finde ich Wartungshandbücher und Wägeberichte?', a: 'Beim jeweiligen Flugzeug im Reiter „Dokumente“.' },
-  { q: 'Warum kann ich zu Hause nichts bearbeiten?', a: 'Ohne Login kannst du alles ansehen, aber nichts ändern. Bearbeiten geht am Werkstatt-Tablet oder mit einem eigenen Zugang. Abzeichnen und Werkstatttage planen kann nur die Werkstattleitung.' },
+  { q: 'Wie trage ich mich ein?', a: 'Beim ersten Öffnen gibst du deinen Vor- und Nachnamen ein – ohne Passwort. Dein Handy merkt sich den Namen, und alles, was du änderst, steht damit im Verlauf.' },
+  { q: 'Soll ich das Tablet oder mein Handy nehmen?', a: 'Am besten dein eigenes Handy. Was du am Werkstatt-Tablet einträgst, steht im Verlauf als „Werkstatt-Tablet“, nicht mit deinem Namen.' },
+  { q: 'Wer braucht ein Passwort?', a: 'Nur die Werkstattleitung, Admins und das Werkstatt-Tablet. Sie zeichnen ab, planen die Werkstatttage und verwalten Konten und Saison.' },
 ]
 const LEVEL_TEXT = {
   ein: 'Ohne Vorkenntnisse machbar, z. B. reinigen und polieren.',

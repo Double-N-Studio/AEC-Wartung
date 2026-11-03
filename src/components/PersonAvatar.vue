@@ -5,7 +5,11 @@ import { userById } from '../store'
 
 const props = withDefaults(defineProps<{ person: UserId; size?: number }>(), { size: 28 })
 const u = computed(() => userById(props.person))
-const initials = computed(() => (u.value?.name ?? '?').slice(0, 2).toUpperCase())
+// Vor- und Nachname: je ein Buchstabe, sonst die ersten beiden.
+const initials = computed(() => {
+  const words = (u.value?.name ?? '?').split(' ').filter(Boolean)
+  return (words.length > 1 ? words[0][0] + words[words.length - 1][0] : words[0].slice(0, 2)).toUpperCase()
+})
 </script>
 
 <template>
