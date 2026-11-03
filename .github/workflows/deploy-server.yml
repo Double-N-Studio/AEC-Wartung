@@ -1,6 +1,6 @@
 name: Server ausrollen
 
-# Kopiert server/ auf den VPS und startet das Compose-Projekt neu.
+# Baut das Backend-Image, schiebt es nach GHCR, kopiert server/ auf den VPS und startet Compose neu.
 # Läuft nur, wenn sich unter server/ etwas geändert hat.
 # Secret DEPLOY_SSH_KEY: privater Schlüssel des Benutzers „deploy“ (siehe server/setup/deploy-user.sh).
 
@@ -17,12 +17,37 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  IMAGE: ghcr.io/double-n-studio/aec-wartung-server
   HOST: 178.105.54.205
   # Host-Schlüssel des VPS, damit die Verbindung nicht auf Zuruf vertraut.
   HOST_KEY: '178.105.54.205 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5mKKLBiN5JIwYJc+GPLDc4nyCM5OduuqaYliVTXgvZ'
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: server
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: APP_VERSION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +60,12 @@ jobs:
           printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
 
       - name: Dateien kopieren
-        run: rsync -az --delete --exclude data/ server/ deploy@$HOST:/srv/wartung/
+        run: rsync -az --delete --exclude data/ --exclude node_modules/ --exclude dist/ server/ deploy@$HOST:/srv/wartung/
 
       - name: Container starten
-        run: ssh deploy@$HOST 'cd /srv/wartung && docker compose pull --quiet && docker compose up -d --remove-orphans && docker compose ps'
+        run: ssh deploy@$HOST 'cd /srv/wartung && docker compose pull --quiet && docker compose up -d --remove-orphans && docker compose ps && docker image prune -f >/dev/null'
+
+      - name: Gesundheit prüfen
+        run: |
+          sleep 3
+          curl --fail --silent https://wartung.nuno-ferreira.de/api/health

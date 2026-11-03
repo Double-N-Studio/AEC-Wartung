@@ -1,7 +1,19 @@
 # Server
 
-Backend-Infrastruktur für die Winterwartung. Der Anwendungs-Code kommt, sobald das Frontend steht;
-dieser Ordner enthält vorerst nur, was davon unabhängig ist.
+Backend der Winterwartung: Hono auf Node 24, SQLite über Drizzle. Bisher nur das Grundgerüst mit
+`GET /api/health`; das Datenmodell und die Endpunkte kommen, sobald das Frontend steht.
+
+## Entwickeln
+
+```bash
+cd server
+npm install
+npm run build && npm run dev   # http://localhost:3000/api/health, Datenbank in server/data/
+npm run db:generate            # neue Migration nach Änderungen an src/schema.ts
+```
+
+Migrationen aus `drizzle/` laufen bei jedem Start. Bei Änderungen am Schema immer `db:generate`
+ausführen und die erzeugte Datei mit einchecken.
 
 ## Wo was läuft
 
@@ -18,8 +30,9 @@ Hetzner CX23 „nuno-vps“ (178.105.54.205), geteilt mit anderen Projekten (cam
 
 ## Ausrollen
 
-`.github/workflows/deploy-server.yml` kopiert `server/` per rsync nach `/srv/wartung` und startet
-`docker compose up -d`. Läuft bei Push auf `main`, wenn sich unter `server/` etwas ändert.
+`.github/workflows/deploy-server.yml` baut das Image nach `ghcr.io/double-n-studio/aec-wartung-server`,
+kopiert `server/` per rsync nach `/srv/wartung` und startet `docker compose up -d`. Läuft bei Push
+auf `main`, wenn sich unter `server/` etwas ändert, und prüft zum Schluss `/api/health`.
 
 Einmalige Einrichtung auf dem VPS (als root): `bash server/setup/deploy-user.sh "<öffentlicher Schlüssel>"`,
 der private Schlüssel kommt als Secret `DEPLOY_SSH_KEY` ins Repo.

@@ -1,0 +1,26 @@
+{
+  "name": "aec-wartung-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Backend der Winterwartung (Hono + SQLite)",
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env dist/index.js",
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.16"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.0.0",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^5.9.0"
+  }
+}
