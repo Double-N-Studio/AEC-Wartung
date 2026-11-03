@@ -5,7 +5,7 @@ import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
 import { addDays, daysBetween, fmtDate, fmtDay, NOW, TODAY } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v15'
+const STORAGE_KEY = 'aec-winterwartung-demo-v16'
 const SESSION_KEY = 'aec-winterwartung-sitzung'
 
 function load(): AppState {
@@ -725,9 +725,16 @@ export function deleteItem(item: InventoryItem) {
   remove(state.inventory, item)
 }
 
+/** Händler, Artikelnummer und Link der letzten Bestellung dieses Artikels übernehmen. */
+function lastOrderDetails(itemId: string) {
+  const last = state.orders.filter((o) => o.itemId === itemId && o.state === 'delivered').sort((a, b) => (b.deliveredAt ?? '').localeCompare(a.deliveredAt ?? ''))[0]
+  return last ? { supplier: last.supplier, articleNo: last.articleNo, link: last.link } : {}
+}
+
 export function addItemToOrders(item: InventoryItem, forWhat?: string, comment = '') {
   if (openOrderFor(item.id)) return
   state.orders.push({
+    ...lastOrderDetails(item.id),
     id: nextId('o'),
     itemId: item.id,
     name: item.name,
@@ -759,6 +766,8 @@ export const defaultDelivery = () => addDays(TODAY, 14)
 export function markOrdered(order: Order, delivery: string) {
   order.state = 'ordered'
   order.delivery = delivery
+  order.orderedBy = actor()
+  order.orderedAt = TODAY
   log(order.history, `Bestellt · Lieferung ca. ${fmtDay(delivery)}`)
 }
 
@@ -780,6 +789,30 @@ export function setOrderFor(order: Order, forWhat: string) {
   log(order.history, `Für: ${forWhat === 'Lager' ? 'Lager (allgemein)' : forWhat}`)
 }
 
+export interface OrderDetails {
+  supplier: string
+  articleNo: string
+  link: string
+  /** Leer = kein Preis */
+  price: number | null
+}
+
+export const orderDetails = (o: Order): OrderDetails => ({
+  supplier: o.supplier ?? '', articleNo: o.articleNo ?? '', link: o.link ?? '', price: o.price ?? null,
+})
+
+export function setOrderDetails(order: Order, input: OrderDetails) {
+  const next = {
+    supplier: input.supplier.trim() || undefined,
+    articleNo: input.articleNo.trim() || undefined,
+    link: input.link.trim() || undefined,
+    price: input.price === null || Number.isNaN(input.price) ? undefined : Math.max(0, input.price),
+  }
+  if (Object.entries(next).every(([k, v]) => order[k as keyof typeof next] === v)) return
+  Object.assign(order, next)
+  log(order.history, 'Bestelldaten geändert')
+}
+
 /** Bestellung ohne Artikel nachträglich einem Inventur-Artikel zuordnen. */
 export function linkOrderToItem(order: Order, item: InventoryItem) {
   if (openOrderFor(item.id)) return
@@ -797,9 +830,11 @@ export function cancelOrder(order: Order) {
 
 export function markDelivered(order: Order, qty: number) {
   order.state = 'delivered'
+  order.deliveredAt = TODAY
   const item = order.itemId ? state.inventory.find((i) => i.id === order.itemId) : undefined
   if (item) {
     item.qty = item.mode === 'flag' ? FLAG.full : item.qty + qty
+    if (item.mode === 'count') order.deliveredQty = qty
     const text = item.mode === 'flag' ? 'Geliefert' : `Geliefert: ${qty} ${unitOf(item, qty)}`
     log(item.history, text)
   }

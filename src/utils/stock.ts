@@ -18,3 +18,6 @@ export function stockText(item: InventoryItem): string {
   if (item.mode === 'count') return `${item.qty} ${unitOf(item, item.qty)}`
   return { empty: 'leer', low: 'fast leer', ok: 'genug vorhanden' }[stockLevel(item)]
 }
+
+/** 12,50 € */
+export const fmtPrice = (euro: number) => euro.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })

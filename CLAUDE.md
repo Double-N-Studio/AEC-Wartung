@@ -82,6 +82,7 @@ public/docs/                    Vorschaubilder der Dokumente
 - Kanban: Checklisten-Fortschritt (z. B. 2/4) erst ab „In Arbeit“, nicht bei „Offen“.
 - Kanban-Karten: Eignungs-Tag rechts neben dem Titel, darunter die Beschreibung (max. 2 Zeilen); Mindesthöhe, damit Karten ohne Beschreibung keine dünnen Streifen werden.
 - Neue Bestellung über den „+“-Button auf der Karte „Muss bestellt werden“ (gleiches Design wie im Kanban), nicht oben rechts auf der Seite.
+- Bestellungen haben Bestelldaten (Händler, Artikelnummer, Link, Gesamtpreis), die beim nächsten Mal vom selben Artikel übernommen werden; wer bestellt hat, ergibt sich aus dem Konto. Gelieferte Bestellungen stehen im Bestellverlauf (Link unter der Bestellliste) mit Summe der Saison.
 - Bestellliste: Bei ähnlichem Namen schlägt das Formular dezent „Meinst du …?“ (Textlink unter dem Feld) einen Inventur-Artikel vor, damit die Bestellung dem Artikel zugeordnet wird.
 - Tages-Popup im Kalender: Werkstattleitung über den Stift neben dem Namen ändern, dazu ein Kommentarfeld pro Tag. Keine „Abnahme“-Einträge und keine Saisonstart-Tage im Kalender.
 - Flugzeug-Seite: Kopf nur mit Typ, Kennzeichen und Pate (`manager`, Konto-ID); der Fortschritt (x von y erledigt) steht im Saisonplan (Gantt-Balken und Popover).

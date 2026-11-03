@@ -8,6 +8,7 @@ import ItemModal from '../../views/inventory/ItemModal.vue'
 import ItemFormModal from '../../views/inventory/ItemFormModal.vue'
 import FreeOrderModal from '../../views/inventory/FreeOrderModal.vue'
 import NewOrderModal from '../../views/inventory/NewOrderModal.vue'
+import OrderHistoryModal from '../../views/inventory/OrderHistoryModal.vue'
 
 /**
  * Bestellliste + Bestand mit allen Popups. Inventur und Material-Reiter zeigen dieselben Daten,
@@ -23,6 +24,7 @@ const openItem = computed(() => state.inventory.find((i) => i.id === openItemId.
 const openFreeId = ref<string | null>(null)
 const openFree = computed(() => state.orders.find((o) => o.id === openFreeId.value && !o.itemId) ?? null)
 const creatingOrder = ref(false)
+const showHistory = ref(false)
 
 /** Artikel-Formular: neu, bearbeiten oder neu für eine Bestellung ohne Artikel. Die Detailansicht ist solange ausgeblendet. */
 const itemForm = ref<{ item?: InventoryItem; order?: Order } | null>(null)
@@ -50,7 +52,7 @@ function saved(item: InventoryItem) {
 
 <template>
   <div class="with-aside">
-    <OrderBoard class="aside" :orders="props.orders" @open="openOrder" @add="creatingOrder = true" />
+    <OrderBoard class="aside" :orders="props.orders" @open="openOrder" @add="creatingOrder = true" @history="showHistory = true" />
     <StockTable
       class="main" :items="props.items" :kinds="props.kinds" :plane-filter="props.planeFilter" :for-what="props.forWhat"
       @open="openItemId = $event.id" @add="itemForm = {}"
@@ -65,5 +67,6 @@ function saved(item: InventoryItem) {
     />
   </template>
   <ItemFormModal v-else :item="itemForm.item" :order="itemForm.order" :preset="preset" @close="itemForm = null" @saved="saved" />
+  <OrderHistoryModal v-if="showHistory" :orders="props.orders" @close="showHistory = false" />
   <NewOrderModal v-if="creatingOrder" :for-what="props.forWhat" @close="creatingOrder = false" />
 </template>

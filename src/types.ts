@@ -180,6 +180,17 @@ export interface Order {
   reportedAt: string
   delivery?: string
   comment: string
+  /** Bestelldaten, damit die nächste Bestellung schneller geht */
+  supplier?: string
+  articleNo?: string
+  link?: string
+  /** Gesamtpreis in Euro */
+  price?: number
+  orderedBy?: UserId
+  orderedAt?: string
+  deliveredAt?: string
+  /** Gelieferte Stückzahl (nur bei Artikeln mit Stückzahl) */
+  deliveredQty?: number
   history: HistoryEntry[]
 }
 

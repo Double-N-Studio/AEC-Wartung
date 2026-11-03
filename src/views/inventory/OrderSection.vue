@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { aircraftTypes, cancelOrder, can, setOrderComment, setOrderDelivery, setOrderFor } from '../../store'
+import { computed, reactive, ref, watch } from 'vue'
+import { aircraftTypes, cancelOrder, can, orderDetails, setOrderComment, setOrderDelivery, setOrderDetails, setOrderFor, userName } from '../../store'
 import type { InventoryItem, Order } from '../../types'
 import { fmtDate } from '../../utils/date'
+import { fmtPrice } from '../../utils/stock'
 import AppIcon from '../../components/AppIcon.vue'
 import ConfirmModal from '../../components/ConfirmModal.vue'
 import QtyStepper from '../../components/QtyStepper.vue'
@@ -26,6 +27,16 @@ const forWhat = computed({
 // Kommentar wird beim Verlassen des Felds gespeichert, nicht bei jedem Tastendruck.
 const comment = ref(props.order.comment)
 watch(() => props.order.comment, (c) => { comment.value = c })
+
+// Bestelldaten ebenfalls beim Verlassen des Felds speichern.
+const details = reactive(orderDetails(props.order))
+watch(() => orderDetails(props.order), (d) => Object.assign(details, d))
+const saveDetails = () => setOrderDetails(props.order, details)
+const priceText = computed({
+  get: () => (details.price === null ? '' : details.price.toFixed(2).replace('.', ',')),
+  set: (v: string) => { details.price = v === '' ? null : Number(v.replace(',', '.')) },
+})
+const isUrl = (s: string) => /^https?:\/\//.test(s)
 
 const cancelling = ref(false)
 const cancelText = computed(() => props.order.state === 'ordered' ? 'Bestellung stornieren' : 'Von der Bestellliste nehmen')
@@ -60,6 +71,25 @@ const cancelText = computed(() => props.order.state === 'ordered' ? 'Bestellung 
           <input :id="`eta-${order.id}`" :value="order.delivery" type="date" class="input" @change="setOrderDelivery(order, ($event.target as HTMLInputElement).value)">
         </div>
       </div>
+      <div class="two">
+        <div class="field">
+          <label :for="`supplier-${order.id}`">Händler</label>
+          <input :id="`supplier-${order.id}`" v-model="details.supplier" class="input" placeholder="optional" @change="saveDetails">
+        </div>
+        <div class="field">
+          <label :for="`artno-${order.id}`">Artikelnummer</label>
+          <input :id="`artno-${order.id}`" v-model="details.articleNo" class="input" placeholder="optional" @change="saveDetails">
+        </div>
+        <div class="field">
+          <label :for="`link-${order.id}`">Link zum Artikel</label>
+          <input :id="`link-${order.id}`" v-model="details.link" type="url" class="input" placeholder="https://…" @change="saveDetails">
+        </div>
+        <div class="field">
+          <label :for="`price-${order.id}`">Preis gesamt (€)</label>
+          <input :id="`price-${order.id}`" v-model="priceText" inputmode="decimal" class="input" placeholder="optional" @change="saveDetails">
+        </div>
+      </div>
+      <p v-if="order.orderedBy" class="muted small">Bestellt von {{ userName(order.orderedBy) }} am {{ fmtDate(order.orderedAt!) }}</p>
       <div class="field">
         <label :for="`comment-${order.id}`">Kommentar zur Bestellung</label>
         <textarea :id="`comment-${order.id}`" v-model="comment" rows="2" class="textarea" placeholder="z. B. Menge, Händler oder Hinweise" @change="setOrderComment(order, comment)" />
@@ -69,6 +99,11 @@ const cancelText = computed(() => props.order.state === 'ordered' ? 'Bestellung 
     <dl v-else class="facts">
       <dt>Für</dt><dd>{{ forLabel(order.forWhat) }}</dd>
       <template v-if="order.delivery && order.state === 'ordered'"><dt>Lieferung ca.</dt><dd>{{ fmtDate(order.delivery) }}</dd></template>
+      <template v-if="order.supplier"><dt>Händler</dt><dd>{{ order.supplier }}</dd></template>
+      <template v-if="order.articleNo"><dt>Artikelnummer</dt><dd>{{ order.articleNo }}</dd></template>
+      <template v-if="order.link"><dt>Link</dt><dd class="plain"><a v-if="isUrl(order.link)" :href="order.link" target="_blank" rel="noopener">{{ order.link }}</a><template v-else>{{ order.link }}</template></dd></template>
+      <template v-if="order.price !== undefined"><dt>Preis</dt><dd>{{ fmtPrice(order.price) }}</dd></template>
+      <template v-if="order.orderedBy"><dt>Bestellt von</dt><dd>{{ userName(order.orderedBy) }} · {{ fmtDate(order.orderedAt!) }}</dd></template>
       <template v-if="order.comment"><dt>Kommentar</dt><dd class="plain">{{ order.comment }}</dd></template>
     </dl>
   </div>
@@ -93,7 +128,8 @@ const cancelText = computed(() => props.order.state === 'ordered' ? 'Bestellung 
 .facts { display: grid; grid-template-columns: 120px minmax(0, 1fr); row-gap: 8px; column-gap: 16px; margin: 0; font-size: 14px; }
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; font-weight: 600; }
-.facts dd.plain { font-weight: 400; white-space: pre-line; }
+.facts dd.plain { font-weight: 400; white-space: pre-line; overflow-wrap: anywhere; }
+.small { font-size: 12.5px; }
 @media (max-width: 640px) {
   .two { grid-template-columns: 1fr; }
 }

@@ -7,13 +7,16 @@ import AppIcon from '../AppIcon.vue'
 
 /** Bestellliste als Seitenspalte neben dem Bestand. */
 const props = defineProps<{ orders: Order[] }>()
-const emit = defineEmits<{ open: [order: Order]; add: [] }>()
+const emit = defineEmits<{ open: [order: Order]; add: []; history: [] }>()
 
 const groups = computed(() => [
   { title: 'Muss bestellt werden', dot: 'var(--today)', list: props.orders.filter((o) => o.state === 'list'), canAdd: true },
   { title: 'Bestellt', dot: 'var(--green)', list: props.orders.filter((o) => o.state === 'ordered'), canAdd: false },
 ])
-const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung ca. ${fmtDay(o.delivery!)}` : `${o.forWhat} · gemeldet von ${userName(o.reportedBy)}`)
+const meta = (o: Order) => (o.state === 'ordered'
+  ? `${o.forWhat} · Lieferung ca. ${fmtDay(o.delivery!)}${o.orderedBy ? ` · bestellt von ${userName(o.orderedBy)}` : ''}`
+  : `${o.forWhat} · gemeldet von ${userName(o.reportedBy)}`)
+const deliveredCount = computed(() => props.orders.filter((o) => o.state === 'delivered').length)
 </script>
 
 <template>
@@ -36,6 +39,7 @@ const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung c
       </button>
       <p v-if="!g.list.length" class="muted empty">Nichts offen.</p>
     </div>
+    <button type="button" class="link-btn history" @click="emit('history')"><AppIcon name="list" :size="15" />Bestellverlauf · {{ deliveredCount }} geliefert</button>
   </section>
 </template>
 
@@ -59,4 +63,5 @@ const meta = (o: Order) => (o.state === 'ordered' ? `${o.forWhat} · Lieferung c
 .text .muted { font-size: 12px; }
 .comment { margin-top: 2px; font-size: 12px; font-style: italic; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .empty { font-size: 13px; padding: 6px 2px; }
+.history { align-self: flex-start; }
 </style>
