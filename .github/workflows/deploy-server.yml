@@ -1,0 +1,41 @@
+name: Server ausrollen
+
+# Kopiert server/ auf den VPS und startet das Compose-Projekt neu.
+# Läuft nur, wenn sich unter server/ etwas geändert hat.
+# Secret DEPLOY_SSH_KEY: privater Schlüssel des Benutzers „deploy“ (siehe server/setup/deploy-user.sh).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-server.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: server
+  cancel-in-progress: false
+
+env:
+  HOST: 178.105.54.205
+  # Host-Schlüssel des VPS, damit die Verbindung nicht auf Zuruf vertraut.
+  HOST_KEY: '178.105.54.205 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5mKKLBiN5JIwYJc+GPLDc4nyCM5OduuqaYliVTXgvZ'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SSH vorbereiten
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
+
+      - name: Dateien kopieren
+        run: rsync -az --delete --exclude data/ server/ deploy@$HOST:/srv/wartung/
+
+      - name: Container starten
+        run: ssh deploy@$HOST 'cd /srv/wartung && docker compose pull --quiet && docker compose up -d --remove-orphans && docker compose ps'

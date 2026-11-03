@@ -1,0 +1,21 @@
+# Läuft auf dem VPS unter /srv/wartung (siehe server/README.md).
+# nginx leitet https://wartung.nuno-ferreira.de auf 127.0.0.1:8081 weiter.
+#
+# Solange es noch keinen eigenen Server-Code gibt, antwortet hier ein Platzhalter,
+# damit der Weg DNS → TLS → nginx → Container schon einmal steht.
+# Später: image: ghcr.io/double-n-studio/aec-wartung-server:latest
+services:
+  app:
+    image: traefik/whoami:v1.11.0
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8081:80'
+    volumes:
+      # SQLite-Datei und Uploads – liegt bewusst auf der Root-Platte,
+      # weil die Hetzner-Backups keine Volumes sichern.
+      - ./data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
