@@ -1,8 +1,8 @@
-name: Server ausrollen
+name: Deploy server
 
-# Baut das Backend-Image, schiebt es nach GHCR, kopiert server/ auf den VPS und startet Compose neu.
-# Läuft nur, wenn sich unter server/ etwas geändert hat.
-# Secret DEPLOY_SSH_KEY: privater Schlüssel des Benutzers „deploy“ (siehe server/setup/deploy-user.sh).
+# Builds the backend image, pushes it to GHCR, copies server/ to the VPS and restarts Compose.
+# Runs only when something under server/ changed.
+# Secret DEPLOY_SSH_KEY: private key of the "deploy" user (see server/setup/deploy-user.sh).
 
 on:
   push:
@@ -19,7 +19,7 @@ concurrency:
 env:
   IMAGE: ghcr.io/double-n-studio/aec-wartung-server
   HOST: 178.105.54.205
-  # Host-Schlüssel des VPS, damit die Verbindung nicht auf Zuruf vertraut.
+  # Host key of the VPS, so the connection doesn't trust on first use.
   HOST_KEY: '178.105.54.205 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5mKKLBiN5JIwYJc+GPLDc4nyCM5OduuqaYliVTXgvZ'
 
 jobs:
@@ -53,20 +53,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: SSH vorbereiten
+      - name: Prepare SSH
         run: |
           install -d -m 700 ~/.ssh
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
 
-      - name: Dateien kopieren
+      - name: Copy files
         run: rsync -az --delete --exclude data/ --exclude node_modules/ --exclude dist/ server/ deploy@$HOST:/srv/wartung/
 
-      - name: Container starten
+      - name: Start containers
         run: ssh deploy@$HOST 'cd /srv/wartung && docker compose pull --quiet && docker compose up -d --remove-orphans && docker compose ps && docker image prune -f >/dev/null'
 
-      - name: Gesundheit prüfen
+      - name: Health check
         run: |
           sleep 3
           curl --fail --silent https://wartung.nuno-ferreira.de/api/health

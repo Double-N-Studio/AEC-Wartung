@@ -5,7 +5,7 @@ import AppIcon from '../AppIcon.vue'
 import AppModal from '../AppModal.vue'
 import { authDialog } from './authDialog'
 
-/** „Wer bist du?“ – Mitglieder geben ohne Passwort Vor- und Nachnamen ein; der Browser merkt sich das. */
+/** "Wer bist du?" – members enter first and last name without a password; the browser remembers it. */
 const form = reactive({ first: '', last: '' })
 const complete = computed(() => !!form.first.trim() && !!form.last.trim())
 const needsLogin = ref(false)
@@ -25,7 +25,7 @@ async function submit() {
   busy.value = false
 }
 
-/** Schließen ohne Eingabe heißt beim ersten Besuch: erst einmal nur ansehen. */
+/** Closing without input on the first visit means: just look around for now. */
 function close() {
   if (!session.chosen) logout()
   authDialog.value = null

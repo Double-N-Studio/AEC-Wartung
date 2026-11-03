@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { setPassword } from '../store'
 import { authDialog } from '../components/account/authDialog'
 
-/** Ziel des Links aus der E-Mail (#/passwort?token=…): Sonderkonten setzen hier ihr Passwort. */
+/** Target of the link from the e-mail (#/passwort?token=…): special accounts set their password here. */
 const route = useRoute()
 const router = useRouter()
 const token = computed(() => String(route.query.token ?? ''))

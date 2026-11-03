@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { isOffline, sync } from '../sync'
 import AppIcon from './AppIcon.vue'
 
-/** Speicherstatus: gespeichert, speichert gerade oder offline mit wartenden Änderungen. */
+/** Save status: saved, saving right now, or offline with pending changes. */
 const status = computed(() => {
   if (isOffline()) {
     const n = sync.pending

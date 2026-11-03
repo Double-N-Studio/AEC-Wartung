@@ -26,7 +26,7 @@ const rows = computed(() => mine.value.filter((d) => d.status === tab.value && (
 const STATUS_TEXT = { offen: 'Offen', arbeit: 'In Arbeit', erledigt: 'Erledigt' }
 const taskOf = (d: Defect) => (d.taskId ? state.tasks.find((t) => t.id === d.taskId) : undefined)
 
-// ?befund=<id> öffnet einen Mangel/Befund direkt (Link aus der Kanban-Karte).
+// ?befund=<id> opens a defect/finding directly (link from the Kanban card).
 const router = useRouter()
 const openId = ref<string | null>(null)
 watch(() => route.query.befund, (id) => { if (typeof id === 'string') openId.value = id }, { immediate: true })
@@ -35,7 +35,7 @@ const closeDefect = () => {
   if (route.query.befund) router.replace({ query: {} })
 }
 const openDefect = computed(() => state.defects.find((d) => d.id === openId.value) ?? null)
-// Formular für neuen ('new') oder bestehenden Befund; die Detailansicht ist solange ausgeblendet.
+// Form for a new ('new') or existing finding; the detail view is hidden meanwhile.
 const form = ref<Defect | 'new' | null>(null)
 </script>
 

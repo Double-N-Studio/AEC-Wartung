@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FLAG } from '../utils/stock'
 
-/** Füllstand für Artikel ohne Stückzahl. Gleich breit wie der QtyStepper (boxed), damit die Zählliste bündig bleibt. */
+/** Fill level for items without a piece count. Same width as the QtyStepper (boxed) so the count list stays aligned. */
 const props = defineProps<{ modelValue: number; big?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 

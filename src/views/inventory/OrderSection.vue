@@ -10,8 +10,8 @@ import QtyStepper from '../../components/QtyStepper.vue'
 import type { OrderStep } from './OrderActions.vue'
 
 /**
- * Abschnitt "Bestellung" in den Inventur-Popups: Verwendungszweck, Lieferdatum, Kommentar, Stornieren
- * und die Eingaben zum nächsten Schritt. Die Buttons zum Bestätigen stehen in der Fußleiste (OrderActions).
+ * Section "Bestellung" in the inventory popups: purpose, delivery date, comment, cancel
+ * and the inputs for the next step. The confirm buttons are in the footer (OrderActions).
  */
 const props = defineProps<{ order: Order; item?: InventoryItem; step: OrderStep }>()
 
@@ -24,11 +24,11 @@ const forWhat = computed({
   set: (v: string) => setOrderFor(props.order, v),
 })
 
-// Kommentar wird beim Verlassen des Felds gespeichert, nicht bei jedem Tastendruck.
+// The comment is saved when leaving the field, not on every keystroke.
 const comment = ref(props.order.comment)
 watch(() => props.order.comment, (c) => { comment.value = c })
 
-// Bestelldaten ebenfalls beim Verlassen des Felds speichern.
+// Order details are likewise saved when leaving the field.
 const details = reactive(orderDetails(props.order))
 watch(() => orderDetails(props.order), (d) => Object.assign(details, d))
 const saveDetails = () => setOrderDetails(props.order, details)

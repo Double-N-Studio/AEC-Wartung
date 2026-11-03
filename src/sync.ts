@@ -8,22 +8,22 @@ import { now } from './utils/date'
 import { newId } from './utils/id'
 
 /**
- * Abgleich zwischen Gerät und Server. Der Store ändert nur seinen Zustand; hier wird nach jeder Aktion
- * verglichen, was sich geändert hat, und das als Sendung (Batch) in die Warteschlange gestellt. Die Warteschlange
- * liegt im Gerätespeicher und geht der Reihe nach raus, offline eben später. Änderungen anderer Geräte meldet der
- * Server über `subscribe`; dann wird der Stand neu geladen und die eigenen wartenden Änderungen darübergelegt.
+ * Sync between device and server. The store only changes its state; here, after every action,
+ * what has changed is compared and queued as a batch. The queue
+ * lives in device storage and goes out in order, later when offline. Changes from other devices are reported by the
+ * server via `subscribe`; then the state is reloaded and our own pending changes are applied on top.
  */
 export const sync = reactive({
-  /** Ein Stand ist da (vom Server oder aus dem Gerätespeicher). */
+  /** A state is available (from the server or from device storage). */
   ready: false,
-  /** Weder Server noch gespeicherter Stand – die App kann nichts anzeigen. */
+  /** Neither server nor stored state – the app cannot show anything. */
   loadError: '',
   online: navigator.onLine,
-  /** Demo: Verbindung abschalten, ohne das Netz zu trennen */
+  /** Demo: switch off the connection without disconnecting the network */
   simulateOffline: false,
-  /** Server beim letzten Versuch erreicht */
+  /** Server reached on the last attempt */
   reachable: true,
-  /** Sendungen, die noch nicht beim Server sind */
+  /** Batches that have not reached the server yet */
   pending: 0,
   saving: false,
   savedAt: null as string | null,
@@ -34,13 +34,13 @@ export const isOffline = () => !canSend() || !sync.reachable
 
 const QUEUE_KEY = `aec-winterwartung-warteschlange-v${MODEL_VERSION}`
 const CACHE_KEY = `aec-winterwartung-stand-v${MODEL_VERSION}`
-/** Dieser Tab bzw. dieses Gerät, damit der Server eigene Änderungen nicht als Konflikt wertet. */
+/** This tab or device, so the server does not treat our own changes as a conflict. */
 const clientId = newId()
 
 let target: AppState | null = null
-/** Server-Stand, auf dem der Zustand hier beruht */
+/** Server revision the state here is based on */
 let rev = 0
-/** Bekannter Stand jedes Datensatzes (Server plus eigene wartende Änderungen) – Vergleichsbasis für diff */
+/** Known state of every record (server plus own pending changes) – baseline for diff */
 let known = new Map<string, string>()
 let queue: Batch[] = []
 
@@ -56,7 +56,7 @@ function writeLocal(key: string, value: unknown) {
   try {
     backend.local.setItem(key, JSON.stringify(value))
   } catch {
-    // Voll oder gesperrt: dann geht nach einem Neuladen offline nichts verloren, was schon beim Server ist.
+    // Full or locked: then after a reload while offline, nothing that is already on the server is lost.
   }
 }
 const saveQueue = () => writeLocal(QUEUE_KEY, queue)
@@ -67,13 +67,13 @@ function saveCache() {
 }
 const pendingChanges = (): Change[] => queue.flatMap((b) => b.changes)
 
-/** Neuen Stand übernehmen, ohne Objekte auszutauschen (offene Popups behalten ihre Datensätze). */
+/** Adopt a new state without swapping objects (open popups keep their records). */
 function adopt(next: AppState) {
   known = knownOf(next)
   applyRemote(target as unknown as Plain, next as unknown as Plain)
 }
 
-/** Nach jeder Aktion: was ist neu? Läuft gebündelt pro Tick, eine Aktion ergibt also eine Sendung. */
+/** After every action: what is new? Runs batched per tick, so one action yields one batch. */
 function capture() {
   if (!target || !sync.ready) return
   const changes = diff(known, target)
@@ -85,7 +85,7 @@ function capture() {
   void flush()
 }
 
-/* ---------- Senden ---------- */
+/* ---------- Sending ---------- */
 
 let flushing = false
 let retryTimer: ReturnType<typeof setTimeout> | undefined
@@ -117,7 +117,7 @@ function rejected(batch: Batch, result: Exclude<PushResult, { ok: true }>) {
   else notify(`${what}: nicht gespeichert (${result.message}).`)
 }
 
-/** Warteschlange der Reihe nach senden. Abgelehnte Sendungen fallen weg; danach wird der Server-Stand geladen. */
+/** Send the queue in order. Rejected batches are dropped; afterwards the server state is loaded. */
 async function flush() {
   if (flushing || !canSend() || !queue.length) return
   flushing = true
@@ -133,7 +133,7 @@ async function flush() {
       sync.pending = queue.length
       saveQueue()
       if (result.ok) {
-        // Dazwischen hat jemand anderes etwas geändert – das holen wir gleich mit.
+        // Someone else changed something in between – we fetch that right away.
         if (result.rev > rev + 1) reload = true
         rev = Math.max(rev, result.rev)
       } else {
@@ -151,12 +151,12 @@ async function flush() {
   if (reload) await refresh()
 }
 
-/* ---------- Laden ---------- */
+/* ---------- Loading ---------- */
 
 let refreshing: Promise<void> | null = null
 let again = false
 
-/** Stand vom Server holen und die eigenen wartenden Änderungen darüberlegen. */
+/** Fetch the state from the server and apply our own pending changes on top. */
 export function refresh(): Promise<void> {
   if (!canSend()) return Promise.resolve()
   if (refreshing) {
@@ -186,7 +186,7 @@ export function refresh(): Promise<void> {
   return refreshing
 }
 
-/** Beim Start: gespeicherten Stand sofort zeigen (auch offline), dann beim Server nachladen. */
+/** On startup: show the stored state immediately (even offline), then reload from the server. */
 export async function connect(state: AppState) {
   target = state
   queue = readLocal<Batch[]>(QUEUE_KEY) ?? []
@@ -202,13 +202,13 @@ export async function connect(state: AppState) {
   backend.subscribe((r) => { if (r > rev) void refresh() })
   window.addEventListener('online', () => setOnline(true))
   window.addEventListener('offline', () => setOnline(false))
-  // Tablets schlafen; beim Aufwachen nachsehen, was sich getan hat.
+  // Tablets sleep; on waking up, check what has happened.
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void refresh() })
   await refresh()
   await flush()
 }
 
-/** Nach Aktionen, die der Server selbst ausführt (Konto anlegen, Vereinsflieger), oder in der Demo nach dem Zurücksetzen. */
+/** After actions the server performs itself (create account, Vereinsflieger), or in the demo after resetting. */
 export function discardQueue() {
   queue = []
   sync.pending = 0
@@ -225,9 +225,9 @@ export function setSimulateOffline(off: boolean) {
   setOnline(sync.online)
 }
 
-/* ---------- Änderungen von anderen Geräten ---------- */
+/* ---------- Changes from other devices ---------- */
 
-/** seq zählt eingespielte Fremdänderungen; changed merkt pro Datensatz-ID, bei welcher zuletzt. */
+/** seq counts applied remote changes; changed remembers per record ID at which one it last changed. */
 const remote = reactive({ seq: 0, changed: {} as Record<string, number> })
 
 type Entity = { id: string }
@@ -237,8 +237,8 @@ const isEntityList = (v: unknown): v is Entity[] => Array.isArray(v) && v.every(
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 /**
- * Fremden Stand in den eigenen einarbeiten, ohne Objekte auszutauschen: Listen mit IDs werden pro Datensatz
- * abgeglichen, damit offene Popups und Formulare weiter auf denselben Objekten arbeiten.
+ * Merge a remote state into our own without swapping objects: lists with IDs are reconciled per record
+ * so that open popups and forms keep working on the same objects.
  */
 function mergeInto(target: Plain, source: Plain, changed: string[]) {
   for (const key of Object.keys(target)) if (!(key in source)) delete target[key]
@@ -272,8 +272,8 @@ function applyRemote(target: Plain, source: Plain) {
 }
 
 /**
- * Für Formulare: wurde der Datensatz seit dem Öffnen auf einem anderen Gerät geändert?
- * reset() nach dem Übernehmen des neuen Stands.
+ * For forms: has the record been changed on another device since opening?
+ * reset() after adopting the new state.
  */
 export function useChangedElsewhere(id: () => string | undefined) {
   const since = ref(remote.seq)

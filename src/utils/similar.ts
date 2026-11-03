@@ -1,4 +1,4 @@
-/** Kleinschreibung, Umlaute als Grundvokal (Tuch ~ Tücher), nur Buchstaben/Ziffern als Wörter. */
+/** Lowercase, umlauts as base vowel (Tuch ~ Tücher), only letters/digits count as words. */
 function words(s: string) {
   return s.toLowerCase()
     .replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss')
@@ -22,7 +22,7 @@ function distance(a: string, b: string) {
   return prev[b.length]
 }
 
-/** 0 = Wort enthalten, 1 = gleicher Wortstamm, 1–3 = Tippfehler, Infinity = keine Ähnlichkeit. */
+/** 0 = word contained, 1 = same word stem, 1–3 = typo, Infinity = no similarity. */
 function score(query: string, name: string) {
   let best = Infinity
   for (const q of words(query)) {
@@ -36,7 +36,7 @@ function score(query: string, name: string) {
   return best
 }
 
-/** Bis zu `limit` Einträge mit ähnlichem Namen, beste zuerst – für „Meinst du …?“. */
+/** Up to `limit` entries with a similar name, best first – for "Meinst du …?". */
 export function similarByName<T extends { name: string }>(query: string, list: T[], limit = 3): T[] {
   return list
     .map((x) => ({ x, s: score(query, x.name) }))

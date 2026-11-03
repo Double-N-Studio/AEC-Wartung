@@ -1,18 +1,18 @@
 import type { AppState } from '../types'
 
 /**
- * Der Zustand als Datensätze: jede Liste mit IDs ist eine Sammlung, `schedule` ist nach Datum geordnet,
- * `season` und `vereinsflieger` sind Einzelwerte (ID = Name der Sammlung). Zwischen Gerät und Server
- * wandern nur ganze Datensätze – angelegt, geändert (value) oder gelöscht (value null).
+ * The state as records: every list with IDs is a collection, `schedule` is keyed by date,
+ * `season` and `vereinsflieger` are single values (ID = name of the collection). Between device and server
+ * only whole records travel – created, changed (value) or deleted (value null).
  */
-/** Bei Änderungen am Datenmodell hochzählen: Demo-Server, Gerätespeicher und Warteschlange alter Stände werden dann verworfen. */
+/** Bump on changes to the data model: demo server, device storage and queue of old revisions are then discarded. */
 export const MODEL_VERSION = 21
 
 export const LISTS = ['users', 'aircraft', 'tasks', 'templates', 'archive', 'defects', 'deadlines', 'documents', 'inventory', 'orders'] as const
 export const SINGLES = ['season', 'vereinsflieger'] as const
 export type Collection = (typeof LISTS)[number] | 'schedule' | (typeof SINGLES)[number]
 
-/** Leerer Zustand bis zum ersten Laden. Der Server liefert immer alle Schlüssel, season und vereinsflieger ausgefüllt. */
+/** Empty state until the first load. The server always delivers all keys, season and vereinsflieger filled in. */
 export const emptyState = (): AppState => ({
   users: [], season: { label: '', start: '', end: '' }, aircraft: [], schedule: {}, tasks: [], templates: [], archive: [],
   defects: [], deadlines: [], documents: [], inventory: [], orders: [], vereinsflieger: { lastSync: '' },
@@ -27,7 +27,7 @@ export interface Change {
 type Plain = Record<string, unknown>
 const key = (coll: string, id: string) => `${coll}\u0000${id}`
 
-/** JSON mit sortierten Schlüsseln, damit gleiche Inhalte unabhängig von der Reihenfolge gleich aussehen. */
+/** JSON with sorted keys, so equal contents look the same regardless of order. */
 export function stable(value: unknown): string {
   return JSON.stringify(value, (_, v) =>
     v && typeof v === 'object' && !Array.isArray(v)
@@ -35,7 +35,7 @@ export function stable(value: unknown): string {
       : v)
 }
 
-/** Alle Datensätze als Schlüssel → JSON. */
+/** All records as key → JSON. */
 export function records(state: AppState): Map<string, { coll: Collection; id: string; json: string }> {
   const out = new Map<string, { coll: Collection; id: string; json: string }>()
   const add = (coll: Collection, id: string, value: unknown) => out.set(key(coll, id), { coll, id, json: stable(value) })
@@ -45,7 +45,7 @@ export function records(state: AppState): Map<string, { coll: Collection; id: st
   return out
 }
 
-/** Was sich gegenüber dem bekannten Stand geändert hat; known wird dabei auf den neuen Stand gebracht. */
+/** What has changed compared to the known state; known is brought up to the new state in the process. */
 export function diff(known: Map<string, string>, state: AppState): Change[] {
   const changes: Change[] = []
   const now = records(state)
@@ -65,7 +65,7 @@ export function diff(known: Map<string, string>, state: AppState): Change[] {
 
 export const knownOf = (state: AppState) => new Map([...records(state)].map(([k, r]) => [k, r.json]))
 
-/** Änderungen in einen einfachen (nicht reaktiven) Zustand einspielen – für den Mock-Server und eigene wartende Änderungen. */
+/** Apply changes to a plain (non-reactive) state – for the mock server and own pending changes. */
 export function applyChanges(state: AppState, changes: Change[]) {
   for (const { coll, id, value } of changes) {
     if (coll === 'schedule') {

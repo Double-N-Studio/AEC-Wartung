@@ -6,7 +6,7 @@ import AppIcon from '../AppIcon.vue'
 import AppModal from '../AppModal.vue'
 import { authDialog } from './authDialog'
 
-/** Anmeldung der Sonderkonten. In der Demo gilt jedes Passwort; die Demo-Konten füllen die E-Mail aus. */
+/** Login for special accounts. In the demo any password is accepted; the demo accounts fill in the e-mail. */
 const form = reactive({ email: '', password: '' })
 const failed = ref<'' | 'wrong' | 'offline'>('')
 const busy = ref(false)
@@ -30,7 +30,7 @@ function fill(email: string) {
   failed.value = ''
 }
 
-/** Beim ersten Besuch geht es ohne Anmeldung zurück zur Namensauswahl. */
+/** On the first visit, closing without logging in goes back to the name selection. */
 const close = () => { authDialog.value = session.chosen ? null : 'name' }
 </script>
 

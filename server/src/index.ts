@@ -1,4 +1,4 @@
-// Einstieg des Backends. nginx auf dem VPS reicht https://wartung.… an diesen Prozess weiter.
+// Backend entry point. nginx on the VPS forwards https://wartung.… to this process.
 import { serve } from '@hono/node-server'
 import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
@@ -16,7 +16,7 @@ app.get('/api/health', (c) => {
   return c.json({ ok: true, version, firstStart: firstStart?.value ?? null })
 })
 
-// Bis das Frontend hier ausgeliefert wird, antwortet die Wurzel nur mit einem Hinweis.
+// Until the frontend is served from here, the root only answers with a note.
 app.get('/', (c) => c.text(`Winterwartung Aero-Club Bad Nauheim – Backend ${version}\n`))
 
 app.notFound((c) => c.json({ error: 'Nicht gefunden' }, 404))
@@ -27,5 +27,5 @@ app.onError((err, c) => {
 
 const port = Number(process.env.PORT ?? 3000)
 serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, () => {
-  console.log(`Backend ${version} lauscht auf Port ${port}`)
+  console.log(`Backend ${version} listening on port ${port}`)
 })

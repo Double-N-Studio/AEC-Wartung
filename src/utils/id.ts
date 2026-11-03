@@ -1,6 +1,6 @@
 /**
- * IDs entstehen auf dem Gerät, damit offline angelegte Datensätze sofort eine feste ID haben
- * und zwei Geräte nie dieselbe vergeben. randomUUID gibt es nur über https oder localhost.
+ * IDs are created on the device so records created offline immediately have a fixed ID
+ * and two devices never assign the same one. randomUUID is only available over https or localhost.
  */
 export function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()

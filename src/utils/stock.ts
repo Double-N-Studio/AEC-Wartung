@@ -1,11 +1,11 @@
 import type { InventoryItem } from '../types'
 
-/** Füllstand bei Artikeln ohne Stückzahl (mode 'flag'), gespeichert in qty. */
+/** Fill level for items without a quantity (mode 'flag'), stored in qty. */
 export const FLAG = { empty: 0, low: 1, full: 2 } as const
 
 export type StockLevel = 'empty' | 'low' | 'ok'
 
-/** "Fast leer" gibt es nur bei Artikeln ohne Stückzahl. */
+/** "Fast leer" only exists for items without a quantity. */
 export function stockLevel(item: InventoryItem): StockLevel {
   if (item.qty === 0) return 'empty'
   return item.mode === 'flag' && item.qty === FLAG.low ? 'low' : 'ok'

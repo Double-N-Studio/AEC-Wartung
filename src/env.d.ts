@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Fester „Heute“-Tag für die Demo (YYYY-MM-DD); leer = echtes Datum */
+  /** Fixed "today" date for the demo (YYYY-MM-DD); empty = real date */
   readonly VITE_DEMO_DATE?: string
-  /** Adresse des Backends, z. B. /api; leer = Demo mit Schein-Server im Browser */
+  /** Address of the backend, e.g. /api; empty = demo with a mock server in the browser */
   readonly VITE_API_URL?: string
 }
 

@@ -64,7 +64,7 @@ h1, h2, h3, p { margin: 0; }
 .btn-danger { border-color: var(--red); background: var(--red); color: #fff; }
 .btn-danger:hover { background: var(--red-ink); }
 .btn:disabled { opacity: 0.5; cursor: default; }
-/* Textlink-Button, z. B. „Verknüpfung lösen“ */
+/* Text link button, e.g. "Verknüpfung lösen" */
 .link-btn {
   display: inline-flex; align-items: center; gap: 5px; padding: 4px 0; border: 0; background: transparent;
   font-size: 13px; font-weight: 600; color: var(--accent-ink);
@@ -98,7 +98,7 @@ h1, h2, h3, p { margin: 0; }
 .pill-green { background: var(--green-soft); color: var(--green-ink); }
 .pill-orange { background: var(--orange-soft); color: var(--orange-ink); }
 .count { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 1px 8px; background: var(--surface); color: var(--text-2); }
-/* ---------- Reiter (Flugzeug-Seite, Inventur) ---------- */
+/* ---------- Tabs (aircraft page, inventory) ---------- */
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; }
 .tab {
   border-top: 0; border-left: 0; border-right: 0; background: transparent; cursor: pointer;
@@ -117,7 +117,7 @@ h1, h2, h3, p { margin: 0; }
 }
 .segmented button[aria-pressed='true'] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(23, 32, 43, 0.12); }
 
-/* ---------- Formulare ---------- */
+/* ---------- Forms ---------- */
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > label, .field-label { font-size: 13px; font-weight: 600; color: var(--text-2); }
 .input, .select, .textarea {
@@ -127,14 +127,14 @@ h1, h2, h3, p { margin: 0; }
 .input, .select { height: 44px; padding: 0 12px; }
 .textarea { padding: 10px 12px; line-height: 1.45; resize: vertical; }
 
-/* ---------- Tabellen ---------- */
+/* ---------- Tables ---------- */
 .table-head {
   position: sticky; top: 0; z-index: 1; background: var(--subtle);
   border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--muted);
 }
 .table-row { border-bottom: 1px solid var(--border-soft); }
 
-/* ---------- Verlauf ---------- */
+/* ---------- History ---------- */
 .history { border-top: 1px solid var(--border-soft); padding-top: 10px; }
 .history summary {
   display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; list-style: none;

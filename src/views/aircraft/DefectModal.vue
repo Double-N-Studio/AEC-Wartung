@@ -36,7 +36,7 @@ function saveNote() {
   note.value = ''
 }
 
-// Mängel kommen aus Vereinsflieger und werden dort bearbeitet; eigene Befunde hier.
+// Defects come from Vereinsflieger and are edited there; own findings here.
 const ownFinding = computed(() => props.defect.source === 'befund' && can('edit'))
 const confirming = ref(false)
 const creatingTask = ref(false)

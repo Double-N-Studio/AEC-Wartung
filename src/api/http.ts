@@ -1,9 +1,9 @@
 import type { User } from '../types'
 import type { Backend, PushResult, SessionInfo, Snapshot } from './backend'
 
-/** Echtes Backend unter base (z. B. /api). Endpunkte und Antworten: docs/backend.md. */
+/** Real backend under base (e.g. /api). Endpoints and responses: docs/backend.md. */
 export function httpBackend(base: string): Backend {
-  /** Netzfehler und 5xx werfen (das Gerät versucht es später erneut), alles andere geht an den Aufrufer. */
+  /** Network errors and 5xx throw (the device retries later), everything else goes to the caller. */
   async function call(method: string, path: string, body?: unknown, headers: Record<string, string> = {}) {
     const json = body !== undefined && !(body instanceof Blob)
     const res = await fetch(`${base}${path}`, {
@@ -37,7 +37,7 @@ export function httpBackend(base: string): Backend {
     },
 
     subscribe(onRev) {
-      // EventSource verbindet sich nach Abbrüchen selbst neu; dazu lädt sync.ts beim Zurückkehren in den Tab nach.
+      // EventSource reconnects by itself after interruptions; in addition sync.ts reloads when returning to the tab.
       const events = new EventSource(`${base}/events`, { withCredentials: true })
       events.addEventListener('rev', (e) => onRev(Number((e as MessageEvent).data)))
     },
@@ -80,7 +80,7 @@ export function httpBackend(base: string): Backend {
         'Content-Type': ref.type || 'application/octet-stream',
         'X-File-Name': encodeURIComponent(ref.name),
       })
-      // 4xx (zu groß, nicht erlaubt) bringt auch ein erneuter Versuch nicht durch.
+      // 4xx (too large, not allowed) will not get through on a retry either.
       if (status >= 300) throw Object.assign(new Error(message(data, 'Datei abgelehnt')), { permanent: true })
     },
 

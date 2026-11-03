@@ -1,5 +1,5 @@
-// SQLite-Datei unter DATA_DIR (im Container /data, lokal ./data). Migrationen aus drizzle/
-// laufen bei jedem Start; neue entstehen mit `npm run db:generate` nach Änderungen an schema.ts.
+// SQLite file under DATA_DIR (/data in the container, ./data locally). Migrations from drizzle/
+// run on every start; new ones are created with `npm run db:generate` after changes to schema.ts.
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
@@ -12,7 +12,7 @@ export const dataDir = process.env.DATA_DIR ?? 'data'
 mkdirSync(dataDir, { recursive: true })
 
 const sqlite = new Database(join(dataDir, 'wartung.db'))
-// WAL: Lesen blockiert Schreiben nicht, und Litestream kann die Datei später mitlesen.
+// WAL: reads don't block writes, and Litestream can tail the file later.
 sqlite.pragma('journal_mode = WAL')
 sqlite.pragma('foreign_keys = ON')
 

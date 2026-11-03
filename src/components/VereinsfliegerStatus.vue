@@ -5,7 +5,7 @@ import { notify } from '../notify'
 import { fmtWhen } from '../utils/date'
 import AppIcon from './AppIcon.vue'
 
-/** Wann zuletzt mit Vereinsflieger abgeglichen wurde, ob es geklappt hat, und „Jetzt abgleichen“. what: was übernommen wird. */
+/** When the last sync with Vereinsflieger happened, whether it succeeded, and "Jetzt abgleichen". what: what gets imported. */
 defineProps<{ what: string }>()
 
 const last = computed(() => (state.vereinsflieger.lastSync ? fmtWhen(state.vereinsflieger.lastSync) : 'noch nie'))

@@ -21,14 +21,14 @@ const ROLE_TEXT: Record<Role, string> = {
 
 const accounts = computed(() => state.users.filter((u) => !u.removed))
 
-/* ---------- Konto anlegen / bearbeiten ---------- */
+/* ---------- Create / edit account ---------- */
 const editing = ref<User | 'new' | null>(null)
 const form = reactive({ name: '', role: 'user' as Role, email: '' })
 function openUser(u: User | 'new') {
   Object.assign(form, u === 'new' ? { name: '', role: 'user', email: '' } : { name: u.name, role: u.role, email: u.email ?? '' })
   editing.value = u
 }
-// Werkstattleitung, Admins und Geräte melden sich mit E-Mail und Passwort an.
+// Workshop leads, admins and devices log in with e-mail and password.
 const withLogin = computed(() => form.role !== 'user' || (editing.value !== 'new' && !!editing.value?.device))
 function saveUser() {
   if (!form.name.trim() || (withLogin.value && !form.email.trim())) return

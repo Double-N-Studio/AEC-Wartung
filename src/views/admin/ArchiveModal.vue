@@ -6,7 +6,7 @@ import { fmtDate, fmtWhen } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
 
-/** Abgeschlossene Saison zum Nachlesen: pro Flugzeug, welche Karten wer erledigt und wer abgezeichnet hat. */
+/** Completed season for reference: per aircraft, which cards were done by whom and who signed them off. */
 const props = defineProps<{ season: ArchivedSeason }>()
 const emit = defineEmits<{ close: [] }>()
 

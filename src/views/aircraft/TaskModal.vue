@@ -21,7 +21,7 @@ const defect = computed(() => state.defects.find((d) => d.id === props.task.defe
 const doc = computed(() => state.documents.find((d) => d.id === props.task.docId))
 const checked = computed(() => props.task.checklist.filter((c) => c.done).length)
 const started = computed(() => props.task.history.find((h) => h.text === 'Arbeit gestartet'))
-// Abgezeichnete Karten sind gesperrt, bis die Werkstattleitung die Abzeichnung zurücknimmt.
+// Signed-off cards are locked until the workshop lead revokes the sign-off.
 const editable = computed(() => can('edit') && !props.task.signedBy)
 
 const confirming = ref(false)

@@ -4,12 +4,12 @@ import { initialUsers, SYSTEM, TABLET } from './people'
 
 const ASG = 'asg32'
 
-/** Beispielfotos ohne Datei – die App zeigt dafür Platzhalter. */
+/** Sample photos without a file – the app shows placeholders for them. */
 const demoPhotos = (key: string, n: number): FileRef[] =>
   Array.from({ length: n }, (_, i) => ({ id: `demo-${key}-${i + 1}`, name: `Foto ${i + 1}.jpg`, type: 'image/jpeg', size: 0 }))
 
 const created = { text: 'Angelegt', who: 'HE', at: '2027-01-09' }
-// Dokument-ID des Wartungshandbuchs
+// Document ID of the maintenance manual
 const WHB = 'd2'
 
 function pkg(
@@ -24,14 +24,14 @@ function pkg(
 }
 
 /**
- * Im Mockup haben alle Flugzeuge denselben Inhalt wie die ASG32.
- * Die Datensätze werden pro Flugzeug mit eigenen IDs kopiert.
+ * In the mockup all aircraft have the same content as the ASG32.
+ * The records are copied per aircraft with their own IDs.
  */
 export function initialState(): AppState {
   const s = baseState()
   const own = <T extends { aircraftId?: string }>(list: T[]) => list.filter((x) => x.aircraftId === ASG)
   const pre = (id: string, ref?: string) => (ref ? `${id}-${ref}` : undefined)
-  // Vorlagen = Karten der ASG32, gültig für alle Flugzeuge; jede Karte merkt sich ihre Vorlage.
+  // Templates = cards of the ASG32, valid for all aircraft; every card remembers its template.
   s.templates = own(s.tasks).map((t) => ({
     id: `v-${t.id}`, aircraftType: '', level: t.level, title: t.title, desc: t.desc, duration: t.duration,
     checklist: t.checklist.map((c) => c.text), docTitle: s.documents.find((d) => d.id === t.docId)?.title,
@@ -43,8 +43,8 @@ export function initialState(): AppState {
     s.deadlines.push(...own(s.deadlines).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id })))
     s.documents.push(...own(s.documents).map((d) => ({ ...structuredClone(d), id: `${a.id}-${d.id}`, aircraftId: a.id })))
   }
-  // Damit das Board je Flugzeug anders aussieht: abgeschlossene Flugzeuge komplett erledigt,
-  // ASG32 und LS8 gemischt, Arcus-T noch gar nicht angefangen.
+  // So the board looks different per aircraft: completed aircraft fully done,
+  // ASG32 and LS8 mixed, Arcus-T not started at all yet.
   for (const a of s.aircraft) {
     const tasks = s.tasks.filter((t) => t.aircraftId === a.id)
     if (a.end < today()) completeAll(s, a, tasks)
@@ -57,7 +57,7 @@ export function initialState(): AppState {
   return s
 }
 
-/** Vorjahr zum Nachlesen: gleiche Flugzeuge und Vorlagen 52 Wochen früher, alles erledigt und abgezeichnet. */
+/** Previous year for reference: same aircraft and templates 52 weeks earlier, everything done and signed off. */
 function previousSeason(s: AppState): ArchivedSeason {
   const back = (iso: string) => addDays(iso, -364)
   const aircraft = s.aircraft.map(({ id, type, reg, start, end }) => ({ id, type, reg, start: back(start), end: back(end) }))
@@ -113,7 +113,7 @@ function finishAt(t: Task, who: string, at: string, signedBy?: string) {
   }
 }
 
-/** Alle Pakete auf die Werkstatttage des Flugzeugs verteilt erledigt und abgezeichnet, Mängel dazu behoben. */
+/** All packages done and signed off, spread across the aircraft's workshop days, with their defects fixed. */
 function completeAll(s: AppState, a: Aircraft, tasks: Task[]) {
   const days: string[] = []
   for (let d = a.start; d <= a.end; d = addDays(d, 7)) if (!s.schedule[d]?.closed) days.push(d)
@@ -134,7 +134,7 @@ function completeAll(s: AppState, a: Aircraft, tasks: Task[]) {
 
 const tick = (t: Task, n: number) => t.checklist.slice(0, n).forEach((c) => { c.done = true })
 
-/** ASG32: erster Werkstatttag war der 09.01., heute ist der zweite. */
+/** ASG32: the first workshop day was 09.01., today is the second. */
 function applyAsg(t: Task) {
   const day1 = '2027-01-09'
   const doneDay1: Record<string, [string, string]> = {
@@ -154,7 +154,7 @@ function applyAsg(t: Task) {
   else if (t.id === 'fl3') { startAt(t, 'LO', `${today()}T09:50`); tick(t, 1) }
 }
 
-/** LS8: erster Werkstatttag ist heute. */
+/** LS8: the first workshop day is today. */
 function applyLs8(t: Task) {
   const id = t.id.replace('ls8-', '')
   resetTask(t)
@@ -208,7 +208,7 @@ function baseState(): AppState {
     vereinsflieger: { lastSync: `${today()}T06:00` },
 
     tasks: [
-      // Flügel
+      // Wings
       pkg('fl1', 'ein', 'Flügel: Putzen', '~2 h', 'Mit Spüliwasser putzen, auch die Bremsklappen und den Bremsklappenkasten.'),
       pkg('fl2', 'ein', 'Flügel: Entfetten und Klebereste entfernen', '~1 h', 'Fett und Klebereste mit Waschbenzin entfernen.'),
       pkg('fl3', 'erf', 'Flügel: Zustand prüfen', '~2 h', 'Flügel inkl. Querruder und Bremsklappen prüfen. Gefundene Mängel zuerst beheben, bevor es weitergeht.', [
@@ -224,7 +224,7 @@ function baseState(): AppState {
       pkg('fl6', 'ein', 'Flügel: Wachsen', '~2 h', 'Wachs mit Watte auftragen, nach der Ablüftzeit mit Mikrofasertuch abpolieren.'),
       pkg('fl7', 'erf', 'Flügel: Buchsen fetten', '~0,5 h', 'Hauptbolzenbuchsen, Querkraftbolzen und die Kugeln der Ruderanschlüsse fetten.'),
       pkg('fl8', 'ein', 'Flügel: Wassersäcke prüfen', '~0,5 h', 'Wassersäcke auf Dichtigkeit prüfen.'),
-      // Rumpf
+      // Fuselage
       pkg('ru1', 'ein', 'Rumpf: Putzen', '~2 h', 'Rumpf innen und außen reinigen, Sitzwanne ausbauen.', [
         'Rumpf aussaugen, Schwerpunkt- und Bugkupplung mit Druckluft ausblasen',
         'Lack und Innenraum mit Spüliwasser wischen, Hydraulikölflecken mit Waschbenzin entfernen',
@@ -253,12 +253,12 @@ function baseState(): AppState {
         'Batteriekapazität messen und mit Labelmaker aufkleben',
       ], { defectId: 'm3' }),
       pkg('ru9', 'wl', 'Rumpf: Sitzwanne einbauen', '~0,5 h', 'Erst nach der Fremdkörperkontrolle durch befugtes Personal einbauen.'),
-      // Höhenleitwerk
+      // Horizontal stabiliser
       pkg('hl1', 'ein', 'Höhenleitwerk: Putzen', '~0,5 h', 'Mit Spüliwasser putzen.'),
       pkg('hl2', 'erf', 'Höhenleitwerk: Entfetten und Klebereste entfernen', '~0,5 h', 'Klebereste und Fett in den Buchsen entfernen, nur Waschbenzin verwenden. Danach die Buchsen neu fetten.'),
       pkg('hl3', 'erf', 'Höhenleitwerk: Bänder prüfen', '~1 h', 'Spaltabklebungen prüfen, ggf. erneuern (Wartungshandbuch 4.2.3 und 4.2.4).', [], { docId: WHB }),
       pkg('hl4', 'erf', 'Höhenleitwerk: Polieren und Wachsen', '~1,5 h', 'Mit Rotationsmaschine und feiner Schleifpolitur polieren, danach wachsen.'),
-      // Anhänger
+      // Trailer
       pkg('an1', 'ein', 'Anhänger: Aussaugen und Auswischen', '~1 h', 'Anhänger und Teppich aussaugen, danach auswischen.'),
       pkg('an2', 'ein', 'Anhänger: Teppich prüfen', '~0,5 h', 'Teppich kontrollieren, ggf. erneuern.'),
       pkg('an3', 'ein', 'Anhänger: Stauraum und Gasfedern', '~0,5 h', 'Stauraum vorne aussaugen und auswischen. Darin sollen liegen: Kopie des Fahrzeugscheins, Ersatzreifen, Wagenheber und Radmutterschlüssel.'),
@@ -318,7 +318,7 @@ function baseState(): AppState {
       { id: 'd2', aircraftId: ASG, title: 'Wartungshandbuch', kind: 'Handbuch', version: 'Änderung TM 14 vom 11.04.2023', image: 'docs/wartungshandbuch.png', addedAt: '2026-10-03', addedBy: 'LO' },
       { id: 'd3', aircraftId: ASG, title: 'Aufbauanleitung', kind: 'Anleitung', version: 'Version 1.0 (2016)', image: 'docs/aufbauanleitung.webp', addedAt: '2026-10-03', addedBy: 'LO' },
       { id: 'd4', aircraftId: ASG, title: 'Gewichtsübersicht', kind: 'Prüfbericht', version: 'Wägung vom 04.03.2023', image: 'docs/gewichtsuebersicht.webp', addedAt: '2026-10-03', addedBy: 'LO' },
-      // Gilt für den ganzen Verein
+      // Applies to the whole club
       { id: 'd5', title: 'Werkstattordnung', kind: 'Sonstiges', version: 'Stand Oktober 2026', addedAt: '2026-10-10', addedBy: 'MA' },
     ],
 
@@ -349,7 +349,7 @@ function baseState(): AppState {
       { id: 'o3', itemId: 'e1', name: 'Reifenschlauch 4.00-4', forWhat: 'LS8', state: 'list', reportedBy: 'LO', reportedAt: '2027-01-16', comment: '1 Stück mit gewinkeltem Ventil.', history: [{ text: 'Auf Bestellliste gesetzt', who: 'LO', at: '2027-01-16' }] },
       { id: 'o4', itemId: 'e3', name: 'Dichtungssatz Wasserballast', forWhat: 'ASG32', state: 'ordered', reportedBy: 'HE', reportedAt: '2027-01-09', delivery: '2027-01-20', comment: '1 Satz, bestellt am 12.01. von Heinrich.', supplier: 'Hersteller (Ersatzteilservice)', articleNo: 'WB-32-DS', price: 48.9, orderedBy: 'HE', orderedAt: '2027-01-12', history: [{ text: 'Bestellt', who: 'HE', at: '2027-01-12' }, { text: 'Auf Bestellliste gesetzt', who: 'HE', at: '2027-01-09' }] },
       { id: 'o5', itemId: 'e2', name: 'Bremsbeläge', forWhat: 'ASG32', state: 'ordered', reportedBy: 'HE', reportedAt: '2027-01-09', delivery: '2027-01-22', comment: '1 Satz, bestellt am 13.01. von Heinrich.', supplier: 'Hersteller (Ersatzteilservice)', price: 86, orderedBy: 'HE', orderedAt: '2027-01-13', history: [{ text: 'Bestellt', who: 'HE', at: '2027-01-13' }, { text: 'Auf Bestellliste gesetzt', who: 'HE', at: '2027-01-09' }] },
-      // Bereits geliefert (Bestellverlauf)
+      // Already delivered (order history)
       { id: 'o6', itemId: 'v4', name: 'Politur', forWhat: 'Lager', state: 'delivered', reportedBy: 'LE', reportedAt: '2026-11-07', comment: '', supplier: 'Flugsportbedarf', articleNo: 'POL-500', price: 39.8, orderedBy: 'MA', orderedAt: '2026-11-09', delivery: '2026-11-14', deliveredAt: '2026-11-14', deliveredQty: 2,
         history: [{ text: 'Geliefert', who: 'MA', at: '2026-11-14' }, { text: 'Bestellt · Lieferung ca. 14.11.', who: 'MA', at: '2026-11-09' }, { text: 'Auf Bestellliste gesetzt', who: 'LE', at: '2026-11-07' }] },
       { id: 'o7', itemId: 'e5', name: 'Batterie 12 V', forWhat: 'alle Flugzeuge', state: 'delivered', reportedBy: 'HE', reportedAt: '2026-11-21', comment: '7,2 Ah', supplier: 'Akku-Versand', price: 74.5, orderedBy: 'HE', orderedAt: '2026-11-22', delivery: '2026-11-28', deliveredAt: '2026-11-27', deliveredQty: 2,

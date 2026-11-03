@@ -3,19 +3,19 @@ import { onBeforeUnmount, onMounted } from 'vue'
 import AppIcon from './AppIcon.vue'
 
 /**
- * Gemeinsames Popup aller Seiten.
- * Kopf: Typ-Symbol, Titel, Untertitel, Status-Chips (#status), Werkzeuge wie Bearbeiten/Löschen (#tools).
- * Fuß: Info links (#meta), Aktionen rechts (#footer).
+ * Shared popup of all pages.
+ * Header: type icon, title, subtitle, status chips (#status), tools such as edit/delete (#tools).
+ * Footer: info on the left (#meta), actions on the right (#footer).
  */
-/** priority: liegt über allen anderen Popups (Name/Anmelden beim ersten Öffnen über einem verlinkten Popup). */
+/** priority: sits above all other popups (name/login on first open above a linked popup). */
 const props = withDefaults(defineProps<{ title: string; icon: string; subtitle?: string; width?: number; priority?: boolean }>(), { width: 640 })
 const emit = defineEmits<{ close: [] }>()
 
-// Escape schließt nur das oberste Popup, z. B. die Rückfrage vor dem Löschen.
+// Escape closes only the topmost popup, e.g. the confirmation before deleting.
 const token = Symbol('modal')
 const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && openModals[openModals.length - 1] === token) emit('close') }
 onMounted(() => {
-  // Vorrangige Popups bleiben oben, auch wenn danach ein anderes aufgeht.
+  // Priority popups stay on top, even if another one opens afterwards.
   const firstPriority = openModals.findIndex((t) => priorityModals.has(t))
   if (props.priority) priorityModals.add(token)
   if (props.priority || firstPriority < 0) openModals.push(token)

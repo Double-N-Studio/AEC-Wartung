@@ -1,8 +1,8 @@
-# Baut das Backend-Image; GitHub Actions schiebt es nach ghcr.io/double-n-studio/aec-wartung-server.
+# Builds the backend image; GitHub Actions pushes it to ghcr.io/double-n-studio/aec-wartung-server.
 FROM node:24-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-# --ignore-scripts: better-sqlite3 bringt fertige Binaries mit, npm würde sonst node-gyp anwerfen.
+# --ignore-scripts: better-sqlite3 ships prebuilt binaries, npm would otherwise run node-gyp.
 RUN npm ci --ignore-scripts
 COPY tsconfig.json ./
 COPY src ./src

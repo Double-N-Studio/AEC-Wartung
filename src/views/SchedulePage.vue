@@ -7,8 +7,8 @@ import AppIcon from '../components/AppIcon.vue'
 import AppModal from '../components/AppModal.vue'
 import HistoryList from '../components/HistoryList.vue'
 
-/* ---------- Saisonplan (Gantt) ---------- */
-// Der Plan beginnt am Montag der Woche des ersten Werkstatt-Samstags und endet mit der Woche des letzten.
+/* ---------- Season plan (Gantt) ---------- */
+// The plan starts on the Monday of the week of the first workshop Saturday and ends with the week of the last one.
 const ganttStart = computed(() => addDays(state.season.start, -((parse(state.season.start).getDay() + 6) % 7)))
 const weekCount = computed(() => Math.max(1, Math.floor(daysBetween(ganttStart.value, state.season.end) / 7) + 1))
 const firstSat = computed(() => addDays(ganttStart.value, 5))
@@ -40,7 +40,7 @@ const weekIndex = (iso: string) => Math.max(0, Math.min(weekCount.value - 1, Mat
 const todayPct = computed(() => (daysBetween(ganttStart.value, today()) / (weekCount.value * 7)) * 100)
 const showToday = computed(() => todayPct.value >= 0 && todayPct.value <= 100)
 
-/* Zeiträume ziehen (Admin): Balken verschieben oder an den Enden verlängern/kürzen, immer in ganzen Wochen. */
+/* Dragging periods (admin): move bars or extend/shorten them at the ends, always in whole weeks. */
 const editPeriods = ref(false)
 type DragMode = 'move' | 'start' | 'end'
 const drag = ref<{ id: string; mode: DragMode; x: number; colW: number; start: string; end: string } | null>(null)
@@ -53,7 +53,7 @@ const maxIso = (a: string, b: string) => (a > b ? a : b)
 function shifted(p: { start: string; end: string }, mode: DragMode, weeksDelta: number) {
   if (mode === 'start') return { start: maxIso(firstSat.value, minIso(addDays(p.start, weeksDelta * 7), p.end)), end: p.end }
   if (mode === 'end') return { start: p.start, end: minIso(lastSat.value, maxIso(addDays(p.end, weeksDelta * 7), p.start)) }
-  // Verschieben: nicht über den Rand des Plans hinaus
+  // Moving: not beyond the edge of the plan
   const lo = Math.ceil(daysBetween(p.start, firstSat.value) / 7)
   const hi = Math.floor(daysBetween(p.end, lastSat.value) / 7)
   const d = Math.max(lo, Math.min(hi, weeksDelta))
@@ -87,7 +87,7 @@ function endDrag() {
   preview.value = null
 }
 
-/** Tastatur: Pfeil verschiebt um eine Woche, mit Umschalt ändert er das Ende. */
+/** Keyboard: arrow moves by one week, with Shift it changes the end. */
 function keyDrag(a: Aircraft, e: KeyboardEvent) {
   if (!editPeriods.value || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
   e.preventDefault()
@@ -117,14 +117,14 @@ const bars = computed(() => activeAircraft()
     }
   }))
 
-// Auf schmalen Bildschirmen den Plan so scrollen, dass "Heute" sichtbar ist.
+// On narrow screens, scroll the plan so that "Heute" is visible.
 const ganttScroll = ref<HTMLElement | null>(null)
 onMounted(() => {
   const el = ganttScroll.value
   if (el && el.scrollWidth > el.clientWidth) el.scrollLeft = (el.scrollWidth * todayPct.value) / 100 - el.clientWidth / 2
 })
 
-// Das Popup hängt am <body>, damit es nicht im scrollbaren Plan abgeschnitten wird.
+// The popup is attached to <body> so it is not clipped inside the scrollable plan.
 const pop = ref<{ id: string; top: number; left: number } | null>(null)
 const popBar = computed(() => bars.value.find((b) => b.a.id === pop.value?.id) ?? null)
 function toggleBar(id: string, e: MouseEvent) {
@@ -153,7 +153,7 @@ function rangeText(p: { start: string; end: string }) {
   return `Sa ${fmtDay(p.start)}${p.start.slice(0, 4) !== p.end.slice(0, 4) ? p.start.slice(0, 4) : ''} – Sa ${fmtDay(p.end)}${p.end.slice(0, 4)}`
 }
 
-/* ---------- Werkstatt-Termine (Kalender) ---------- */
+/* ---------- Workshop dates (calendar) ---------- */
 const calMonths = computed(() => {
   const out: { y: number; m: number }[] = []
   const end = parse(state.season.end)
@@ -223,7 +223,7 @@ const closedModel = computed({
 function saveReason() {
   if (openDay.value && closedModel.value && reasonDraft.value.trim() !== dayInfo(openDay.value).reason) setDayClosed(openDay.value, true, reasonDraft.value)
 }
-/** Beim Schließen (auch per Escape) den Kommentar übernehmen, der noch im Feld steht. */
+/** On close (also via Escape), take over the comment that is still in the field. */
 function closeDay() {
   saveComment()
   openDay.value = null
@@ -432,7 +432,7 @@ function closeDay() {
 .g-bar.done { background: var(--green-soft); border-color: #B5DCC6; color: var(--green-ink); }
 .g-bar.running { background: var(--accent); color: #fff; }
 .g-bar.planned { background: var(--surface); border: 1.5px dashed var(--faint); color: var(--text-2); }
-/* Bearbeiten: ganze Balken ziehen, Griffe an den Enden */
+/* Editing: drag whole bars, handles at the ends */
 .editing .g-bar { touch-action: none; cursor: grab; padding: 0 16px 0 14px; box-shadow: 0 0 0 1px var(--accent-soft); }
 .editing .g-bar.running { padding-bottom: 0; }
 .editing .g-bar.dragging { cursor: grabbing; box-shadow: 0 0 0 2px var(--accent); }
@@ -454,7 +454,7 @@ function closeDay() {
 }
 .editing .g-today-label { opacity: 0.35; }
 
-/* Kalender */
+/* Calendar */
 .cal { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
 .cal-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .cal-nav { display: flex; align-items: center; gap: 4px; }

@@ -10,9 +10,9 @@ import LevelPicker from '../LevelPicker.vue'
 import QtyStepper from '../QtyStepper.vue'
 
 /**
- * Bestand als alphabetische Zählliste, gezählt wird direkt in der Zeile.
- * kinds: welche Arten angezeigt werden (mit Umschalter, wenn beide).
- * forWhat: wird bei "Auf Bestellliste" als Verwendungszweck gespeichert (z. B. Flugzeugtyp).
+ * Stock as an alphabetical count list, counting happens directly in the row.
+ * kinds: which kinds are shown (with a toggle if both).
+ * forWhat: stored as the purpose on "Auf Bestellliste" (e.g. aircraft type).
  */
 const props = withDefaults(defineProps<{ items: InventoryItem[]; kinds?: ('vs' | 'et')[]; planeFilter?: boolean; forWhat?: string }>(), {
   kinds: () => ['vs', 'et'],
@@ -117,7 +117,7 @@ const rows = computed(() => {
 }
 @media (max-width: 640px) {
   .row { gap: 10px; }
-  /* Zähler/Picker teilt sich die Zeile mit dem Bestellstatus; erst auf sehr schmalen Geräten umbrechen. */
+  /* Stepper/picker shares the row with the order status; wrap only on very narrow devices. */
   .control { flex: 0 0 168px; }
   .order { flex: 1 1 auto; }
   .order .btn-sm { padding: 0 10px; }

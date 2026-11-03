@@ -25,14 +25,14 @@ const groups = computed(() => SCOPES.map((s) => ({ ...s, list: docs.value.filter
 const meta = (d: DocumentItem) => [d.file ? (d.file.type === 'application/pdf' ? 'PDF' : 'Bild') : 'PDF', d.kind, d.version].filter(Boolean).join(' · ')
 const isPdf = (f?: FileRef) => f?.type === 'application/pdf'
 
-// Adressen der hochgeladenen Dateien (Vorschau, Anzeige, Herunterladen)
+// URLs of the uploaded files (preview, display, download)
 const urls = reactive<Record<string, string | null>>({})
 watchEffect(async () => {
   for (const d of docs.value) if (d.file && !(d.file.id in urls)) urls[d.file.id] = await fileUrl(d.file)
 })
 const previewOf = (d: DocumentItem) => d.image ?? (d.file && !isPdf(d.file) ? urls[d.file.id] : null)
 
-// ?dokument=<id> öffnet ein Dokument direkt (Link aus der Kanban-Karte).
+// ?dokument=<id> opens a document directly (link from the Kanban card).
 const viewId = ref<string | null>(null)
 watch(() => route.query.dokument, (id) => { if (typeof id === 'string') viewId.value = id }, { immediate: true })
 const viewing = computed(() => docs.value.find((d) => d.id === viewId.value) ?? null)
@@ -50,7 +50,7 @@ async function download(d: DocumentItem) {
   }
 }
 
-/* Hinzufügen und Bearbeiten teilen sich ein Formular. */
+/* Adding and editing share one form. */
 const KINDS: DocKind[] = ['Handbuch', 'Anleitung', 'Prüfbericht', 'Sonstiges']
 const editing = ref<DocumentItem | 'new' | null>(null)
 const form = reactive(docInput())

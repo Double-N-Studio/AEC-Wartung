@@ -17,7 +17,7 @@ const props = defineProps<{ item: InventoryItem; forWhat?: string; start?: 'orde
 const emit = defineEmits<{ close: []; edit: [] }>()
 
 const order = computed(() => openOrderFor(props.item.id))
-// start: aus der Bestellliste direkt mit dem nächsten Schritt öffnen
+// start: open directly with the next step from the order list
 const step = reactive<OrderStep>({ step: props.start ?? null, qty: 1, date: props.start ? defaultDelivery() : '' })
 const unit = (n: number) => unitOf(props.item, n)
 const qty = computed({

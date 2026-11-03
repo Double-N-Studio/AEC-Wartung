@@ -6,7 +6,7 @@ import AppIcon from '../AppIcon.vue'
 import PersonAvatar from '../PersonAvatar.vue'
 import { authDialog } from './authDialog'
 
-/** Konto unten in der Seitenleiste: Namen eingeben, anmelden oder abmelden. */
+/** Account at the bottom of the sidebar: enter name, log in or log out. */
 const open = ref(false)
 const root = ref<HTMLElement | null>(null)
 const me = computed(() => currentUser())

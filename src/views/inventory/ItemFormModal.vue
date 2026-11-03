@@ -9,8 +9,8 @@ import ConflictNote from '../../components/ConflictNote.vue'
 import LevelPicker from '../../components/LevelPicker.vue'
 
 /**
- * Inventur-Artikel anlegen oder (mit item) bearbeiten.
- * preset: Vorbelegung beim Anlegen, order: Bestellung ohne Artikel, die danach dem neuen Artikel zugeordnet wird.
+ * Create an inventory item or (with item) edit one.
+ * preset: prefill when creating, order: order without an item, which is linked to the new item afterwards.
  */
 const props = defineProps<{ item?: InventoryItem; preset?: { name?: string; kind?: InventoryItem['kind']; fits?: string }; order?: Order }>()
 const emit = defineEmits<{ close: []; saved: [item: InventoryItem] }>()
@@ -24,7 +24,7 @@ function reload() {
   reset()
 }
 const fitsList = computed(() => (form.fits && form.fits !== ALL ? form.fits.split(', ') : []))
-// Typen bereits ausgemusterter Flugzeuge bleiben wählbar, solange der Artikel sie noch nennt.
+// Types of already retired aircraft stay selectable as long as the item still names them.
 const types = computed(() => [...new Set([...aircraftTypes(), ...fitsList.value])])
 
 function toggleType(type: string) {
@@ -34,7 +34,7 @@ function toggleType(type: string) {
   form.fits = types.value.filter((t) => set.has(t)).join(', ')
 }
 
-// Zählweise wechseln: Bestand sinnvoll übertragen statt eine Stückzahl als Füllstand zu deuten.
+// Switching the counting mode: carry over the stock sensibly instead of interpreting a piece count as a fill level.
 watch(() => form.mode, (mode, before) => {
   if (mode === before) return
   form.qty = mode === 'flag' ? (form.qty > 0 ? FLAG.full : FLAG.empty) : 0

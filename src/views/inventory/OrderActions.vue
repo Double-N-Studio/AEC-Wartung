@@ -1,10 +1,10 @@
 <script lang="ts">
-/** Nächster Bestellschritt: Eingaben im Inhalt (OrderSection), Bestätigen in der Fußleiste. */
+/** Next order step: inputs in the content (OrderSection), confirm in the footer. */
 export interface OrderStep {
   step: null | 'order' | 'deliver'
-  /** Gelieferte Menge */
+  /** Delivered quantity */
   qty: number
-  /** Erwartete Lieferung */
+  /** Expected delivery */
   date: string
 }
 </script>
@@ -13,7 +13,7 @@ export interface OrderStep {
 import { defaultDelivery, markDelivered, markOrdered } from '../../store'
 import type { InventoryItem, Order } from '../../types'
 
-/** Nächster Bestellschritt als Buttons für die Fußleiste der Inventur-Popups. */
+/** Next order step as buttons for the footer of the inventory popups. */
 const props = defineProps<{ order: Order; item?: InventoryItem; step: OrderStep }>()
 const emit = defineEmits<{ delivered: [] }>()
 

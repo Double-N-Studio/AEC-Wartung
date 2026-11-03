@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue'
 
-/** Hinweis im Formular, wenn der Datensatz währenddessen auf einem anderen Gerät geändert wurde. */
+/** Note in the form when the record was changed on another device in the meantime. */
 defineProps<{ who: string }>()
 const emit = defineEmits<{ reload: [] }>()
 </script>

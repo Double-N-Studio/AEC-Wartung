@@ -7,7 +7,7 @@ import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
 import ConfirmModal from '../../components/ConfirmModal.vue'
 
-/** Flugzeuge des Vereins anlegen, bearbeiten, ausmustern. Nichts ist fest im Code, damit andere Vereine die App nutzen können. */
+/** Create, edit and retire the club's aircraft. Nothing is hard-coded so that other clubs can use the app. */
 const list = computed(() => [...state.aircraft].sort((a, b) => Number(!!a.retired) - Number(!!b.retired) || a.type.localeCompare(b.type, 'de')))
 
 const editing = ref<Aircraft | 'new' | null>(null)
@@ -26,7 +26,7 @@ const error = computed(() => {
   if (form.start < state.season.start || form.end > state.season.end) return 'Der Werkstattzeitraum muss in der Saison liegen.'
   return ''
 })
-// Ein entferntes Konto bleibt als Pate sichtbar, bis jemand anderes eingetragen wird.
+// A removed account stays visible as sponsor until someone else is entered.
 const managers = computed(() => {
   const list = people()
   return form.manager && !list.some((u) => u.id === form.manager) ? [...list, { id: form.manager, name: userName(form.manager) }] : list

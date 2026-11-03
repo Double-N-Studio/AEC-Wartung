@@ -1,31 +1,31 @@
-/** Konto-ID (z. B. 'MA', 'tablet') oder SYSTEM für Einträge aus Vereinsflieger. */
+/** Account ID (e.g. 'MA', 'tablet') or SYSTEM for entries from Vereinsflieger. */
 export type UserId = string
 
-/** Admins dürfen alles wie Werkstattleiter, dazu die Verwaltung. Ohne Login gibt es kein Konto. */
+/** Admins may do everything a workshop lead can, plus administration. Without login there is no account. */
 export type Role = 'admin' | 'wl' | 'user'
 
 export interface User {
   id: UserId
   name: string
   role: Role
-  /** Anmeldename der Sonderkonten (Werkstattleitung, Admin, Tablet); Mitglieder geben nur ihren Namen ein. */
+  /** Sign-in name of the special accounts (workshop lead, admin, tablet); members only enter their name. */
   email?: string
-  /** Geteiltes Gerät wie das Werkstatt-Tablet, keine Person. */
+  /** Shared device such as the workshop tablet, not a person. */
   device?: boolean
-  /** Entfernte Konten bleiben für den Verlauf erhalten, tauchen aber in keiner Auswahl mehr auf. */
+  /** Removed accounts are kept for the history but no longer appear in any selection. */
   removed?: boolean
 }
 
-/** Verweis auf eine hochgeladene Datei (Foto, PDF); den Inhalt liefert src/api/files.ts. */
+/** Reference to an uploaded file (photo, PDF); the content is provided by src/api/files.ts. */
 export interface FileRef {
   id: string
   name: string
-  /** MIME-Typ, z. B. image/jpeg oder application/pdf */
+  /** MIME type, e.g. image/jpeg or application/pdf */
   type: string
   size: number
 }
 
-/** at: ISO-Datum (YYYY-MM-DD) oder Datum mit Uhrzeit (YYYY-MM-DDTHH:mm) */
+/** at: ISO date (YYYY-MM-DD) or date with time (YYYY-MM-DDTHH:mm) */
 export interface HistoryEntry {
   text: string
   who: UserId
@@ -37,23 +37,23 @@ export interface Aircraft {
   type: string
   reg: string
   serial?: string
-  /** Verkauft o. ä.: bleibt mit allen Daten erhalten, taucht aber in Seitenleiste, Saisonplan und Auswahllisten nicht mehr auf. */
+  /** Sold or similar: kept with all its data, but no longer appears in the sidebar, season plan and selection lists. */
   retired?: boolean
-  /** Flugzeugpate (Konto-ID) */
+  /** Aircraft sponsor (account ID) */
   manager?: UserId
-  /** Werkstattzeitraum, jeweils ein Samstag */
+  /** Workshop period, each a Saturday */
   start: string
   end: string
 }
 
 export interface Season {
   label: string
-  /** Erster und letzter Werkstatt-Samstag */
+  /** First and last workshop Saturday */
   start: string
   end: string
 }
 
-/** Welche Flugzeuge an einem Tag in der Werkstatt sind, ergibt sich aus den Zeiträumen der Flugzeuge. */
+/** Which aircraft are in the workshop on a day follows from the aircraft periods. */
 export interface ScheduleDay {
   leader?: UserId | null
   closed?: boolean
@@ -70,7 +70,7 @@ export interface ChecklistItem {
   done: boolean
 }
 
-/** Notiz an einer Kanban-Karte, z. B. was beim Arbeiten aufgefallen ist. */
+/** Note on a Kanban card, e.g. what was noticed while working. */
 export interface TaskNote {
   id: string
   text: string
@@ -92,7 +92,7 @@ export interface Task {
   deadline?: string
   docId?: string
   defectId?: string
-  /** Aus dieser Vorlage angelegt (Saisonstart oder neues Flugzeug). */
+  /** Created from this template (season start or new aircraft). */
   templateId?: string
   doneBy?: UserId
   doneAt?: string
@@ -101,21 +101,21 @@ export interface Task {
   history: HistoryEntry[]
 }
 
-/** Vorlage für Kanban-Karten; daraus entstehen zu Saisonbeginn die Karten jedes Flugzeugs. */
+/** Template for Kanban cards; at season start the cards of every aircraft are created from it. */
 export interface TaskTemplate {
   id: string
-  /** Flugzeugtyp, leer = alle Flugzeuge */
+  /** Aircraft type, empty = all aircraft */
   aircraftType: string
   level: Level
   title: string
   desc: string
   duration: string
   checklist: string[]
-  /** Dokumente gehören zum einzelnen Flugzeug; verknüpft wird das Dokument mit diesem Titel. */
+  /** Documents belong to the individual aircraft; the document with this title gets linked. */
   docTitle?: string
 }
 
-/** Abgeschlossene Saison, nur noch zum Nachlesen. */
+/** Completed season, read-only for reference. */
 export interface ArchivedSeason extends Season {
   id: string
   aircraft: Pick<Aircraft, 'id' | 'type' | 'reg' | 'start' | 'end'>[]
@@ -160,8 +160,8 @@ export interface Deadline {
 export type DocKind = 'Handbuch' | 'Anleitung' | 'Prüfbericht' | 'Sonstiges'
 
 /**
- * Dokument eines Flugzeugs (aircraftId), aller Flugzeuge eines Typs (aircraftType)
- * oder des ganzen Vereins (beides leer, z. B. Werkstattordnung).
+ * Document of one aircraft (aircraftId), of all aircraft of a type (aircraftType)
+ * or of the whole club (both empty, e.g. workshop rules).
  */
 export interface DocumentItem {
   id: string
@@ -169,10 +169,10 @@ export interface DocumentItem {
   aircraftType?: string
   title: string
   kind: DocKind
-  /** Ausgabe oder Stand, z. B. „Änderung TM 14 vom 11.04.2023“ */
+  /** Edition or revision, e.g. "Änderung TM 14 vom 11.04.2023" */
   version: string
   file?: FileRef
-  /** Vorschaubild der ersten Seite (nur Beispieldaten) */
+  /** Preview image of the first page (sample data only) */
   image?: string
   addedAt: string
   addedBy: UserId
@@ -184,7 +184,7 @@ export interface InventoryItem {
   name: string
   location: string
   mode: 'count' | 'flag'
-  /** Stückzahl; bei mode 'flag' der Füllstand (siehe FLAG in utils/stock.ts) */
+  /** Quantity; for mode 'flag' the fill level (see FLAG in utils/stock.ts) */
   qty: number
   unit: [string, string]
   fits?: string
@@ -201,16 +201,16 @@ export interface Order {
   reportedAt: string
   delivery?: string
   comment: string
-  /** Bestelldaten, damit die nächste Bestellung schneller geht */
+  /** Order details so the next order goes faster */
   supplier?: string
   articleNo?: string
   link?: string
-  /** Gesamtpreis in Euro */
+  /** Total price in euros */
   price?: number
   orderedBy?: UserId
   orderedAt?: string
   deliveredAt?: string
-  /** Gelieferte Stückzahl (nur bei Artikeln mit Stückzahl) */
+  /** Delivered quantity (only for items with a quantity) */
   deliveredQty?: number
   history: HistoryEntry[]
 }
@@ -222,13 +222,13 @@ export interface AppState {
   schedule: Record<string, ScheduleDay>
   tasks: Task[]
   templates: TaskTemplate[]
-  /** Frühere Saisons */
+  /** Previous seasons */
   archive: ArchivedSeason[]
   defects: Defect[]
   deadlines: Deadline[]
   documents: DocumentItem[]
   inventory: InventoryItem[]
   orders: Order[]
-  /** Letzter Abgleich mit Vereinsflieger; error, wenn er fehlgeschlagen ist */
+  /** Last sync with Vereinsflieger; error if it failed */
   vereinsflieger: { lastSync: string; error?: string }
 }

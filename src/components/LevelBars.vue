@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Drei Balken, gefüllt je nach Eignungsstufe (1–3). */
+/** Three bars, filled according to the skill level (1–3). */
 defineProps<{ bars: number }>()
 </script>
 

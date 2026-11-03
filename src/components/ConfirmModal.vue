@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppModal from './AppModal.vue'
 
-/** Rückfrage vor Aktionen, die sich nicht rückgängig machen lassen (z. B. Löschen). */
+/** Confirmation prompt before actions that cannot be undone (e.g. deleting). */
 const props = withDefaults(defineProps<{ title: string; text: string; confirm?: string; icon?: string }>(), { confirm: 'Löschen', icon: 'trash' })
 const emit = defineEmits<{ confirm: []; close: [] }>()
 </script>

@@ -7,7 +7,7 @@ import PhotoStrip from '../../components/PhotoStrip.vue'
 import AppModal from '../../components/AppModal.vue'
 import ConflictNote from '../../components/ConflictNote.vue'
 
-/** Befund erfassen oder (mit defect) bearbeiten. */
+/** Record a finding or (with defect) edit one. */
 const props = defineProps<{ aircraftId: string; defect?: Defect }>()
 const emit = defineEmits<{ close: [] }>()
 

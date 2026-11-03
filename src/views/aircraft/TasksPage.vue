@@ -29,7 +29,7 @@ const chips = computed(() => [
   ...LEVEL_KEYS.map((k) => ({ value: k, label: LEVELS[k].long, fg: LEVELS[k].fg, bars: LEVELS[k].bars })),
 ])
 
-// Scroll-Hinweis: Verlauf am unteren Rand und "N weitere", solange eine Spalte unten noch Karten verbirgt.
+// Scroll hint: fade at the bottom edge and "N weitere" as long as a column still hides cards below.
 const lists: Partial<Record<TaskStatus, HTMLElement>> = {}
 const overflow = reactive<Record<TaskStatus, { fade: boolean; more: number }>>({
   offen: { fade: false, more: 0 }, arbeit: { fade: false, more: 0 }, erledigt: { fade: false, more: 0 },
@@ -39,7 +39,7 @@ const measure = (status: TaskStatus) => {
   if (!el) return
   const bottom = el.scrollTop + el.clientHeight
   overflow[status].fade = el.scrollHeight - bottom > 4
-  // Karten, die zu mehr als der Hälfte unterhalb des sichtbaren Bereichs liegen.
+  // Cards that lie more than half below the visible area.
   overflow[status].more = [...el.querySelectorAll<HTMLElement>('.task')].filter((c) => c.offsetTop + c.offsetHeight / 2 > bottom).length
 }
 const resizeObserver = new ResizeObserver((entries) => {
@@ -60,7 +60,7 @@ const scrollMore = (status: TaskStatus) => {
 const checked = (t: Task) => t.checklist.filter((c) => c.done).length
 const defectOf = (t: Task) => (t.defectId ? state.defects.find((d) => d.id === t.defectId) : undefined)
 
-// ?paket=<id> öffnet eine Kanban-Karte direkt (Link aus dem Mangel/Befund).
+// ?paket=<id> opens a Kanban card directly (link from the defect/finding).
 const router = useRouter()
 const openId = ref<string | null>(null)
 watch(() => route.query.paket, (id) => { if (typeof id === 'string') openId.value = id }, { immediate: true })
@@ -69,7 +69,7 @@ const closeTask = () => {
   if (route.query.paket) router.replace({ query: {} })
 }
 const openTask = computed(() => state.tasks.find((t) => t.id === openId.value) ?? null)
-// Formular für neue ('new') oder bestehende Karte; die Detailansicht ist solange ausgeblendet.
+// Form for a new ('new') or existing card; the detail view is hidden meanwhile.
 const form = ref<Task | 'new' | null>(null)
 </script>
 
@@ -107,7 +107,7 @@ const form = ref<Task | 'new' | null>(null)
             <AppIcon :name="defectOf(t)!.source === 'vf' ? 'cloud' : 'camera'" :size="14" :stroke="1.9" />
             <span class="task-origin-text"><b>{{ defectOf(t)!.source === 'vf' ? 'Mangel' : 'Befund' }}:</b> {{ defectOf(t)!.title }}</span>
           </span>
-          <!-- Checklisten-Fortschritt erst ab "In Arbeit"; offene Karten zeigen die Dauer. -->
+          <!-- Checklist progress only from "In Arbeit" on; open cards show the duration. -->
           <span v-if="t.status === 'offen' || t.notes?.length || (t.status === 'arbeit' && (t.checklist.length || t.deadline))" class="task-meta">
             <span v-if="t.status === 'offen'"><AppIcon name="clock" :size="14" />{{ t.duration }}</span>
             <span v-else-if="t.status === 'arbeit' && t.checklist.length"><AppIcon name="list" :size="14" />{{ checked(t) }}/{{ t.checklist.length }}</span>

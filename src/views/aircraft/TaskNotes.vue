@@ -8,7 +8,7 @@ import ConfirmModal from '../../components/ConfirmModal.vue'
 import PersonAvatar from '../../components/PersonAvatar.vue'
 import PhotoStrip from '../../components/PhotoStrip.vue'
 
-/** Notizen mit Fotos an einer Kanban-Karte. editable: Karte ist nicht abgezeichnet und das Konto darf bearbeiten. */
+/** Notes with photos on a Kanban card. editable: the card is not signed off and the account may edit. */
 const props = defineProps<{ task: Task; editable: boolean }>()
 
 const text = ref('')
@@ -19,7 +19,7 @@ function save() {
   photos.value = []
 }
 
-// Eigene Notizen darf man löschen, die Werkstattleitung alle.
+// Everyone may delete their own notes, the workshop lead all of them.
 const canDelete = (n: TaskNote) => props.editable && (n.who === currentUser()?.id || can('lead'))
 const removing = ref<TaskNote | null>(null)
 function confirmRemove() {

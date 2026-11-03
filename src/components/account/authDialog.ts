@@ -1,4 +1,4 @@
 import { ref } from 'vue'
 
-/** Welches Konto-Popup offen ist; geöffnet aus Seitenleiste, Hinweisleiste oder beim ersten Besuch. */
+/** Which account popup is open; opened from the sidebar, the notice bar or on the first visit. */
 export const authDialog = ref<'name' | 'login' | null>(null)

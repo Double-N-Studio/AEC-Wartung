@@ -1,45 +1,45 @@
 # Server
 
-Backend der Winterwartung: Hono auf Node 24, SQLite über Drizzle. Bisher nur das Grundgerüst mit
-`GET /api/health`; was das Frontend an Endpunkten und Datenmodell erwartet, steht in `../docs/backend.md`.
+Backend of the winter maintenance app: Hono on Node 24, SQLite via Drizzle. So far only the scaffold with
+`GET /api/health`; what the frontend expects in endpoints and data model is in `../docs/backend.md`.
 
-## Entwickeln
+## Development
 
 ```bash
 cd server
 npm install
-npm run build && npm run dev   # http://localhost:3000/api/health, Datenbank in server/data/
-npm run db:generate            # neue Migration nach Änderungen an src/schema.ts
+npm run build && npm run dev   # http://localhost:3000/api/health, database in server/data/
+npm run db:generate            # new migration after changes to src/schema.ts
 ```
 
-Migrationen aus `drizzle/` laufen bei jedem Start. Bei Änderungen am Schema immer `db:generate`
-ausführen und die erzeugte Datei mit einchecken.
+Migrations from `drizzle/` run on every start. After changing the schema always run `db:generate`
+and commit the generated file.
 
-## Wo was läuft
+## Where things run
 
-Hetzner CX23 „nuno-vps“ (178.105.54.205), geteilt mit anderen Projekten (camper, GitLab-Runner).
+Hetzner CX23 "nuno-vps" (178.105.54.205), shared with other projects (camper, GitLab runner).
 
-| Was | Wo |
+| What | Where |
 |---|---|
-| Hostname | `wartung.nuno-ferreira.de` (vorläufig), später `wartung.aecbn.de` |
-| TLS | Let's Encrypt über certbot, verlängert sich automatisch |
-| Reverse-Proxy | nginx, `/etc/nginx/sites-available/wartung` → `127.0.0.1:8081` |
-| Compose-Projekt | `/srv/wartung` (Kopie von `server/`), Benutzer `deploy` |
-| Daten | `/srv/wartung/data` (SQLite, Uploads) – auf der Root-Platte, damit Hetzner-Backups sie erfassen |
-| Docker | `data-root` liegt auf dem 40-GB-Volume (`/mnt/HC_Volume_107352022/docker`), weil die Root-Platte vom GitLab-Runner belegt ist |
+| Hostname | `wartung.nuno-ferreira.de` (temporary), later `wartung.aecbn.de` |
+| TLS | Let's Encrypt via certbot, renews automatically |
+| Reverse proxy | nginx, `/etc/nginx/sites-available/wartung` → `127.0.0.1:8081`, uploads up to 30 MB |
+| Compose project | `/srv/wartung` (copy of `server/`), user `deploy` |
+| Data | `/srv/wartung/data` (SQLite, uploads) – on the root disk so Hetzner backups cover it |
+| Docker | `data-root` is on the 40 GB volume (`/mnt/HC_Volume_107352022/docker`) because the root disk is taken by the GitLab runner |
 
-## Ausrollen
+## Deployment
 
-`.github/workflows/deploy-server.yml` baut das Image nach `ghcr.io/double-n-studio/aec-wartung-server`,
-kopiert `server/` per rsync nach `/srv/wartung` und startet `docker compose up -d`. Läuft bei Push
-auf `main`, wenn sich unter `server/` etwas ändert, und prüft zum Schluss `/api/health`.
+`.github/workflows/deploy-server.yml` builds the image to `ghcr.io/double-n-studio/aec-wartung-server`,
+copies `server/` via rsync to `/srv/wartung` and runs `docker compose up -d`. Runs on push to `main`
+when something under `server/` changed, and checks `/api/health` at the end.
 
-Einmalige Einrichtung auf dem VPS (als root): `bash server/setup/deploy-user.sh "<öffentlicher Schlüssel>"`,
-der private Schlüssel kommt als Secret `DEPLOY_SSH_KEY` ins Repo.
+One-time setup on the VPS (as root): `bash server/setup/deploy-user.sh "<public key>"`;
+the private key goes into the repo as the secret `DEPLOY_SSH_KEY`.
 
-## Domain-Wechsel auf wartung.aecbn.de
+## Switching the domain to wartung.aecbn.de
 
-1. Vereins-Admin legt einen A-Record `wartung.aecbn.de → 178.105.54.205` an (und AAAA auf die IPv6, falls gewünscht).
-2. Auf dem VPS: `certbot certonly --nginx -d wartung.aecbn.de`
-3. In `/etc/nginx/sites-available/wartung` den neuen `server_name` und die Zertifikatspfade eintragen, `nginx -t && systemctl reload nginx`.
-4. Alten Hostnamen als Weiterleitung behalten oder entfernen.
+1. The club admin creates an A record `wartung.aecbn.de → 178.105.54.205` (and AAAA to the IPv6 if wanted).
+2. On the VPS: `certbot certonly --nginx -d wartung.aecbn.de`
+3. Put the new `server_name` and certificate paths into `/etc/nginx/sites-available/wartung`, `nginx -t && systemctl reload nginx`.
+4. Keep the old hostname as a redirect or remove it.

@@ -11,8 +11,8 @@ import FreeOrderModal from '../../views/inventory/FreeOrderModal.vue'
 import NewOrderModal from '../../views/inventory/NewOrderModal.vue'
 
 /**
- * Reiter Bestand / Bestellliste mit allen Popups. Inventur und Material-Reiter zeigen dieselben Daten,
- * der Material-Reiter nur gefiltert (forWhat = Flugzeugtyp).
+ * Stock / order list tabs with all popups. Inventory and the material tab show the same data,
+ * the material tab only filtered (forWhat = aircraft type).
  */
 const props = withDefaults(defineProps<{ items: InventoryItem[]; orders: Order[]; kinds?: ('vs' | 'et')[]; planeFilter?: boolean; forWhat?: string }>(), {
   kinds: () => ['vs', 'et'],
@@ -25,11 +25,11 @@ const openFreeId = ref<string | null>(null)
 const openFree = computed(() => state.orders.find((o) => o.id === openFreeId.value && !o.itemId) ?? null)
 const creatingOrder = ref(false)
 const tab = ref<'stock' | 'orders'>('stock')
-/** Nächster Bestellschritt, mit dem das Popup aus der Bestellliste heraus startet */
+/** Next order step the popup starts with when opened from the order list */
 const startStep = ref<'order' | 'deliver' | undefined>()
 const openCount = computed(() => props.orders.filter((o) => o.state === 'list').length)
 
-/** Artikel-Formular: neu, bearbeiten oder neu für eine Bestellung ohne Artikel. Die Detailansicht ist solange ausgeblendet. */
+/** Item form: new, edit, or new for an order without an item. The detail view is hidden meanwhile. */
 const itemForm = ref<{ item?: InventoryItem; order?: Order } | null>(null)
 const preset = computed(() => ({
   name: itemForm.value?.order?.name,
@@ -37,7 +37,7 @@ const preset = computed(() => ({
   fits: props.forWhat && props.forWhat !== 'Lager' ? props.forWhat : undefined,
 }))
 
-// ?artikel=<id> bzw. ?bestellung=<id> öffnen direkt (Links aus „Meine Sachen“).
+// ?artikel=<id> or ?bestellung=<id> open directly (links from "Meine Sachen").
 const route = useRoute()
 const router = useRouter()
 watch(() => [route.query.artikel, route.query.bestellung], ([itemId, orderId]) => {

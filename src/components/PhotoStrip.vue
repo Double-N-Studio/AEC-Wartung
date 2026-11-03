@@ -6,8 +6,8 @@ import AppIcon from './AppIcon.vue'
 import AppModal from './AppModal.vue'
 
 /**
- * Fotos anzeigen (Antippen = groß) und mit editable aufnehmen oder entfernen.
- * Fotos ohne Datei (Beispieldaten) erscheinen als Platzhalter.
+ * Show photos (tap = enlarge) and, with editable, take or remove them.
+ * Photos without a file (sample data) appear as placeholders.
  */
 const props = withDefaults(defineProps<{ modelValue: FileRef[]; editable?: boolean; small?: boolean; max?: number }>(), { max: 6 })
 const emit = defineEmits<{ 'update:modelValue': [refs: FileRef[]] }>()

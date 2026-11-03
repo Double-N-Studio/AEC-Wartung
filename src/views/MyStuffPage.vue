@@ -6,7 +6,7 @@ import { fmtDay, fmtWhen } from '../utils/date'
 import AppIcon from '../components/AppIcon.vue'
 import PriorityBadge from '../components/PriorityBadge.vue'
 
-/** Alles, was gerade an der angemeldeten Person hängt – mit Links direkt in die Popups. */
+/** Everything currently assigned to the logged-in person – with links straight into the popups. */
 const me = computed(() => currentUser())
 const myId = computed(() => me.value?.id)
 const active = computed(() => new Set(activeAircraft().map((a) => a.id)))

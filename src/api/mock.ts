@@ -7,9 +7,9 @@ import type { Backend, Batch, PushResult, SessionInfo } from './backend'
 import { applyChanges, MODEL_VERSION } from './records'
 
 /**
- * Schein-Server der Demo: liegt im localStorage und ist damit für alle Tabs dieses Browsers derselbe –
- * jeder Tab spielt ein eigenes Gerät (Warteschlange im sessionStorage). Verhält sich wie im Vertrag
- * (docs/backend.md), nur ohne Passwörter und Berechtigungsprüfung.
+ * Mock server of the demo: lives in localStorage and is therefore the same for all tabs of this browser –
+ * each tab plays its own device (queue in sessionStorage). Behaves as in the contract
+ * (docs/backend.md), just without passwords and permission checks.
  */
 
 const SERVER_KEY = `aec-winterwartung-demo-v${MODEL_VERSION}`
@@ -18,9 +18,9 @@ const SESSION_KEY = 'aec-winterwartung-sitzung'
 interface Server {
   rev: number
   state: AppState
-  /** Pro Datensatz: bei welchem Stand und von welchem Gerät zuletzt geändert */
+  /** Per record: at which revision and by which device it was last changed */
   meta: Record<string, { rev: number; clientId: string }>
-  /** Zuletzt angenommene Sendungen, damit Wiederholungen nicht doppelt zählen */
+  /** Most recently accepted batches, so repeats do not count twice */
   seen: string[]
 }
 
@@ -31,7 +31,7 @@ function read(): Server {
     const raw = localStorage.getItem(SERVER_KEY)
     if (raw) return JSON.parse(raw) as Server
   } catch {
-    // Kein localStorage – dann eben jedes Mal die Ausgangsdaten.
+    // No localStorage – then simply the initial data every time.
   }
   return fresh()
 }
@@ -40,11 +40,11 @@ function write(server: Server) {
   try {
     localStorage.setItem(SERVER_KEY, JSON.stringify(server))
   } catch {
-    // Speichern ist optional.
+    // Saving is optional.
   }
 }
 
-/** Eine Änderung des Servers selbst (Konto angelegt, Vereinsflieger-Abgleich). */
+/** A change by the server itself (account created, Vereinsflieger sync). */
 function serverChange(fn: (s: AppState) => void) {
   const server = read()
   fn(server.state)
@@ -64,7 +64,7 @@ function readSession(): SessionInfo {
       return { userId: userId ?? null, auth: auth ?? null }
     }
   } catch {
-    // Ohne localStorage gibt es keine gespeicherte Sitzung.
+    // Without localStorage there is no stored session.
   }
   return { userId: null, auth: null }
 }
@@ -72,7 +72,7 @@ function writeSession(s: SessionInfo) {
   try {
     localStorage.setItem(SESSION_KEY, JSON.stringify(s))
   } catch {
-    // Speichern ist optional.
+    // Saving is optional.
   }
 }
 
@@ -91,7 +91,7 @@ export function mockBackend(): Backend {
       await latency()
       const server = read()
       if (server.seen.includes(batch.id)) return { ok: true, rev: server.rev }
-      // Konflikt: ein anderes Gerät hat denselben Datensatz geändert, nachdem dieses ihn zuletzt gesehen hat.
+      // Conflict: another device changed the same record after this one last saw it.
       const clash = batch.changes.find((c) => {
         const m = server.meta[`${c.coll}/${c.id}`]
         return m && m.rev > batch.baseRev && m.clientId !== batch.clientId
@@ -111,7 +111,7 @@ export function mockBackend(): Backend {
         try {
           onRev((JSON.parse(e.newValue) as Server).rev)
         } catch {
-          // Unlesbarer Stand – beim nächsten Laden wieder.
+          // Unreadable state – try again on the next load.
         }
       })
     },
@@ -138,7 +138,7 @@ export function mockBackend(): Backend {
       await latency()
       const mail = email.trim().toLowerCase()
       const user = read().state.users.find((u) => !u.removed && needsPassword(u) && u.email?.toLowerCase() === mail)
-      // Die Demo prüft kein Passwort.
+      // The demo does not check a password.
       if (!user || !password) return { ok: false }
       writeSession({ userId: user.id, auth: 'password' })
       return { ok: true, user }
@@ -148,7 +148,7 @@ export function mockBackend(): Backend {
       writeSession({ userId: null, auth: null })
     },
 
-    // Die Demo verschickt keine E-Mails und kennt keine Passwörter.
+    // The demo sends no e-mails and knows no passwords.
     async sendPasswordLink() {
       await latency()
     },
@@ -157,7 +157,7 @@ export function mockBackend(): Backend {
       return true
     },
 
-    // Dateien liegen in der Demo nur in IndexedDB dieses Browsers (siehe files.ts).
+    // In the demo, files live only in this browser's IndexedDB (see files.ts).
     async putFile() {},
     fileUrl: () => null,
 

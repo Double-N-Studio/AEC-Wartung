@@ -16,7 +16,7 @@ const drawerOpen = ref(false)
 const route = useRoute()
 watch(() => route.fullPath, () => { drawerOpen.value = false })
 
-// Beim ersten Besuch nach dem Namen fragen, sobald die Sitzung bekannt ist – nicht auf der Seite zum Passwort-Setzen.
+// On the first visit ask for the name as soon as the session is known – not on the set-password page.
 watch(() => sync.ready, (ready) => {
   if (ready && !session.chosen && !route.path.startsWith('/passwort')) authDialog.value = 'name'
 }, { immediate: true })
@@ -95,7 +95,7 @@ watch(() => sync.ready, (ready) => {
     position: fixed; top: 0; bottom: 0; left: 0; z-index: 60;
     transform: translateX(-100%); transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  /* Schatten nur im offenen Zustand, sonst ragt er geschlossen von links ins Bild. */
+  /* Shadow only when open, otherwise it sticks into view from the left while closed. */
   .sidebar-wrap.open { transform: translateX(0); box-shadow: var(--shadow-modal); }
   .backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(23, 32, 43, 0.4); }
   .content { height: auto; flex: 1; min-height: 0; }

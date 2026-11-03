@@ -8,13 +8,13 @@ import AppModal from '../../components/AppModal.vue'
 import ConfirmModal from '../../components/ConfirmModal.vue'
 import LevelBars from '../../components/LevelBars.vue'
 
-/** Kanban-Vorlage anlegen oder (mit template) bearbeiten. */
+/** Create a Kanban template or (with template) edit one. */
 const props = defineProps<{ template?: TaskTemplate; preset?: { aircraftType?: string } }>()
 const emit = defineEmits<{ close: [] }>()
 
 const form = reactive({ ...templateInput(props.template), ...(props.template ? {} : props.preset) })
 const durations = computed(() => (DURATIONS.includes(form.duration) ? DURATIONS : [form.duration, ...DURATIONS]))
-// Typ eines ausgemusterten Flugzeugs bleibt wählbar, solange die Vorlage ihn noch nennt.
+// The type of a retired aircraft stays selectable as long as the template still names it.
 const types = computed(() => [...new Set([...aircraftTypes(), ...(form.aircraftType ? [form.aircraftType] : [])])])
 const docTitles = computed(() => [...new Set(state.documents.map((d) => d.title))].sort((a, b) => a.localeCompare(b, 'de')))
 

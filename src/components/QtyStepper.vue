@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue'
 
-/** boxed: kompakte Variante mit Rahmen und voller Breite, z. B. in der Zählliste. */
+/** boxed: compact variant with a border and full width, e.g. in the count list. */
 const props = withDefaults(defineProps<{ modelValue: number; label: string; min?: number; big?: boolean; boxed?: boolean }>(), { min: 0 })
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 const set = (v: number) => emit('update:modelValue', Math.max(props.min, v))

@@ -9,37 +9,37 @@ import { newId } from './utils/id'
 import { connect, discardQueue, isOffline, refresh } from './sync'
 
 /**
- * Gemeinsamer Zustand. Aktionen ändern ihn nur synchron; was sich geändert hat, ermittelt sync.ts
- * und schickt es an den Server. Bis der erste Stand geladen ist (sync.ready), ist er leer.
+ * Shared state. Actions only change it synchronously; sync.ts works out what changed
+ * and sends it to the server. Until the first revision is loaded (sync.ready), it is empty.
  */
 export const state = reactive<AppState>(emptyState())
 
 const SESSION_KEY = 'aec-winterwartung-konto'
 
-/** Beim Start: erst fragen, wer an diesem Gerät angemeldet ist, dann den Stand laden. */
+/** On startup: first ask who is signed in on this device, then load the state. */
 export async function boot() {
   try {
     const info = await backend.session()
     Object.assign(session, info, info.userId ? { chosen: true } : {})
   } catch {
-    // Offline bleibt die zuletzt bekannte Sitzung.
+    // Offline, the last known session is kept.
   }
   await connect(state)
 }
 
-/** Nur Demo: Ausgangsdaten wiederherstellen. */
+/** Demo only: restore the initial data. */
 export async function resetDemo() {
   await backend.reset?.()
   discardQueue()
   await refresh()
 }
 
-/* ---------- Konto und Rechte ---------- */
+/* ---------- Account and permissions ---------- */
 
 /**
- * Mitglieder geben nur Vor- und Nachnamen ein (ohne Passwort), Sonderkonten (Werkstattleitung, Admin, Tablet) melden sich an.
- * Die Sitzung selbst hält der Server (Cookie); hier steht die zuletzt bekannte, damit die App auch offline weiß, wer man ist.
- * chosen: Auswahl schon einmal getroffen – sonst fragt die App beim Öffnen „Wer bist du?“.
+ * Members only enter first and last name (no password); special accounts (workshop lead, admin, tablet) sign in.
+ * The session itself is held by the server (cookie); the last known one is kept here so the app knows who you are even offline.
+ * chosen: a choice has been made before – otherwise the app asks "Wer bist du?" on opening.
  */
 interface Session {
   userId: UserId | null
@@ -52,32 +52,32 @@ function loadSession(): Session {
     const raw = localStorage.getItem(SESSION_KEY)
     if (raw !== null) return JSON.parse(raw) as Session
   } catch {
-    // Ohne localStorage fragt die App bei jedem Öffnen nach dem Namen.
+    // Without localStorage the app asks for the name on every opening.
   }
   return { userId: null, auth: null, chosen: false }
 }
 
-/** Wer in diesem Browser eingetragen bzw. angemeldet ist. */
+/** Who is entered or signed in in this browser. */
 export const session = reactive<Session>(loadSession())
 
 watch(session, (value) => {
   try {
     localStorage.setItem(SESSION_KEY, JSON.stringify(value))
   } catch {
-    // Speichern ist optional.
+    // Saving is optional.
   }
 }, { deep: true })
 
 export { needsPassword }
 
-/** Für Aufrufe, die nur mit Server gehen (Anmelden, Vereinsflieger). */
+/** For calls that only work with the server (signing in, Vereinsflieger). */
 function requireOnline() {
   if (isOffline()) throw new Error('Keine Verbindung')
 }
 
 /**
- * Mitglied gibt Vor- und Nachnamen ein (keine Namensliste). Gleicher Name = dasselbe Konto, sonst legt der Server eines an.
- * 'login': Der Name gehört einem Sonderkonto, das sich mit Passwort anmelden muss. Wirft ohne Verbindung.
+ * Member enters first and last name (no name list). Same name = same account, otherwise the server creates one.
+ * 'login': the name belongs to a special account that must sign in with a password. Throws without a connection.
  */
 export async function enterName(first: string, last: string): Promise<'ok' | 'login'> {
   requireOnline()
@@ -89,7 +89,7 @@ export async function enterName(first: string, last: string): Promise<'ok' | 'lo
   return 'ok'
 }
 
-/** Anmeldung für Sonderkonten. Wirft ohne Verbindung. */
+/** Sign-in for special accounts. Throws without a connection. */
 export async function login(email: string, password: string) {
   requireOnline()
   const result = await backend.login(email.trim(), password)
@@ -98,21 +98,21 @@ export async function login(email: string, password: string) {
   return true
 }
 
-/** Abmelden bzw. Namen vergessen – danach nur ansehen. */
+/** Sign out or forget the name – afterwards view only. */
 export function logout() {
   Object.assign(session, { userId: null, auth: null, chosen: true })
   backend.logout().catch(() => {
-    // Offline: Der Server vergisst die Sitzung spätestens, wenn sie abläuft.
+    // Offline: the server forgets the session at the latest when it expires.
   })
 }
 
-/** Admin schickt einem Sonderkonto den Link zum Passwort-Setzen (erneut). Wirft ohne Verbindung. */
+/** Admin sends a special account the link to set a password (again). Throws without a connection. */
 export async function sendPasswordLink(user: User) {
   requireOnline()
   await backend.sendPasswordLink(user.id)
 }
 
-/** Passwort über den Link aus der E-Mail setzen. false: Link abgelaufen oder schon benutzt. Wirft ohne Verbindung. */
+/** Set the password via the link from the e-mail. false: link expired or already used. Throws without a connection. */
 export async function setPassword(token: string, password: string) {
   requireOnline()
   return backend.setPassword(token, password)
@@ -125,23 +125,23 @@ export function userName(id: UserId | null | undefined) {
   return userById(id)?.name ?? 'Unbekannt'
 }
 
-/** Eingetragenes Konto, solange es nicht entfernt wurde. Sonderkonten zählen nur nach der Anmeldung. */
+/** The entered account, as long as it has not been removed. Special accounts only count after signing in. */
 export function currentUser(): User | undefined {
   const u = userById(session.userId)
   if (!u || u.removed) return undefined
   return needsPassword(u) && session.auth !== 'password' ? undefined : u
 }
 
-/** Personen zur Auswahl (ohne Geräte und entfernte Konten). */
+/** People available for selection (without devices and removed accounts). */
 export const people = () => state.users.filter((u) => !u.device && !u.removed)
 
-/** Wer Werkstattleitung übernehmen kann (Werkstattleiter und Admins). */
+/** Who can take over workshop lead duty (workshop leads and admins). */
 export const leaders = () => people().filter((u) => u.role !== 'user')
 
 /**
- * edit: Daten pflegen (alle Angemeldeten) · lead: Werkstattleitung (abzeichnen, Tage planen; auf den
- * Flugzeugseiten haben Werkstattleiter und Admins dieselben Rechte) · admin: Verwaltung (Konten, Saison,
- * Flugzeuge, Vorlagen) und Werkstattzeiträume, nur Admins.
+ * edit: maintain data (everyone signed in) · lead: workshop lead (sign off, plan days; on the
+ * aircraft pages workshop leads and admins have the same rights) · admin: administration (accounts, season,
+ * aircraft, templates) and workshop periods, admins only.
  */
 export type Permission = 'edit' | 'lead' | 'admin'
 
@@ -158,20 +158,20 @@ export function can(permission: Permission) {
 
 const actor = () => currentUser()?.id ?? TABLET
 
-/* ---------- Allgemein ---------- */
+/* ---------- General ---------- */
 
 export function aircraftLabel(id: string) {
   const a = state.aircraft.find((x) => x.id === id)
   return a ? `${a.type} · ${a.reg}` : ''
 }
 
-/** Flugzeuge im Verein (ohne ausgemusterte). */
+/** Aircraft in the club (without retired ones). */
 export const activeAircraft = () => state.aircraft.filter((a) => !a.retired)
 
-/** Flugzeugtypen im Verein, je Typ einmal – für Ersatzteile und Bestellungen. */
+/** Aircraft types in the club, once per type – for spare parts and orders. */
 export const aircraftTypes = () => [...new Set(activeAircraft().map((a) => a.type))]
 
-/** Ersatzteil passt zu diesem Flugzeugtyp? */
+/** Does the spare part fit this aircraft type? */
 export function fitsAircraft(item: InventoryItem, type: string) {
   return item.kind === 'et' && (item.fits === 'alle Flugzeuge' || (item.fits ?? '').split(', ').includes(type))
 }
@@ -185,19 +185,19 @@ function remove<T>(list: T[], item: T) {
   if (i >= 0) list.splice(i, 1)
 }
 
-/* ---------- Saison und Zeitplan ---------- */
+/* ---------- Season and schedule ---------- */
 
 export function setSeason(input: Season) {
   Object.assign(state.season, { label: input.label.trim(), start: input.start, end: input.end })
 }
 
-/** Werkstattzeitraum eines Flugzeugs, jeweils von Samstag bis Samstag. */
+/** Workshop period of an aircraft, always from Saturday to Saturday. */
 export function setAircraftPeriod(aircraft: Aircraft, start: string, end: string) {
   aircraft.start = start
   aircraft.end = end
 }
 
-/** Flugzeuge, die an diesem Tag in der Werkstatt sind – aus den Zeiträumen, nicht von Hand gepflegt. */
+/** Aircraft that are in the workshop on this day – derived from the periods, not maintained by hand. */
 export function planesOn(date: string) {
   return activeAircraft()
     .filter((a) => a.start <= date && date <= a.end)
@@ -229,7 +229,7 @@ export function setDayClosed(date: string, closed: boolean, reason = '') {
   dayLog(date, closed ? `Werkstatt geschlossen: ${day.reason}` : 'Werkstatt wieder geöffnet')
 }
 
-/** Neue Saison: laufende archivieren, Karten aus den Vorlagen neu anlegen, Zeiträume um dieselbe Wochenzahl verschieben. */
+/** New season: archive the current one, recreate cards from the templates, shift periods by the same number of weeks. */
 export function startSeason(input: Season, carryOver: boolean) {
   const oldStart = state.season.start
   state.archive.unshift(JSON.parse(JSON.stringify({
@@ -241,7 +241,7 @@ export function startSeason(input: Season, carryOver: boolean) {
     closedAt: today(),
     closedBy: actor(),
   })))
-  // Eigene Karten (z. B. aus Mängeln), die noch nicht erledigt sind, gehen in die neue Saison mit.
+  // Custom cards (e.g. from defects) that are not yet done carry over into the new season.
   const keep = (t: Task) => carryOver && !t.templateId && t.status !== 'erledigt'
   for (const t of state.tasks) {
     if (keep(t)) continue
@@ -262,11 +262,11 @@ export function startSeason(input: Season, carryOver: boolean) {
   }
 }
 
-/* ---------- Kanban-Vorlagen ---------- */
+/* ---------- Kanban templates ---------- */
 
 export const templatesFor = (type: string) => state.templates.filter((v) => !v.aircraftType || v.aircraftType === type)
 
-/** Karten aus allen Vorlagen anlegen, die bei diesem Flugzeug noch fehlen. */
+/** Create cards from all templates that are still missing for this aircraft. */
 export function cardsFromTemplates(a: Aircraft) {
   const used = new Set(state.tasks.filter((t) => t.aircraftId === a.id).map((t) => t.templateId))
   for (const v of templatesFor(a.type)) {
@@ -286,7 +286,7 @@ export interface TemplateInput {
   title: string
   desc: string
   duration: string
-  /** Ein Schritt pro Zeile */
+  /** One step per line */
   checklist: string
   docTitle: string
 }
@@ -313,7 +313,7 @@ function applyTemplateInput(v: TaskTemplate, input: TemplateInput) {
   })
 }
 
-/** Vorlagen wirken erst beim nächsten Saisonstart oder neuen Flugzeug; bestehende Karten bleiben, wie sie sind. */
+/** Templates only take effect at the next season start or for a new aircraft; existing cards stay as they are. */
 export function createTemplate(input: TemplateInput) {
   const v: TaskTemplate = { id: newId(), aircraftType: '', level: 'ein', title: '', desc: '', duration: '', checklist: [] }
   applyTemplateInput(v, input)
@@ -328,15 +328,15 @@ export function deleteTemplate(v: TaskTemplate) {
   remove(state.templates, v)
 }
 
-/* ---------- Flugzeuge ---------- */
+/* ---------- Aircraft ---------- */
 
 export interface AircraftInput {
   type: string
   reg: string
   serial: string
-  /** Flugzeugpate (Konto-ID), leer = keiner */
+  /** Aircraft sponsor (account ID), empty = none */
   manager: UserId | ''
-  /** Werkstattzeitraum, jeweils ein Samstag */
+  /** Workshop period, each a Saturday */
   start: string
   end: string
   retired: boolean
@@ -362,7 +362,7 @@ function applyAircraftInput(a: Aircraft, input: AircraftInput) {
   a.retired = input.retired || undefined
 }
 
-/** withCards: gleich die Kanban-Karten aus den Vorlagen anlegen. */
+/** withCards: create the Kanban cards from the templates right away. */
 export function createAircraft(input: AircraftInput, withCards = false): Aircraft {
   const a: Aircraft = { id: newId(), type: '', reg: '', start: '', end: '' }
   applyAircraftInput(a, input)
@@ -371,7 +371,7 @@ export function createAircraft(input: AircraftInput, withCards = false): Aircraf
   return a
 }
 
-/** Neuer Typname gilt auch für Ersatzteile und Bestellungen, solange kein anderes Flugzeug den alten Typ hat. */
+/** A new type name also applies to spare parts and orders, as long as no other aircraft has the old type. */
 export function updateAircraft(a: Aircraft, input: AircraftInput) {
   const oldType = a.type
   applyAircraftInput(a, input)
@@ -382,7 +382,7 @@ export function updateAircraft(a: Aircraft, input: AircraftInput) {
   for (const o of state.orders) if (o.forWhat === oldType) o.forWhat = a.type
 }
 
-/** Für versehentlich angelegte Flugzeuge: löscht Kanban-Karten, Mängel, Fristen und Dokumente mit. Sonst ausmustern. */
+/** For aircraft created by mistake: also deletes Kanban cards, defects, deadlines and documents. Otherwise retire. */
 export function deleteAircraft(a: Aircraft) {
   state.tasks = state.tasks.filter((t) => t.aircraftId !== a.id)
   state.defects = state.defects.filter((d) => d.aircraftId !== a.id)
@@ -391,9 +391,9 @@ export function deleteAircraft(a: Aircraft) {
   remove(state.aircraft, a)
 }
 
-/* ---------- Konten ---------- */
+/* ---------- Accounts ---------- */
 
-/** email: Anmeldename der Sonderkonten; Mitglieder brauchen keine. */
+/** email: sign-in name of the special accounts; members do not need one. */
 export function createUser(name: string, role: Role, email = ''): User {
   const user: User = { id: newId(), name: name.trim(), role }
   if (role !== 'user') user.email = email.trim()
@@ -408,7 +408,7 @@ export function updateUser(user: User, name: string, role: Role, email = '') {
   else delete user.email
 }
 
-/** Entfernte Konten bleiben gespeichert, damit Namen im Verlauf erhalten bleiben. */
+/** Removed accounts stay stored so that names in the history are preserved. */
 export function removeUser(user: User) {
   user.removed = true
   for (const day of Object.values(state.schedule)) if (day.leader === user.id) day.leader = null
@@ -416,7 +416,7 @@ export function removeUser(user: User) {
 
 /* ---------- Kanban ---------- */
 
-/** Wer gestartet hat, ergibt sich aus dem angemeldeten Konto. */
+/** Who started follows from the signed-in account. */
 export function startTask(task: Task) {
   task.status = 'arbeit'
   log(task.history, 'Arbeit gestartet', now())
@@ -432,7 +432,7 @@ export function finishTask(task: Task) {
   log(task.history, 'Als erledigt gemeldet', now(), task.doneBy)
 }
 
-/** Rücknahme von „Erledigt“, solange noch nicht abgezeichnet. */
+/** Take back "Erledigt" as long as it has not been signed off yet. */
 export function reopenTask(task: Task) {
   if (task.signedBy) return
   task.status = 'arbeit'
@@ -441,7 +441,7 @@ export function reopenTask(task: Task) {
   log(task.history, 'Wieder in Arbeit', now())
 }
 
-/** Zurück auf „Offen“, z. B. wenn versehentlich gestartet. Die Checkliste beginnt von vorn. */
+/** Back to "Offen", e.g. when started by mistake. The checklist starts over. */
 export function resetTaskToOpen(task: Task) {
   task.status = 'offen'
   task.checklist.forEach((c) => { c.done = false })
@@ -449,8 +449,8 @@ export function resetTaskToOpen(task: Task) {
 }
 
 /**
- * Checkliste steuert den Status: erster Haken startet, alle Haken melden erledigt,
- * ein entfernter Haken nimmt „Erledigt“ zurück. Abgezeichnete Karten bleiben unverändert.
+ * The checklist drives the status: the first tick starts, all ticks report done,
+ * a removed tick takes back "Erledigt". Signed-off cards remain unchanged.
  */
 export function setChecklistItem(task: Task, index: number, done: boolean) {
   if (task.signedBy) return
@@ -461,7 +461,7 @@ export function setChecklistItem(task: Task, index: number, done: boolean) {
   else if (!done && task.status === 'erledigt') reopenTask(task)
 }
 
-/** Wer abzeichnet: das angemeldete Konto, am Werkstatt-Tablet die Werkstattleitung des Tages. */
+/** Who signs off: the signed-in account, on the workshop tablet the workshop lead of the day. */
 export function signer(): UserId {
   const u = currentUser()
   if (u?.device) return state.schedule[today()]?.leader ?? u.id
@@ -499,7 +499,7 @@ export interface TaskInput {
   level: Task['level']
   duration: string
   desc: string
-  /** Ein Schritt pro Zeile */
+  /** One step per line */
   checklist: string
   deadline: string
   defectId: string
@@ -517,7 +517,7 @@ export const taskInput = (task?: Task): TaskInput => ({
   docId: task?.docId ?? '',
 })
 
-/** Verknüpfung Kanban-Karte ↔ Mangel/Befund auf beiden Seiten setzen oder lösen. */
+/** Set or remove the link Kanban card ↔ defect/finding on both sides. */
 function linkDefect(task: Task, defectId: string) {
   if ((task.defectId ?? '') === defectId) return
   const old = state.defects.find((d) => d.id === task.defectId)
@@ -567,7 +567,7 @@ export function deleteTask(task: Task) {
   remove(state.tasks, task)
 }
 
-/* ---------- Mängel / Befunde ---------- */
+/* ---------- Defects / findings ---------- */
 
 export function setDefectStatus(defect: Defect, status: Defect['status']) {
   defect.status = status
@@ -632,7 +632,7 @@ export function updateDefect(defect: Defect, input: DefectInput) {
   log(defect.history, 'Bearbeitet.')
 }
 
-/** Nur eigene Befunde – Mängel kommen aus Vereinsflieger. */
+/** Only own findings – defects come from Vereinsflieger. */
 export function deleteDefect(defect: Defect) {
   if (defect.source !== 'befund') return
   unlinkDefectTask(defect)
@@ -641,16 +641,16 @@ export function deleteDefect(defect: Defect) {
 
 /* ---------- Vereinsflieger ---------- */
 
-/** Abgleich anstoßen. Mängel, Fristen und `vereinsflieger` schreibt nur der Server; danach den neuen Stand holen. Wirft ohne Verbindung. */
+/** Trigger the sync. Defects, deadlines and `vereinsflieger` are written only by the server; afterwards fetch the new state. Throws without a connection. */
 export async function syncVereinsflieger() {
   requireOnline()
   await backend.vereinsfliegerSync()
   await refresh()
 }
 
-/* ---------- Dokumente ---------- */
+/* ---------- Documents ---------- */
 
-/** Dokumente, die für dieses Flugzeug gelten: eigene, die seines Typs und die des Vereins. */
+/** Documents that apply to this aircraft: its own, those of its type and those of the club. */
 export function docsFor(aircraftId: string) {
   const type = state.aircraft.find((a) => a.id === aircraftId)?.type
   return state.documents.filter((d) => d.aircraftId ? d.aircraftId === aircraftId : !d.aircraftType || d.aircraftType === type)
@@ -675,7 +675,7 @@ export const docInput = (d?: DocumentItem): DocInput => ({
   file: d?.file ?? null,
 })
 
-/** aircraftId: von welchem Flugzeug aus angelegt bzw. bearbeitet – bestimmt Flugzeug und Typ für den Geltungsbereich. */
+/** aircraftId: from which aircraft it was created or edited – determines aircraft and type for the scope. */
 function applyDocInput(d: DocumentItem, aircraftId: string, input: DocInput) {
   const type = state.aircraft.find((a) => a.id === aircraftId)?.type
   d.title = input.title.trim()
@@ -685,7 +685,7 @@ function applyDocInput(d: DocumentItem, aircraftId: string, input: DocInput) {
   d.aircraftType = input.scope === 'type' ? type : undefined
   if (input.file?.id !== d.file?.id) {
     d.file = input.file ?? undefined
-    // Die Vorschau der Beispieldaten passt nicht mehr zur neuen Datei.
+    // The sample data preview no longer matches the new file.
     delete d.image
   }
 }
@@ -705,7 +705,7 @@ export function deleteDocument(doc: DocumentItem) {
   remove(state.documents, doc)
 }
 
-/* ---------- Inventur ---------- */
+/* ---------- Inventory ---------- */
 
 export const openOrderFor = (itemId: string) =>
   state.orders.find((o) => o.itemId === itemId && o.state !== 'delivered')
@@ -714,7 +714,7 @@ export function setQty(item: InventoryItem, qty: number) {
   item.qty = Math.max(0, qty)
 }
 
-/** Bestand setzen und als Zählung im Verlauf festhalten (eine Zählung pro Tag, spätere überschreiben). */
+/** Set the stock and record it as a count in the history (one count per day, later ones overwrite). */
 export function countItem(item: InventoryItem, qty: number) {
   setQty(item, qty)
   logCount(item)
@@ -734,7 +734,7 @@ export interface ItemInput {
   mode: InventoryItem['mode']
   qty: number
   unit: [string, string]
-  /** Flugzeugtypen, durch ", " getrennt, oder "alle Flugzeuge" (nur Ersatzteile) */
+  /** Aircraft types, separated by ", ", or "alle Flugzeuge" (spare parts only) */
   fits: string
 }
 
@@ -774,7 +774,7 @@ export function updateItem(item: InventoryItem, input: ItemInput) {
   if (stockText(item) !== before) logCount(item)
 }
 
-/** Offene Bestellungen bleiben als Bestellungen ohne Artikel stehen. */
+/** Open orders remain as orders without an item. */
 export function deleteItem(item: InventoryItem) {
   for (const o of state.orders) {
     if (o.itemId !== item.id) continue
@@ -784,7 +784,7 @@ export function deleteItem(item: InventoryItem) {
   remove(state.inventory, item)
 }
 
-/** Händler, Artikelnummer und Link der letzten Bestellung dieses Artikels übernehmen. */
+/** Take over supplier, article number and link from the last order of this item. */
 function lastOrderDetails(itemId: string) {
   const last = state.orders.filter((o) => o.itemId === itemId && o.state === 'delivered').sort((a, b) => (b.deliveredAt ?? '').localeCompare(a.deliveredAt ?? ''))[0]
   return last ? { supplier: last.supplier, articleNo: last.articleNo, link: last.link } : {}
@@ -819,7 +819,7 @@ export function addFreeOrder(name: string, forWhat: string, comment: string) {
   })
 }
 
-/** Vorschlag für die erwartete Lieferung beim Bestellen. */
+/** Suggestion for the expected delivery when ordering. */
 export const defaultDelivery = () => addDays(today(), 14)
 
 export function markOrdered(order: Order, delivery: string) {
@@ -852,7 +852,7 @@ export interface OrderDetails {
   supplier: string
   articleNo: string
   link: string
-  /** Leer = kein Preis */
+  /** Empty = no price */
   price: number | null
 }
 
@@ -872,7 +872,7 @@ export function setOrderDetails(order: Order, input: OrderDetails) {
   log(order.history, 'Bestelldaten geändert')
 }
 
-/** Bestellung ohne Artikel nachträglich einem Inventur-Artikel zuordnen. */
+/** Assign an order without an item to an inventory item afterwards. */
 export function linkOrderToItem(order: Order, item: InventoryItem) {
   if (openOrderFor(item.id)) return
   order.itemId = item.id
@@ -880,7 +880,7 @@ export function linkOrderToItem(order: Order, item: InventoryItem) {
   log(order.history, `Artikel zugeordnet: ${item.name}`)
 }
 
-/** Von der Bestellliste nehmen bzw. Bestellung stornieren. */
+/** Remove from the order list or cancel the order. */
 export function cancelOrder(order: Order) {
   const item = state.inventory.find((i) => i.id === order.itemId)
   if (item) log(item.history, order.state === 'ordered' ? 'Bestellung storniert' : 'Von der Bestellliste genommen')

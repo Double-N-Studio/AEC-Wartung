@@ -1,9 +1,9 @@
 import { ref } from 'vue'
 
 /**
- * Für die Demo steht „heute“ fest auf VITE_DEMO_DATE (passend zu den Beispieldaten, siehe .env),
- * sonst gilt das echte Datum. Die Uhrzeit läuft immer mit; `clock` tickt jede Minute,
- * damit Anzeigen wie „heute“ um Mitternacht umspringen. Zeiten sind Ortszeit des Geräts.
+ * For the demo, "today" is fixed to VITE_DEMO_DATE (matching the sample data, see .env),
+ * otherwise the real date applies. The time always runs; `clock` ticks every minute
+ * so displays like "heute" switch over at midnight. Times are the device's local time.
  */
 const DEMO_DATE = import.meta.env.VITE_DEMO_DATE || undefined
 const clock = ref(new Date())
@@ -26,10 +26,10 @@ export function toIso(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-/** Heutiges Datum (YYYY-MM-DD) */
+/** Today's date (YYYY-MM-DD) */
 export const today = () => DEMO_DATE ?? toIso(clock.value)
 
-/** Jetzt (YYYY-MM-DDTHH:mm) */
+/** Now (YYYY-MM-DDTHH:mm) */
 export const now = () => `${today()}T${pad(clock.value.getHours())}:${pad(clock.value.getMinutes())}`
 
 /** 09.01.2027 */
@@ -44,7 +44,7 @@ export function fmtDay(iso: string): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.`
 }
 
-/** "heute, 09:20" / "Sa 09.01., 16:10" / "Sa 09.01." / "07.11.2026" für andere Jahre */
+/** "heute, 09:20" / "Sa 09.01., 16:10" / "Sa 09.01." / "07.11.2026" for other years */
 export function fmtWhen(iso: string): string {
   const d = parse(iso)
   const time = iso.includes('T') ? `, ${pad(d.getHours())}:${pad(d.getMinutes())}` : ''

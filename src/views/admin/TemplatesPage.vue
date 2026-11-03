@@ -7,7 +7,7 @@ import DropdownSelect from '../../components/DropdownSelect.vue'
 import LevelBadge from '../../components/LevelBadge.vue'
 import TemplateFormModal from './TemplateFormModal.vue'
 
-/** Kanban-Vorlagen: daraus entstehen zu Saisonbeginn und bei neuen Flugzeugen die Karten. */
+/** Kanban templates: the cards are created from them at season start and for new aircraft. */
 const scope = ref('alle')
 const scopes = computed(() => [{ value: 'alle', label: 'Alle' }, { value: '', label: 'Alle Flugzeuge' }, ...aircraftTypes().map((t) => ({ value: t, label: t }))])
 

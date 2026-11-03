@@ -13,7 +13,7 @@ import DeadlinesPage from './views/aircraft/DeadlinesPage.vue'
 import DefectsPage from './views/aircraft/DefectsPage.vue'
 import MaterialPage from './views/aircraft/MaterialPage.vue'
 
-// Hash-Routing, damit GitHub Pages ohne Server-Rewrites funktioniert.
+// Hash routing so GitHub Pages works without server rewrites.
 export const router = createRouter({
   history: createWebHashHistory(),
   scrollBehavior: () => ({ top: 0 }),

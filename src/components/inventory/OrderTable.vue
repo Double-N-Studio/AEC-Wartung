@@ -7,9 +7,9 @@ import { fmtPrice } from '../../utils/stock'
 import AppIcon from '../AppIcon.vue'
 
 /**
- * Bestellliste als Tabelle über die volle Breite (Reiter „Bestellliste“).
- * Offen: „Muss bestellt werden“ und „Bestellt“, je Zeile der nächste Schritt; Geliefert: Bestellverlauf mit Summe der Saison.
- * Ist die Karte schmaler als die Tabelle (Container-Abfrage, nicht Fensterbreite), werden die Zeilen zu Karten.
+ * Order list as a full-width table ("Bestellliste" tab).
+ * Open: "Muss bestellt werden" and "Bestellt", with the next step per row; delivered: order history with the season total.
+ * If the card is narrower than the table (container query, not window width), the rows become cards.
  */
 const props = defineProps<{ orders: Order[] }>()
 const emit = defineEmits<{ open: [order: Order, start?: 'order' | 'deliver']; add: [] }>()

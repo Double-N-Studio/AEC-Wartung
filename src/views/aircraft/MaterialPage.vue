@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { fitsAircraft, state } from '../../store'
 import InventoryWorkspace from '../../components/inventory/InventoryWorkspace.vue'
 
-// Gleiche Daten wie die Inventur, gefiltert auf dieses Flugzeug.
+// Same data as the inventory, filtered to this aircraft.
 const route = useRoute()
 const aircraft = computed(() => state.aircraft.find((a) => a.id === route.params.id)!)
 const items = computed(() => state.inventory.filter((i) => fitsAircraft(i, aircraft.value.type)))

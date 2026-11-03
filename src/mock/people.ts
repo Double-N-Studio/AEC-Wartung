@@ -1,10 +1,10 @@
 import type { Role, User } from '../types'
 
 export const TABLET = 'tablet'
-/** Absender von Einträgen, die aus Vereinsflieger übernommen wurden. */
+/** Author of entries that were taken over from Vereinsflieger. */
 export const SYSTEM = 'system'
 
-/** Sonderkonten (Werkstattleitung, Admin, Tablet) melden sich mit Passwort an, Mitglieder nur mit Namen. */
+/** Special accounts (workshop lead, admin, tablet) sign in with a password, members only with their name. */
 export const needsPassword = (u: User) => !!u.device || u.role !== 'user'
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -18,7 +18,7 @@ const user = (id: string, name: string, role: Role): User => ({
   ...(role === 'user' ? {} : { email: `${name.toLowerCase().replace(/ /g, '.')}@example.org` }),
 })
 
-/** Testkonten des Mockups. Sonderkonten melden sich mit vorname.nachname@example.org und beliebigem Passwort an. */
+/** Test accounts of the mockup. Special accounts sign in with vorname.nachname@example.org and any password. */
 export function initialUsers(): User[] {
   return [
     { ...user(TABLET, 'Werkstatt-Tablet', 'wl'), email: 'werkstatt@example.org', device: true },

@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Backend der Winterwartung (Hono + SQLite)",
+  "description": "Backend of the winter maintenance app (Hono + SQLite)",
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env dist/index.js",
     "build": "tsc",

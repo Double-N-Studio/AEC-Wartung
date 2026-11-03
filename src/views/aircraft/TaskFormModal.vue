@@ -8,7 +8,7 @@ import AppModal from '../../components/AppModal.vue'
 import ConflictNote from '../../components/ConflictNote.vue'
 import LevelBars from '../../components/LevelBars.vue'
 
-/** Kanban-Karte anlegen oder (mit task) bearbeiten; mit defect vorausgefüllt aus einem Mangel/Befund. */
+/** Create a Kanban card or (with task) edit one; with defect, prefilled from a defect/finding. */
 const props = defineProps<{ aircraftId: string; task?: Task; defect?: Defect }>()
 const emit = defineEmits<{ close: [] }>()
 

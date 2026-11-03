@@ -9,7 +9,7 @@ const props = withDefaults(defineProps<{ forWhat?: string }>(), { forWhat: 'Lage
 const emit = defineEmits<{ close: [] }>()
 const form = reactive({ name: '', forWhat: props.forWhat, comment: '' })
 
-// Ähnlich benannte Artikel aus der Inventur vorschlagen, damit die Bestellung dem Artikel zugeordnet wird.
+// Suggest similarly named items from the inventory so the order gets linked to the item.
 const item = ref<InventoryItem | null>(null)
 const dismissed = ref(false)
 const suggestions = computed(() => (item.value || dismissed.value ? [] : similarByName(form.name, state.inventory)))

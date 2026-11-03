@@ -7,11 +7,11 @@ import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
 import ArchiveModal from './ArchiveModal.vue'
 
-/** Saison bearbeiten, neue Saison starten (aus den Vorlagen) und frühere Saisons nachlesen. */
+/** Edit the season, start a new season (from the templates) and look up earlier seasons. */
 const mode = ref<'edit' | 'new' | null>(null)
 const form = reactive({ label: '', start: '', end: '', carryOver: true })
 
-/** „2026/27“ → „2027/28“; andere Bezeichnungen bleiben zum Überschreiben stehen. */
+/** "2026/27" → "2027/28"; other labels are left in place to be overwritten. */
 function nextLabel(label: string) {
   const m = label.match(/^(\d{4})\/(\d{2})$/)
   return m ? `${Number(m[1]) + 1}/${String((Number(m[2]) + 1) % 100).padStart(2, '0')}` : label
@@ -19,7 +19,7 @@ function nextLabel(label: string) {
 
 function open(m: 'edit' | 'new') {
   const s = state.season
-  // 52 Wochen später: wieder Samstage, ungefähr dieselben Kalendertage.
+  // 52 weeks later: Saturdays again, roughly the same calendar days.
   Object.assign(form, m === 'edit' ? { ...s, carryOver: true } : { label: nextLabel(s.label), start: addDays(s.start, 364), end: addDays(s.end, 364), carryOver: true })
   mode.value = m
 }
@@ -43,7 +43,7 @@ function save() {
 }
 
 const viewing = ref<ArchivedSeason | null>(null)
-/** Neueste zuerst – die Reihenfolge der Liste selbst legt der Server fest. */
+/** Newest first – the order of the list itself is set by the server. */
 const archive = computed(() => [...state.archive].sort((a, b) => b.start.localeCompare(a.start)))
 </script>
 

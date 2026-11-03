@@ -11,10 +11,10 @@ import OrderSection from './OrderSection.vue'
 
 const props = defineProps<{ order: Order; start?: 'order' | 'deliver' }>()
 const emit = defineEmits<{ close: []; linked: [itemId: string]; createItem: [] }>()
-// start: aus der Bestellliste direkt mit dem nächsten Schritt öffnen
+// start: open directly with the next step from the order list
 const step = reactive<OrderStep>({ step: props.start ?? null, qty: 1, date: props.start ? defaultDelivery() : '' })
 
-// Nachträglich einem Inventur-Artikel zuordnen; Artikel mit eigener offener Bestellung scheiden aus.
+// Link to an inventory item afterwards; items with their own open order are excluded.
 const linkable = computed(() => state.inventory
   .filter((i) => !openOrderFor(i.id))
   .sort((a, b) => a.name.localeCompare(b.name, 'de')))

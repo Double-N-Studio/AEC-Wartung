@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 
-/** Kurze Meldungen unten im Bild, z. B. wenn der Server eine Änderung abgelehnt hat. */
+/** Short messages at the bottom of the screen, e.g. when the server rejected a change. */
 export interface Toast {
   id: number
   text: string

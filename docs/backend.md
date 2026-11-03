@@ -1,99 +1,105 @@
-# Backend-Vertrag
+# Backend contract
 
-Was das Frontend vom Server erwartet. Die Gegenstelle im Frontend ist `src/api/http.ts`, die Demo spielt denselben Vertrag in `src/api/mock.ts` nach. Mit `VITE_API_URL=/api` (z. B. in `.env.local`) spricht die App mit dem Backend; ohne den Eintrag läuft die Demo. `npm run dev` reicht `/api` an `http://localhost:3000` weiter.
+What the frontend expects from the server. The frontend side is `src/api/http.ts`; the demo replays the same contract in `src/api/mock.ts`. With `VITE_API_URL=/api` (e.g. in `.env.local`) the app talks to the backend; without it, the demo runs. `npm run dev` proxies `/api` to `http://localhost:3000`.
 
-## Grundidee
+The frontend assumes the API is on the **same origin** (relative `VITE_API_URL`, cookie session). Serving it from another origin would need CORS with credentials and `SameSite=None` cookies; the plan is to let nginx serve `dist/` and `/api` from the same host instead.
 
-Der ganze Zustand (`AppState` in `src/types.ts`) besteht aus **Datensätzen**. Das Gerät schickt nach jeder Aktion die geänderten Datensätze als Ganzes, der Server prüft und speichert sie und zählt einen globalen Stand `rev` hoch. Andere Geräte erfahren per Server-Sent Events, dass es einen neuen Stand gibt, und laden neu. Fachlogik (Status, Verlauf, Saisonwechsel) läuft im Frontend; der Server prüft Rechte und Plausibilität.
+## Core idea
 
-| Sammlung | Art | ID |
+The whole state (`AppState` in `src/types.ts`) consists of **records**. After every action the device sends the changed records as a whole; the server validates and stores them and increments a global revision `rev`. Other devices learn about the new revision via Server-Sent Events and reload. Business logic (status, history, season rollover) lives in the frontend; the server checks permissions and plausibility.
+
+| Collection | Kind | ID |
 |---|---|---|
-| `users`, `aircraft`, `tasks`, `templates`, `archive`, `defects`, `deadlines`, `documents`, `inventory`, `orders` | Liste | `id` des Datensatzes |
-| `schedule` | nach Datum | `YYYY-MM-DD` |
-| `season`, `vereinsflieger` | Einzelwert | Name der Sammlung |
+| `users`, `aircraft`, `tasks`, `templates`, `archive`, `defects`, `deadlines`, `documents`, `inventory`, `orders` | list | the record's `id` |
+| `schedule` | keyed by date | `YYYY-MM-DD` |
+| `season`, `vereinsflieger` | single value | name of the collection |
 
-- **IDs vergibt das Gerät** (`crypto.randomUUID()`), damit offline angelegte Datensätze sofort feststehen. Die Beispieldaten haben lesbare IDs (`asg32`, `an1`); beides sind nur Strings.
-- Verlauf (`history`), Checklisten und Notizen stehen **im** Datensatz, nicht getrennt.
-- Listen in Einfügereihenfolge zurückgeben. Das Frontend sortiert, wo es darauf ankommt.
-- Datumsangaben sind lokale Zeit ohne Zeitzone: `YYYY-MM-DD` oder `YYYY-MM-DDTHH:mm`.
-- Ändert sich das Datenmodell, `MODEL_VERSION` in `src/api/records.ts` hochzählen: Geräte verwerfen dann ihren gespeicherten Stand und ihre Warteschlange.
+- **IDs are assigned by the device** (`newId()` in `src/utils/id.ts`: a UUID, or a random string where `crypto.randomUUID` is unavailable over plain http), so records created offline are final immediately. The server must not rely on any ID format. The demo data uses readable IDs (`asg32`, `an1`); both are just strings.
+- History (`history`), checklists and notes live **inside** the record, not in separate collections.
+- Return lists in insertion order. The frontend sorts where it matters.
+- Dates are local time without a time zone: `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm`.
+- When the data model changes, bump `MODEL_VERSION` in `src/api/records.ts`: devices then discard their cached state and their queue.
 
-Speichern lässt sich das als eine Tabelle `records(coll, id, value JSON, rev, client_id, updated_by, updated_at)` oder als Tabellen pro Sammlung. Das Frontend sieht nur JSON.
+Storage can be a single table `records(coll, id, value JSON, rev, client_id, updated_by, updated_at)` or one table per collection. The frontend only ever sees JSON.
 
-## Endpunkte
+## Endpoints
 
-Alle unter `VITE_API_URL`, JSON, Sitzung per Cookie (`credentials: 'include'`). Antworten mit 5xx oder Netzfehler versucht das Gerät später erneut; 4xx nimmt es als endgültig.
+All under `VITE_API_URL`, JSON, session via cookie (`credentials: 'include'`). On 5xx or a network error the device retries later; it treats any 4xx as final.
 
-| Methode und Pfad | Anfrage | Antwort |
+| Method and path | Request | Response |
 |---|---|---|
-| `GET /state` | – | `200 { rev, state: AppState }`, immer alle Schlüssel; `season` und `vereinsflieger` ausgefüllt |
-| `POST /changes` | `Batch` (siehe unten) | `200 { rev }` · `409 { error }` Konflikt · `401` nicht angemeldet · `403`/`422 { error }` abgelehnt |
-| `GET /events` | – | SSE-Strom: `event: rev` / `data: 42` bei jedem neuen Stand |
+| `GET /state` | – | `200 { rev, state: AppState }`, always all keys; `season` and `vereinsflieger` filled in |
+| `POST /changes` | `Batch` (see below) | `200 { rev }` · `409 { error }` conflict · `401` not signed in · `403`/`422 { error }` rejected |
+| `GET /events` | – | SSE stream: `event: rev` / `data: 42` on every new revision |
 | `GET /session` | – | `200 { userId, auth: 'name' \| 'password' \| null }` |
-| `POST /session/name` | `{ name }` | `200 { user }` (Konto gefunden oder neu angelegt) · `409` Name gehört einem Sonderkonto |
+| `POST /session/name` | `{ name }` | `200 { user }` (account found or created) · `409` name belongs to a special account |
 | `POST /session/login` | `{ email, password }` | `200 { user }` · `401` |
 | `DELETE /session` | – | `204` |
-| `POST /users/:id/password-link` | – | `204` – schickt die E-Mail mit dem Link (nur Admins) |
-| `POST /password` | `{ token, password }` | `204` · `400` Link abgelaufen oder schon benutzt |
-| `PUT /files/:id` | Rohdaten, `Content-Type`, `X-File-Name` (URL-kodiert) | `204` · `413` zu groß |
-| `GET /files/:id` | – | die Datei |
-| `POST /vereinsflieger/sync` | – | `202`; Ergebnis landet in den Datensätzen |
+| `POST /users/:id/password-link` | – | `204` – sends the e-mail with the link (admins only) |
+| `POST /password` | `{ token, password }` | `204` · `400` link expired or already used |
+| `PUT /files/:id` | raw body, `Content-Type`, `X-File-Name` (URL-encoded) | `204` · `413` too large |
+| `GET /files/:id` | – | the file |
+| `POST /vereinsflieger/sync` | – | `202`; the result lands in the records |
 
-### Änderungen senden
+Any response other than the listed success codes counts as rejected; if the body is `{ error: string }`, the frontend shows that text.
+
+### Sending changes
 
 ```ts
 interface Batch {
-  id: string          // eindeutig; dieselbe Sendung kann nach einem Netzfehler erneut kommen
-  clientId: string    // Gerät bzw. Browser-Tab
-  baseRev: number     // Stand, auf dem die Änderungen gemacht wurden
-  at: string
-  changes: { coll: string; id: string; value: object | null }[]  // null = gelöscht
+  id: string          // unique; the same batch may arrive again after a network error
+  clientId: string    // device or browser tab
+  baseRev: number     // revision the changes were made on
+  at: string          // device time, YYYY-MM-DDTHH:mm
+  changes: { coll: string; id: string; value: object | null }[]  // null = deleted
 }
 ```
 
-- **Ganz oder gar nicht:** Eine Sendung ist eine Aktion (z. B. „Neue Saison starten“ ändert Dutzende Datensätze). In einer Transaktion anwenden, danach `rev + 1`.
-- **Wiederholungen:** Eine bereits angenommene `id` mit `200 { rev }` beantworten, ohne erneut anzuwenden.
-- **Konflikt (409):** Wenn ein Datensatz der Sendung zuletzt bei einem Stand `> baseRev` von einer **anderen** `clientId` geändert wurde. Das Gerät verwirft dann die Sendung, zeigt eine Meldung und lädt neu. Eigene schnelle Folgeänderungen (gleiche `clientId`) sind kein Konflikt. Wer lieber „letzter gewinnt“ will, lässt die Prüfung weg; das Frontend kommt mit beidem zurecht.
-- Nach der Antwort lädt das Gerät neu, wenn `rev` um mehr als 1 gesprungen ist. Die eigene Änderung kommt per SSE zurück und wird ignoriert.
-- Offline gesammelte Sendungen kommen der Reihe nach, jede mit ihrem alten `baseRev`.
+- **All or nothing:** one batch is one action (e.g. "start new season" touches dozens of records). Apply it in one transaction, then `rev + 1`.
+- **Retries:** answer an already accepted `id` with `200 { rev }` without applying it again.
+- **Conflict (409):** when a record in the batch was last changed at a revision `> baseRev` by a **different** `clientId`. The device then drops the batch, shows a message and reloads. Quick follow-up changes from the same `clientId` are not a conflict. If "last write wins" is preferred, skip the check; the frontend copes with either.
+- After the response the device reloads if `rev` jumped by more than 1. Its own change also comes back via SSE and is ignored.
+- Batches collected offline arrive in order, each with its old `baseRev`.
 
-### Laden und andere Geräte
+### Loading and other devices
 
-`GET /state` liefert den kompletten Stand (wenige hundert Datensätze, plus `archive`). Das Gerät legt seine noch wartenden Sendungen darüber. Es lädt neu bei einem SSE-`rev` größer als seinem eigenen, nach dem Wiederverbinden und wenn der Tab wieder sichtbar wird. Ein `GET /changes?since=rev` lässt sich später ergänzen, ohne dass sich am Frontend viel ändert (`refresh` in `src/sync.ts`).
+`GET /state` returns the complete state (a few hundred records, plus `archive`). The device lays its still-pending batches on top. It reloads on an SSE `rev` greater than its own, after reconnecting, and when the tab becomes visible again. A `GET /changes?since=rev` can be added later without much change on the frontend side (`refresh` in `src/sync.ts`).
 
-## Rechte
+`EventSource` reconnects on its own. The server should send a comment line (`: ping`) every ~30 s so proxies don't drop idle streams; nginx on the VPS is configured with `proxy_buffering off` and a long read timeout for `/api`.
 
-Das Frontend blendet nur Bedienelemente aus (`can()` in `src/store.ts`); der Server muss jede Sendung selbst prüfen, indem er alten und neuen Datensatz vergleicht.
+## Permissions
 
-| Wer | Darf |
+The frontend only hides controls (`can()` in `src/store.ts`); the server must check every batch itself by comparing the old and the new record.
+
+| Who | May |
 |---|---|
-| ohne Sitzung | nur `GET /state`, `/events`, `/files/:id`, die Sitzungs-Endpunkte und `POST /password` |
-| alle Angemeldeten (`edit`) | `tasks` (außer Abzeichnen), eigene Befunde in `defects` (`source: 'befund'`) anlegen, ändern, löschen; bei Mängeln aus Vereinsflieger nur `status`, `owner`, `taskId`, `doneAt`, `doneBy`, `history`; `documents`, `inventory`, `orders`; in `schedule` nur `comment` und `history` |
-| Werkstattleiter und Admins (`lead`) | zusätzlich `signedBy`/`signedAt` setzen und entfernen, fremde Notizen (`tasks[].notes`) löschen, in `schedule` `leader`, `closed`, `reason` |
-| Admins (`admin`) | zusätzlich `users`, `season`, `aircraft` (auch Werkstattzeitraum `start`/`end`), `templates`, `archive` |
-| nur der Server | `deadlines`, `vereinsflieger`, Mängel aus Vereinsflieger anlegen und löschen, Konten über `POST /session/name` |
+| no session | only `GET /state`, `/events`, `/files/:id`, the session endpoints and `POST /password` |
+| everyone signed in (`edit`) | `tasks` (except signing off); create, edit and delete own findings in `defects` (`source: 'befund'`); for defects from Vereinsflieger only `status`, `owner`, `taskId`, `doneAt`, `doneBy`, `history`; `documents`, `inventory`, `orders`; in `schedule` only `comment` and `history` |
+| workshop leads and admins (`lead`) | additionally set and remove `signedBy`/`signedAt`, delete other people's notes (`tasks[].notes`), and `leader`, `closed`, `reason` in `schedule` |
+| admins (`admin`) | additionally `users`, `season`, `aircraft` (including the workshop period `start`/`end`), `templates`, `archive` |
+| server only | `deadlines`, `vereinsflieger`, creating and deleting defects from Vereinsflieger, accounts via `POST /session/name` |
 
-Weitere Regeln, die der Server durchsetzen sollte:
+Further rules the server should enforce:
 
-- **Abgezeichnete Karten sind gesperrt:** Hat der alte Datensatz `signedBy`, darf nur `lead` ändern, und zwar nur `signedBy`/`signedAt` entfernen plus Verlauf.
-- **Wer und wann:** Neue Verlaufseinträge (`history`, `notes`) tragen in `who` das angemeldete Konto. Ausnahme: Am Werkstatt-Tablet steht in `signedBy` die Werkstattleitung des Tages (`schedule[heute].leader`, siehe `signer()`). Die Zeit kommt vom Gerät und darf nach dem Offline-Arbeiten zurückliegen.
-- Die eigene Rolle darf ein Admin nicht ändern, die eigene Sitzung nicht entfernen (`removed`).
-- Konten werden nie gelöscht, nur mit `removed: true` markiert. Entfernte Konten können sich nicht mehr anmelden.
+- **Signed-off cards are locked:** if the old record has `signedBy`, only `lead` may change it, and only to remove `signedBy`/`signedAt` plus a history entry.
+- **Who and when:** new history entries (`history`, `notes`) carry the signed-in account in `who`. Exception: on the workshop tablet `signedBy` is the workshop lead of the day (`schedule[today].leader`, see `signer()`); if no lead is set for the day, the tablet's own account. Timestamps come from the device and may lie in the past after working offline.
+- An admin must not change their own role or mark their own account `removed`.
+- Accounts are never deleted, only marked `removed: true`. Removed accounts can no longer sign in.
 
-## Konten und Anmeldung
+## Accounts and sign-in
 
-- **Mitglieder** (`role: 'user'`, kein `email`): `POST /session/name` mit „Vorname Nachname“. Gleicher Name (ohne Groß/Klein) = dasselbe Konto, sonst legt der Server `{ id, name, role: 'user' }` an. Gehört der Name einem Sonderkonto, kommt `409`. Danach lädt das Gerät neu, damit das Konto in `users` steht.
-- **Sonderkonten** (Admin, Werkstattleiter, Werkstatt-Tablet mit `device: true`; Regel in `needsPassword`): Anmeldung mit E-Mail und Passwort. Legt ein Admin ein Sonderkonto an (Datensatz in `users` mit `email`), schickt der Server von sich aus die E-Mail mit dem Link `<App-URL>/#/passwort?token=…`. „Link zum Passwort-Setzen senden“ in der Verwaltung ruft `password-link` erneut auf. Passwörter stehen nie in `users`.
-- Die Sitzung sollte lange halten: Das Tablet bleibt die ganze Saison angemeldet, Mitglieder geben ihren Namen nur einmal ein.
+- **Members** (`role: 'user'`, no `email`): `POST /session/name` with "First Last". Same name (case-insensitive) = same account, otherwise the server creates `{ id, name, role: 'user' }`. If the name belongs to a special account, respond `409`. Afterwards the device reloads so the account appears in `users`.
+- **Special accounts** (admin, workshop lead, workshop tablet with `device: true`; rule in `needsPassword`): sign in with e-mail and password. When an admin creates a special account (record in `users` with `email`), the server sends the e-mail with the link `<app URL>/#/passwort?token=…` on its own. "Send link to set password" in the admin area calls `password-link` again. Passwords are never part of `users`.
+- Sessions should be long-lived: the tablet stays signed in for the whole season, members enter their name only once.
 
-## Dateien
+## Files
 
-Fotos und PDFs landen zuerst in IndexedDB des Geräts und in einem Postausgang (`src/api/files.ts`). Vor jeder Sendung lädt das Gerät offene Dateien per `PUT /files/:id` hoch; ein Datensatz zeigt also nie auf eine Datei, die der Server noch nicht hat. `PUT` mit derselben ID darf überschreiben. Grenze im Frontend: 25 MB (`MAX_FILE_SIZE`), Fotos werden vorher auf 1600 px verkleinert. Die `FileRef` im Datensatz (`id`, `name`, `type`, `size`) reicht zum Ausliefern. Wird ein Datensatz gelöscht, kann der Server verwaiste Dateien später aufräumen.
+Photos and PDFs first go into the device's IndexedDB and an outbox (`src/api/files.ts`). Before every batch the device uploads pending files via `PUT /files/:id`, so a record never points to a file the server doesn't have yet. `PUT` with the same ID may overwrite. Frontend limit: 25 MB (`MAX_FILE_SIZE`); photos are downscaled to 1600 px beforehand. nginx on the VPS allows 30 MB (`client_max_body_size`). The `FileRef` in the record (`id`, `name`, `type`, `size`) is enough to serve the file. When a record is deleted, the server can clean up orphaned files later.
 
 ## Vereinsflieger
 
-Der Server gleicht regelmäßig und auf `POST /vereinsflieger/sync` ab und schreibt dabei die Mängel (`defects` mit `source: 'vf'`, `reportedBy: 'system'`), `deadlines` und `vereinsflieger: { lastSync, error? }`. Bei einem Fehler bleibt `lastSync` stehen und `error` bekommt einen kurzen Text. Die Zugangsdaten liegen nur auf dem Server. Zurückschreiben nach Vereinsflieger kommt später.
+The server syncs periodically and on `POST /vereinsflieger/sync`, writing the defects (`defects` with `source: 'vf'`, `reportedBy: 'system'`), `deadlines` and `vereinsflieger: { lastSync, error? }`. On failure `lastSync` stays as it was and `error` gets a short text. Credentials live only on the server. Writing back to Vereinsflieger comes later.
 
-## Erster Start
+## First start
 
-Der Server braucht einen Ausgangsstand: `season` (Bezeichnung, erster und letzter Werkstatt-Samstag), `vereinsflieger: { lastSync: '' }`, ein erstes Admin-Konto mit Link zum Passwort-Setzen und leere Listen. Alles Weitere (Flugzeuge, Vorlagen, Konten) pflegen Admins in der App. Die Beispieldaten der Demo stehen in `src/mock/data.ts` (`initialState()`), falls man sie zum Ausprobieren importieren will.
+The server needs an initial state: `season` (label, first and last workshop Saturday), `vereinsflieger: { lastSync: '' }`, a first admin account with a link to set the password, and empty lists. Everything else (aircraft, templates, accounts) admins maintain in the app. The demo data lives in `src/mock/data.ts` (`initialState()`) in case it's useful to import for trying things out.

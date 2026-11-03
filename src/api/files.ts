@@ -3,13 +3,13 @@ import { newId } from '../utils/id'
 import { backend } from './backend'
 
 /**
- * Dateien (Fotos, PDFs). Datensätze speichern nur die FileRef, nie den Inhalt.
- * Neue Dateien landen zuerst in IndexedDB dieses Geräts und in einem Postausgang; `flushFiles` lädt sie zum Server
- * hoch (sync.ts ruft es vor jeder Sendung auf, damit der Server eine Datei kennt, bevor ein Datensatz auf sie zeigt).
- * So geht ein Foto auch offline. In der Demo ist IndexedDB selbst „der Server“.
+ * Files (photos, PDFs). Records store only the FileRef, never the content.
+ * New files first land in this device's IndexedDB and in an outbox; `flushFiles` uploads them to the server
+ * (sync.ts calls it before every batch, so the server knows a file before a record points to it).
+ * This way a photo works offline too. In the demo, IndexedDB itself is "the server".
  */
 
-/** Größte Datei, die angenommen wird (der Server sollte dieselbe Grenze prüfen). */
+/** Largest file that is accepted (the server should check the same limit). */
 export const MAX_FILE_SIZE = 25 * 1024 * 1024
 
 const DB_NAME = 'aec-winterwartung-dateien'
@@ -39,7 +39,7 @@ async function run<T>(storeName: string, mode: IDBTransactionMode, fn: (store: I
   })
 }
 
-/** Datei auf dem Gerät ablegen und zum Hochladen vormerken. Wirft nur, wenn sie zu groß ist oder das Gerät sie nicht speichern kann. */
+/** Store the file on the device and mark it for upload. Throws only if it is too large or the device cannot store it. */
 export async function uploadFile(blob: Blob, name: string): Promise<FileRef> {
   if (blob.size > MAX_FILE_SIZE) throw new Error(`Die Datei ist größer als ${fmtSize(MAX_FILE_SIZE)}.`)
   const ref: FileRef = { id: newId(), name, type: blob.type, size: blob.size }
@@ -50,7 +50,7 @@ export async function uploadFile(blob: Blob, name: string): Promise<FileRef> {
 
 let flushing: Promise<void> | null = null
 
-/** Vorgemerkte Dateien hochladen. Netzfehler werfen (später erneut); vom Server abgelehnte Dateien fallen aus dem Postausgang. */
+/** Upload the marked files. Network errors throw (retry later); files rejected by the server drop out of the outbox. */
 export function flushFiles(): Promise<void> {
   flushing ??= (async () => {
     try {
@@ -73,7 +73,7 @@ export function flushFiles(): Promise<void> {
 
 const urls = new Map<string, string>()
 
-/** Adresse zum Anzeigen oder Herunterladen; null, wenn die Datei fehlt (z. B. Beispieldaten ohne Datei). */
+/** Address for viewing or downloading; null if the file is missing (e.g. sample data without a file). */
 export async function fileUrl(ref: FileRef): Promise<string | null> {
   if (urls.has(ref.id)) return urls.get(ref.id)!
   try {
@@ -84,7 +84,7 @@ export async function fileUrl(ref: FileRef): Promise<string | null> {
       return url
     }
   } catch {
-    // Kein IndexedDB – dann vom Server.
+    // No IndexedDB – then from the server.
   }
   return backend.fileUrl(ref)
 }
@@ -99,7 +99,7 @@ export async function downloadFile(ref: FileRef) {
   return true
 }
 
-/** Fotos vor dem Hochladen verkleinern (längste Seite max. 1600 px, JPEG), damit sie auch im Hangar-WLAN schnell durchgehen. */
+/** Shrink photos before uploading (longest side max. 1600 px, JPEG), so they go through quickly even on the hangar Wi-Fi. */
 export async function compressImage(file: File, max = 1600, quality = 0.8): Promise<Blob> {
   try {
     const bitmap = await createImageBitmap(file)
@@ -114,7 +114,7 @@ export async function compressImage(file: File, max = 1600, quality = 0.8): Prom
   }
 }
 
-/** 2,4 MB */
+/** e.g. "2,4 MB" */
 export function fmtSize(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
   return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`

@@ -1,6 +1,6 @@
-# Läuft auf dem VPS unter /srv/wartung (siehe server/README.md).
-# nginx leitet https://wartung.nuno-ferreira.de auf 127.0.0.1:8081 weiter.
-# Das Image baut .github/workflows/deploy-server.yml bei jedem Push auf main.
+# Runs on the VPS under /srv/wartung (see server/README.md).
+# nginx forwards https://wartung.nuno-ferreira.de to 127.0.0.1:8081.
+# The image is built by .github/workflows/deploy-server.yml on every push to main.
 services:
   app:
     image: ghcr.io/double-n-studio/aec-wartung-server:latest
@@ -8,8 +8,8 @@ services:
     ports:
       - '127.0.0.1:8081:3000'
     volumes:
-      # SQLite-Datei und Uploads – liegt bewusst auf der Root-Platte,
-      # weil die Hetzner-Backups keine Volumes sichern.
+      # SQLite file and uploads – deliberately on the root disk,
+      # because Hetzner backups don't cover volumes.
       - ./data:/data
     logging:
       driver: json-file
