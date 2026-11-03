@@ -17,10 +17,12 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 
 **Pro Flugzeug**
 - **Kanban** als Board (Offen · In Arbeit · Erledigt) mit Eignung für Einsteiger, Erfahrene oder nur Werkstattleiter/Prüfer, Checklisten und Abzeichnung durch die Werkstattleitung
-- **Dokumente** wie Flughandbuch, Wartungshandbuch, Aufbauanleitung und Gewichtsübersicht
-- **Fristen** aus Vereinsflieger, mit Warnung bei bald ablaufenden Terminen
-- **Mängel/Befunde**: Mängel aus Vereinsflieger und eigene Befunde mit Fotos, daraus direkt eine Kanban-Karte anlegen
+- **Dokumente** wie Flughandbuch, Wartungshandbuch, Aufbauanleitung und Gewichtsübersicht: PDF oder Bild hochladen, im Viewer ansehen, herunterladen; gültig für ein Flugzeug, alle eines Typs oder den ganzen Verein
+- **Fristen** aus Vereinsflieger, mit Warnung bei bald ablaufenden Terminen und Stand des letzten Abgleichs
+- **Mängel/Befunde**: Mängel aus Vereinsflieger und eigene Befunde mit Fotos (Kamera, werden verkleinert), daraus direkt eine Kanban-Karte anlegen
 - **Material**: Ersatzteile und Bestellungen für dieses Flugzeug
+
+**Meine Sachen**: eigene Karten in Arbeit, zugewiesene Mängel, eigene Bestellungen und Befunde; für die Werkstattleitung alles, was auf Abzeichnung wartet
 
 **Inventur**
 - Verbrauchsstoffe aus dem Lager und Ersatzteile mit Lagerort und Bestand
@@ -29,7 +31,7 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 
 **Verwaltung** (Admin): Saison (neue Saison aus Kanban-Vorlagen starten, frühere Saisons nachlesen), Kanban-Vorlagen, Flugzeuge (anlegen, bearbeiten, ausmustern), Konten mit Rollen
 
-**Rollen und Anmeldung:** Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (ohne Passwort), damit jede Änderung einen Namen hat. Werkstattleiter, Admins und das Werkstatt-Tablet melden sich mit E-Mail und Passwort an: Werkstattleiter zeichnen ab und planen die Tage, Admins verwalten Konten und Saison. Ohne Namen kann man alles ansehen, aber nichts ändern. In der Demo gilt jedes Passwort; die Testkonten stehen im Anmelde-Popup.
+**Rollen und Anmeldung:** Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (ohne Passwort), damit jede Änderung einen Namen hat. Werkstattleiter, Admins und das Werkstatt-Tablet melden sich mit E-Mail und Passwort an: Werkstattleiter und Admins zeichnen ab und planen die Tage (auf den Flugzeugseiten gleiche Rechte); nur Admins haben die Verwaltung (Konten, Saison, Flugzeuge, Vorlagen) und ändern Werkstattzeiträume. Ohne Namen kann man alles ansehen, aber nichts ändern. In der Demo gilt jedes Passwort; die Testkonten stehen im Anmelde-Popup.
 
 **Speichern:** Anzeige „Gespeichert“ / „Speichert …“ / „Offline · n Änderungen warten“; ohne Netz arbeitet man weiter, die Änderungen gehen beim Wiederverbinden raus. Ändert jemand gleichzeitig dieselbe Karte, warnt das Formular. In der Demo: „Offline testen“ unten links, zweiter Tab als zweites Gerät.
 
@@ -73,4 +75,4 @@ Mehr zur Code-Struktur und zu den Konventionen steht in [CLAUDE.md](CLAUDE.md).
 - **Anbindung an Vereinsflieger** für Fristen und Mängel
 - **Echte Anmeldung** der Sonderkonten (Passwort, Link zum Passwort-Setzen), Rechte zusätzlich im Backend prüfen
 - **PWA** für die Nutzung am Tablet auch ohne Netz
-- echte Datei-Uploads und Fotos von der Kamera
+- Dateien auf dem Server statt im Browser (`src/api/files.ts`), Vereinsflieger-Abgleich auf dem Server (`src/api/vereinsflieger.ts`)

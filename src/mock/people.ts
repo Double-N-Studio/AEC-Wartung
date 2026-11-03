@@ -25,7 +25,7 @@ const user = (id: string, name: string, role: Role, color: number): User => ({
 export function initialUsers(): User[] {
   return [
     { ...user(TABLET, 'Werkstatt-Tablet', 'wl', 0), email: 'werkstatt@example.org', device: true },
-    user('MA', 'Matthias Greiner', 'wl', 0),
+    user('MA', 'Matthias Greiner', 'admin', 0),
     user('HE', 'Heinrich Hoop', 'wl', 1),
     user('LO', 'Lorenz Dierschke', 'wl', 7),
     user('JO', 'Jonas Weber', 'user', 2),

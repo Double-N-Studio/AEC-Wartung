@@ -10,6 +10,7 @@ import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
 import ConfirmModal from '../../components/ConfirmModal.vue'
 import HistoryList from '../../components/HistoryList.vue'
+import PhotoStrip from '../../components/PhotoStrip.vue'
 import PriorityBadge from '../../components/PriorityBadge.vue'
 
 const props = defineProps<{ defect: Defect }>()
@@ -59,9 +60,7 @@ function remove() {
 
     <p class="desc">{{ defect.desc }}</p>
 
-    <div v-if="defect.photos" class="photos">
-      <div v-for="n in defect.photos" :key="n" class="photo"><AppIcon name="image" :size="22" :stroke="1.8" /><span>Foto {{ n }}</span></div>
-    </div>
+    <PhotoStrip v-if="defect.photos.length" :model-value="defect.photos" />
 
     <div class="facts">
       <label for="df-owner" class="muted">Zuständig</label>
@@ -109,11 +108,6 @@ function remove() {
 
 <style scoped>
 .desc { font-size: 15px; line-height: 1.55; }
-.photos { display: flex; gap: 10px; flex-wrap: wrap; }
-.photo {
-  width: 150px; height: 110px; border-radius: 10px; background: #DDE3EA; color: var(--muted);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px;
-}
 .facts { display: grid; grid-template-columns: 130px minmax(0, 1fr); row-gap: 10px; column-gap: 16px; align-items: center; font-size: 14px; }
 .owner { height: 40px; max-width: 220px; font-weight: 600; }
 .strong { font-weight: 600; text-decoration: none; }

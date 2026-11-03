@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
-import { aircraftLabel, createTask, state, taskInput, updateTask, userName } from '../../store'
+import { aircraftLabel, createTask, docsFor, state, taskInput, updateTask, userName } from '../../store'
 import { useChangedElsewhere } from '../../sync'
 import type { Task } from '../../types'
 import { DURATIONS, LEVEL_KEYS, LEVELS } from '../../utils/levels'
@@ -20,7 +20,7 @@ function reload() {
 }
 const openDefects = computed(() => state.defects.filter((d) =>
   d.aircraftId === props.aircraftId && (d.id === props.task?.defectId || (d.status === 'open' && !d.taskId))))
-const docs = computed(() => state.documents.filter((d) => d.aircraftId === props.aircraftId))
+const docs = computed(() => docsFor(props.aircraftId))
 const durations = computed(() => (DURATIONS.includes(form.duration) ? DURATIONS : [form.duration, ...DURATIONS]))
 
 function submit() {

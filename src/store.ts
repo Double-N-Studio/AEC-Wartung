@@ -1,12 +1,12 @@
 import { nextTick, reactive, watch } from 'vue'
-import type { Aircraft, AppState, Defect, DocumentItem, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskNote, TaskTemplate, User, UserId } from './types'
+import type { Aircraft, AppState, Defect, DocumentItem, FileRef, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskNote, TaskTemplate, User, UserId } from './types'
 import { initialState } from './mock/data'
 import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
-import { addDays, daysBetween, fmtDate, fmtDay, now, today } from './utils/date'
+import { addDays, daysBetween, fmtDay, now, today } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 import { applyRemote, isOffline, noteChange } from './sync'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v16'
+const STORAGE_KEY = 'aec-winterwartung-demo-v20'
 const SESSION_KEY = 'aec-winterwartung-sitzung'
 
 function load(): AppState {
@@ -149,18 +149,19 @@ export function currentUser(): User | undefined {
 /** Personen zur Auswahl (ohne Geräte und entfernte Konten). */
 export const people = () => state.users.filter((u) => !u.device && !u.removed)
 
-/** Wer Werkstattleitung übernehmen kann. */
-export const leaders = () => people().filter((u) => u.role === 'wl')
+/** Wer Werkstattleitung übernehmen kann (Werkstattleiter und Admins). */
+export const leaders = () => people().filter((u) => u.role !== 'user')
 
 /**
- * edit: Daten pflegen (alle Angemeldeten) · lead: Werkstattleitung (abzeichnen, Tage planen)
- * admin: Konten, Saison, Werkstattzeiträume. Admin und Werkstattleiter sind vorerst gleich.
+ * edit: Daten pflegen (alle Angemeldeten) · lead: Werkstattleitung (abzeichnen, Tage planen; auf den
+ * Flugzeugseiten haben Werkstattleiter und Admins dieselben Rechte) · admin: Verwaltung (Konten, Saison,
+ * Flugzeuge, Vorlagen) und Werkstattzeiträume, nur Admins.
  */
 export type Permission = 'edit' | 'lead' | 'admin'
 
 const PERMISSIONS: Record<Role, Permission[]> = {
   admin: ['edit', 'lead', 'admin'],
-  wl: ['edit', 'lead', 'admin'],
+  wl: ['edit', 'lead'],
   user: ['edit'],
 }
 
@@ -291,7 +292,7 @@ export function cardsFromTemplates(a: Aircraft) {
     state.tasks.push({
       id: nextId('t'), aircraftId: a.id, templateId: v.id, status: 'offen', level: v.level, title: v.title, desc: v.desc || '–',
       duration: v.duration, checklist: v.checklist.map((text) => ({ text, done: false })),
-      docId: v.docTitle ? state.documents.find((d) => d.aircraftId === a.id && d.title === v.docTitle)?.id : undefined,
+      docId: v.docTitle ? docsFor(a.id).find((d) => d.title === v.docTitle)?.id : undefined,
       history: [{ text: 'Aus Vorlage angelegt', who: actor(), at: today() }],
     })
   }
@@ -498,11 +499,13 @@ export function unsignTask(task: Task) {
   log(task.history, 'Abzeichnung zurückgenommen', now())
 }
 
-export function addTaskNote(task: Task, text: string, photos: number) {
-  if (!text.trim() && !photos) return
+const photoCount = (n: number) => (n === 1 ? '1 Foto' : `${n} Fotos`)
+
+export function addTaskNote(task: Task, text: string, photos: FileRef[]) {
+  if (!text.trim() && !photos.length) return
   task.notes ??= []
   task.notes.push({ id: nextId('n'), text: text.trim(), photos, who: actor(), at: now() })
-  log(task.history, photos ? `Notiz mit ${photos === 1 ? '1 Foto' : `${photos} Fotos`}` : 'Notiz hinzugefügt', now())
+  log(task.history, photos.length ? `Notiz mit ${photoCount(photos.length)}` : 'Notiz hinzugefügt', now())
 }
 
 export function deleteTaskNote(task: Task, note: TaskNote) {
@@ -623,18 +626,18 @@ export interface DefectInput {
   title: string
   desc: string
   priority: Defect['priority']
-  photos: number
+  photos: FileRef[]
 }
 
 export function createDefect(aircraftId: string, input: DefectInput) {
-  const photoText = input.photos ? `Befund mit ${input.photos} ${input.photos === 1 ? 'Foto' : 'Fotos'} erfasst.` : 'Befund erfasst.'
+  const photoText = input.photos.length ? `Befund mit ${photoCount(input.photos.length)} erfasst.` : 'Befund erfasst.'
   state.defects.push({
     id: nextId('m'),
     aircraftId,
     title: input.title.trim(),
     desc: input.desc.trim() || '–',
     source: 'befund',
-    photos: input.photos,
+    photos: [...input.photos],
     reportedAt: today(),
     reportedBy: actor(),
     priority: input.priority,
@@ -648,7 +651,7 @@ export function updateDefect(defect: Defect, input: DefectInput) {
   defect.title = input.title.trim()
   defect.desc = input.desc.trim() || '–'
   defect.priority = input.priority
-  defect.photos = input.photos
+  defect.photos = [...input.photos]
   log(defect.history, 'Bearbeitet.')
 }
 
@@ -659,19 +662,64 @@ export function deleteDefect(defect: Defect) {
   remove(state.defects, defect)
 }
 
-/* ---------- Dokumente ---------- */
+/* ---------- Vereinsflieger ---------- */
 
-export function addDocument(aircraftId: string, title: string, kind: string) {
-  state.documents.push({ id: nextId('d'), aircraftId, title: title.trim(), meta: `PDF · ${kind} · hinzugefügt ${fmtDate(today())}` })
+/** Ergebnis eines Abgleichs festhalten. Bei einem Fehler bleibt der Zeitpunkt des letzten erfolgreichen stehen. */
+export function recordVereinsfliegerSync(error?: string) {
+  if (error) state.vereinsflieger.error = error
+  else state.vereinsflieger = { lastSync: now() }
 }
 
-/** replaced: neue Datei hochgeladen (im Mockup simuliert). */
-export function updateDocument(doc: DocumentItem, title: string, replaced: boolean) {
-  doc.title = title.trim()
-  if (replaced) {
-    doc.meta = `PDF · neue Version vom ${fmtDate(today())}`
-    delete doc.image
+/* ---------- Dokumente ---------- */
+
+/** Dokumente, die für dieses Flugzeug gelten: eigene, die seines Typs und die des Vereins. */
+export function docsFor(aircraftId: string) {
+  const type = state.aircraft.find((a) => a.id === aircraftId)?.type
+  return state.documents.filter((d) => d.aircraftId ? d.aircraftId === aircraftId : !d.aircraftType || d.aircraftType === type)
+}
+
+export type DocScope = 'aircraft' | 'type' | 'club'
+export const docScope = (d: DocumentItem): DocScope => (d.aircraftId ? 'aircraft' : d.aircraftType ? 'type' : 'club')
+
+export interface DocInput {
+  title: string
+  kind: DocumentItem['kind']
+  version: string
+  scope: DocScope
+  file: FileRef | null
+}
+
+export const docInput = (d?: DocumentItem): DocInput => ({
+  title: d?.title ?? '',
+  kind: d?.kind ?? 'Handbuch',
+  version: d?.version ?? '',
+  scope: d ? docScope(d) : 'aircraft',
+  file: d?.file ?? null,
+})
+
+/** aircraftId: von welchem Flugzeug aus angelegt bzw. bearbeitet – bestimmt Flugzeug und Typ für den Geltungsbereich. */
+function applyDocInput(d: DocumentItem, aircraftId: string, input: DocInput) {
+  const type = state.aircraft.find((a) => a.id === aircraftId)?.type
+  d.title = input.title.trim()
+  d.kind = input.kind
+  d.version = input.version.trim()
+  d.aircraftId = input.scope === 'aircraft' ? aircraftId : undefined
+  d.aircraftType = input.scope === 'type' ? type : undefined
+  if (input.file?.id !== d.file?.id) {
+    d.file = input.file ?? undefined
+    // Die Vorschau der Beispieldaten passt nicht mehr zur neuen Datei.
+    delete d.image
   }
+}
+
+export function addDocument(aircraftId: string, input: DocInput) {
+  const d: DocumentItem = { id: nextId('d'), title: '', kind: 'Handbuch', version: '', addedAt: today(), addedBy: actor() }
+  applyDocInput(d, aircraftId, input)
+  state.documents.push(d)
+}
+
+export function updateDocument(d: DocumentItem, aircraftId: string, input: DocInput) {
+  applyDocInput(d, aircraftId, input)
 }
 
 export function deleteDocument(doc: DocumentItem) {

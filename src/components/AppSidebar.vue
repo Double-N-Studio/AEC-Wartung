@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { activeAircraft, can, resetDemo, state } from '../store'
+import { activeAircraft, can, currentUser, resetDemo, state } from '../store'
 import AccountMenu from './account/AccountMenu.vue'
 import SyncStatus from './SyncStatus.vue'
 import { setSimulateOffline, sync } from '../sync'
@@ -29,6 +29,9 @@ function onReset() {
       </RouterLink>
       <RouterLink to="/inventur" class="nav-item" active-class="active" @click="emit('navigate')">
         <AppIcon name="box" :size="20" :stroke="1.8" /> Inventur
+      </RouterLink>
+      <RouterLink v-if="currentUser() && !currentUser()!.device" to="/meine-sachen" class="nav-item" active-class="active" @click="emit('navigate')">
+        <AppIcon name="user" :size="20" :stroke="1.8" /> Meine Sachen
       </RouterLink>
     </div>
 

@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { state } from '../../store'
 import { daysBetween, fmtDate, today } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
+import VereinsfliegerStatus from '../../components/VereinsfliegerStatus.vue'
 
 const WARN_DAYS = 30
 const route = useRoute()
@@ -32,7 +33,7 @@ const upcoming = computed(() => rows.value.filter((r) => r.warn))
   <section class="card list" aria-labelledby="fr-h">
     <div class="toolbar">
       <h2 id="fr-h" class="section-title">Offene Fristen</h2>
-      <span class="muted note"><AppIcon name="cloud" :size="15" :stroke="1.9" />Fristen werden automatisch aus Vereinsflieger übernommen.</span>
+      <VereinsfliegerStatus what="Fristen" />
     </div>
     <div class="table" role="table" aria-label="Offene Fristen">
       <div class="row table-head" role="row">
@@ -62,7 +63,6 @@ const upcoming = computed(() => rows.value.filter((r) => r.warn))
 }
 .list { overflow: hidden; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; flex-wrap: wrap; }
-.note { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; }
 .table { border-top: 1px solid var(--border); }
 .row {
   display: grid; align-items: center;

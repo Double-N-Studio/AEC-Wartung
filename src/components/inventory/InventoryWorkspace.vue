@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { state } from '../../store'
 import type { InventoryItem, Order } from '../../types'
 import OrderBoard from './OrderBoard.vue'
@@ -33,6 +34,17 @@ const preset = computed(() => ({
   kind: props.kinds.length === 1 ? props.kinds[0] : undefined,
   fits: props.forWhat && props.forWhat !== 'Lager' ? props.forWhat : undefined,
 }))
+
+// ?artikel=<id> bzw. ?bestellung=<id> öffnen direkt (Links aus „Meine Sachen“).
+const route = useRoute()
+const router = useRouter()
+watch(() => [route.query.artikel, route.query.bestellung], ([itemId, orderId]) => {
+  if (typeof itemId === 'string') openItemId.value = itemId
+  const order = typeof orderId === 'string' ? state.orders.find((o) => o.id === orderId) : undefined
+  if (order) openOrder(order)
+}, { immediate: true })
+const clearQuery = () => { if (route.query.artikel || route.query.bestellung) router.replace({ query: {} }) }
+watch([openItemId, openFreeId], ([item, free]) => { if (!item && !free) clearQuery() })
 
 function openOrder(o: Order) {
   if (o.itemId) openItemId.value = o.itemId

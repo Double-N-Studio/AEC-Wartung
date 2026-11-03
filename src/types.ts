@@ -1,7 +1,7 @@
 /** Konto-ID (z. B. 'MA', 'tablet') oder SYSTEM für Einträge aus Vereinsflieger. */
 export type UserId = string
 
-/** Admin und Werkstattleiter haben vorerst dieselben Rechte. Ohne Login gibt es kein Konto. */
+/** Admins dürfen alles wie Werkstattleiter, dazu die Verwaltung. Ohne Login gibt es kein Konto. */
 export type Role = 'admin' | 'wl' | 'user'
 
 export interface User {
@@ -16,6 +16,15 @@ export interface User {
   removed?: boolean
   bg: string
   fg: string
+}
+
+/** Verweis auf eine hochgeladene Datei (Foto, PDF); den Inhalt liefert src/api/files.ts. */
+export interface FileRef {
+  id: string
+  name: string
+  /** MIME-Typ, z. B. image/jpeg oder application/pdf */
+  type: string
+  size: number
 }
 
 /** at: ISO-Datum (YYYY-MM-DD) oder Datum mit Uhrzeit (YYYY-MM-DDTHH:mm) */
@@ -63,11 +72,11 @@ export interface ChecklistItem {
   done: boolean
 }
 
-/** Notiz an einer Kanban-Karte, z. B. was beim Arbeiten aufgefallen ist. Fotos sind im Mockup Platzhalter. */
+/** Notiz an einer Kanban-Karte, z. B. was beim Arbeiten aufgefallen ist. */
 export interface TaskNote {
   id: string
   text: string
-  photos: number
+  photos: FileRef[]
   who: UserId
   at: string
 }
@@ -125,7 +134,7 @@ export interface Defect {
   title: string
   desc: string
   source: 'vf' | 'befund'
-  photos: number
+  photos: FileRef[]
   reportedAt: string
   reportedBy: UserId
   priority: Priority
@@ -149,12 +158,25 @@ export interface Deadline {
   startsLeft?: number
 }
 
+export type DocKind = 'Handbuch' | 'Anleitung' | 'Prüfbericht' | 'Sonstiges'
+
+/**
+ * Dokument eines Flugzeugs (aircraftId), aller Flugzeuge eines Typs (aircraftType)
+ * oder des ganzen Vereins (beides leer, z. B. Werkstattordnung).
+ */
 export interface DocumentItem {
   id: string
-  aircraftId: string
+  aircraftId?: string
+  aircraftType?: string
   title: string
-  meta: string
+  kind: DocKind
+  /** Ausgabe oder Stand, z. B. „Änderung TM 14 vom 11.04.2023“ */
+  version: string
+  file?: FileRef
+  /** Vorschaubild der ersten Seite (nur Beispieldaten) */
   image?: string
+  addedAt: string
+  addedBy: UserId
 }
 
 export interface InventoryItem {
@@ -208,5 +230,7 @@ export interface AppState {
   documents: DocumentItem[]
   inventory: InventoryItem[]
   orders: Order[]
+  /** Letzter Abgleich mit Vereinsflieger; error, wenn er fehlgeschlagen ist */
+  vereinsflieger: { lastSync: string; error?: string }
   counter: number
 }

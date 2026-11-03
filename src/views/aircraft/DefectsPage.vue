@@ -6,6 +6,7 @@ import type { Defect } from '../../types'
 import { fmtDate } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
 import DropdownSelect from '../../components/DropdownSelect.vue'
+import VereinsfliegerStatus from '../../components/VereinsfliegerStatus.vue'
 import PriorityBadge from '../../components/PriorityBadge.vue'
 import DefectModal from './DefectModal.vue'
 import DefectFormModal from './DefectFormModal.vue'
@@ -46,7 +47,7 @@ const form = ref<Defect | 'new' | null>(null)
           <button type="button" :aria-pressed="tab === 'open'" @click="tab = 'open'">Offen · {{ openCount }}</button>
           <button type="button" :aria-pressed="tab === 'done'" @click="tab = 'done'">Erledigt · {{ doneCount }}</button>
         </div>
-        <span class="muted note">Mängel werden automatisch aus Vereinsflieger übernommen.</span>
+        <VereinsfliegerStatus what="Mängel" />
       </div>
       <div class="right">
         <DropdownSelect v-model="source" label="Quelle" :options="SOURCES" />
@@ -70,7 +71,7 @@ const form = ref<Defect | 'new' | null>(null)
         </span>
         <span role="cell" class="c-src">
           <AppIcon :name="d.source === 'vf' ? 'cloud' : 'camera'" :size="15" :stroke="1.9" />
-          {{ d.source === 'vf' ? 'Vereinsflieger' : `Befund · ${d.photos === 1 ? '1 Foto' : `${d.photos} Fotos`}` }}
+          {{ d.source === 'vf' ? 'Vereinsflieger' : `Befund · ${d.photos.length === 1 ? '1 Foto' : `${d.photos.length} Fotos`}` }}
         </span>
         <span role="cell" class="c-stack"><strong>{{ fmtDate(d.reportedAt) }}</strong><span class="muted">{{ userName(d.reportedBy) }}</span></span>
         <span role="cell" class="c-stack">
@@ -92,7 +93,6 @@ const form = ref<Defect | 'new' | null>(null)
 .list { overflow: hidden; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; flex-wrap: wrap; }
 .left, .right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.note { font-size: 12.5px; }
 .tall { height: 40px; }
 .table { border-top: 1px solid var(--border); }
 .row {

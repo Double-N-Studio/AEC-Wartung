@@ -35,11 +35,12 @@ src/
   types.ts                      Datenmodell
   mock/data.ts                  Ausgangsdaten (initialState)
   mock/people.ts                Testkonten (Personen + Werkstatt-Tablet), Rollen-Bezeichnungen
+  api/                          Schnittstellen zum Backend: files.ts (Dateien, Mockup: IndexedDB), vereinsflieger.ts (Abgleich, simuliert)
   utils/                        Datums-Formatierung, Eignungsstufen
   styles/base.css               Design-Tokens (CSS-Variablen) und Basisklassen
   components/                   wiederverwendbare Bausteine (AppModal, Badges, DropdownSelect …)
   components/inventory/         Bestellliste + Bestandstabelle + Popups (InventoryWorkspace, Inventur und Material-Reiter)
-  views/                        Seiten: Zeitplan, Inventur, Verwaltung (Konten, Saison), FAQ
+  views/                        Seiten: Zeitplan, Inventur, Meine Sachen, Verwaltung (Konten, Saison), FAQ
   views/aircraft/               Flugzeug-Reiter: Kanban, Dokumente, Fristen, Mängel/Befunde, Material
   views/inventory/              Popups der Inventur
 public/docs/                    Vorschaubilder der Dokumente
@@ -49,7 +50,7 @@ public/docs/                    Vorschaubilder der Dokumente
 
 - **Sprache:** Oberfläche, Kommentare und Commit-Nachrichten auf Deutsch; Bezeichner im Code auf Englisch.
 - **Zustand nur über den Store ändern.** Neue Aktionen gehören in `store.ts`, nicht in Komponenten – auch kein `v-model` direkt auf Store-Objekte. Änderungen an Kanban-Karten, Mängeln, Bestellungen, Artikeln und Werkstatttagen schreiben einen Eintrag in `history`; Freitext (Kommentare) wird beim Verlassen des Felds gespeichert, nicht pro Tastendruck.
-- **Rollen:** Admin, Werkstattleiter, Mitglied, nicht eingetragen (nur ansehen). Mitglieder geben nur Vor- und Nachnamen ein (`enterName`, ohne Passwort; gleicher Name = dasselbe Konto); Sonderkonten (Admin, Werkstattleiter, Werkstatt-Tablet, siehe `needsPassword`) melden sich mit E-Mail und Passwort an (`login`). `currentUser()` liefert ein Sonderkonto nur nach der Anmeldung. Rechte nur über `can('edit' | 'lead' | 'admin')` aus dem Store prüfen, nie über die Rolle direkt. `edit` = alle Angemeldeten, `lead` = abzeichnen und Werkstatttage planen, `admin` = Konten, Saison, Werkstattzeiträume. Admin und Werkstattleiter haben vorerst dieselben Rechte. Ohne Recht wird ein Bedienelement ausgeblendet oder als Text angezeigt, nicht nur deaktiviert.
+- **Rollen:** Admin, Werkstattleiter, Mitglied, nicht eingetragen (nur ansehen). Mitglieder geben nur Vor- und Nachnamen ein (`enterName`, ohne Passwort; gleicher Name = dasselbe Konto); Sonderkonten (Admin, Werkstattleiter, Werkstatt-Tablet, siehe `needsPassword`) melden sich mit E-Mail und Passwort an (`login`). `currentUser()` liefert ein Sonderkonto nur nach der Anmeldung. Rechte nur über `can('edit' | 'lead' | 'admin')` aus dem Store prüfen, nie über die Rolle direkt. `edit` = alle Angemeldeten, `lead` = abzeichnen und Werkstatttage planen (Werkstattleiter und Admins, auf den Flugzeugseiten gleich), `admin` = Verwaltung (Konten, Saison, Flugzeuge, Vorlagen) und Werkstattzeiträume, nur Admins. Ohne Recht wird ein Bedienelement ausgeblendet oder als Text angezeigt, nicht nur deaktiviert.
 - **Personen sind Konto-IDs** (`UserId`) in allen Feldern (`who`, `doneBy`, `owner` …); angezeigt wird über `userName()`. Entfernte Konten bleiben mit `removed` erhalten, damit der Verlauf lesbar bleibt. `SYSTEM` steht für Einträge aus Vereinsflieger.
 - **Bearbeiten/Löschen** im Popup-Kopf über `#tools` (Stift, Mülleimer), Löschen immer mit `ConfirmModal`. Formulare zum Anlegen und Bearbeiten sind dieselbe Komponente (`TaskFormModal`, `DefectFormModal`, `ItemFormModal`).
 - **Speichern und Konflikte:** Der Store meldet jede Änderung an `sync.ts` (`noteChange`); offline zählen sie als wartend und gehen beim Wiederverbinden raus. Änderungen anderer Geräte kommen über `applyRemote`, das Datensätze per ID abgleicht, damit offene Popups ihre Objekte behalten. Formulare mit Speichern-Button zeigen per `useChangedElsewhere` + `ConflictNote`, wenn jemand anderes denselben Datensatz geändert hat. Mit Backend ersetzen API-Aufrufe genau diese Stellen. In der Demo simuliert „Offline testen“ unten links den Verbindungsabbruch; ein zweiter Tab spielt ein zweites Gerät.
@@ -60,10 +61,11 @@ public/docs/                    Vorschaubilder der Dokumente
 - **Farben und Abstände** über die CSS-Variablen aus `base.css`, keine neuen Hex-Werte in Komponenten, wenn es ein Token gibt.
 - **Responsiv:** Breakpoints `900px` (Seitenleiste wird Menü, Tabellen werden Karten) und `640px` (Handy). Neue Seiten in beiden Breiten prüfen.
 - **Statische Assets:** Bilder in Templates per `import` aus `src/assets` einbinden; dynamische Pfade (z. B. Dokument-Vorschauen) relativ ohne führenden `/`, weil `base: './'` gilt.
-- **Bewusst ohne Funktion** (führen „ins Nichts“): Herunterladen, Foto aufnehmen (nur Platzhalter), Datei-Upload (simuliert). Anmeldung prüft im Mockup kein Passwort; das Login-Popup bietet die Demo-Konten zum Antippen an. Die Sitzung liegt unter eigenem localStorage-Schlüssel und übersteht „Demo zurücksetzen“.
+- **Dateien** (Fotos, Dokumente) laufen über `src/api/files.ts`: Datensätze speichern nur eine `FileRef`, den Inhalt liefern `uploadFile` / `fileUrl` / `downloadFile`. Im Mockup liegen die Dateien in IndexedDB des Browsers, mit Backend auf dem Server. Fotos werden vor dem Hochladen verkleinert (`compressImage`); Fotos der Beispieldaten haben keine Datei und erscheinen als Platzhalter. Anmeldung prüft im Mockup kein Passwort; das Login-Popup bietet die Demo-Konten zum Antippen an. Die Sitzung liegt unter eigenem localStorage-Schlüssel und übersteht „Demo zurücksetzen“.
 
 ## Produkt-Entscheidungen aus dem Feedback
 
+- „Meine Sachen“ (nur für Personen, nicht am Tablet): eigene Karten in Arbeit, zugewiesene Mängel/Befunde, eigene offene Bestellungen und Befunde; für Werkstattleitung und Admins zusätzlich alle erledigten Karten, die auf Abzeichnung warten. Links öffnen die Popups direkt (`?paket=`, `?befund=`, `?artikel=`, `?bestellung=`).
 - Startseite ist der Zeitplan; gearbeitet wird nur samstags.
 - Der Reiter heißt „Kanban“, ein Eintrag „Kanban-Karte“ (auch bei Mängeln/Befunden); im Code bleibt es `Task`.
 - Konten: Der Link geht nur an Vereinsmitglieder, daher kein Vereinscode. Jede Aktion braucht einen Namen; Mitglieder geben beim ersten Öffnen Vor- und Nachnamen ein (Pflicht, keine Namensliste), nur Sonderkonten haben ein Passwort. Was am Tablet passiert, steht als „Werkstatt-Tablet“ im Verlauf; die App ermuntert, das eigene Handy zu nehmen.
@@ -71,9 +73,11 @@ public/docs/                    Vorschaubilder der Dokumente
 - Abzeichnen: als angemeldete Person, am Werkstatt-Tablet als Werkstattleitung des Tages. Abgezeichnete Karten sind gesperrt, bis die Werkstattleitung die Abzeichnung zurücknimmt.
 - Kanban-Karten haben Notizen mit Fotos (`notes`), z. B. was beim Arbeiten aufgefallen ist. Eigene Notizen darf man löschen, die Werkstattleitung alle; nach dem Abzeichnen ist auch das gesperrt. Die Karte zeigt die Anzahl.
 - Eine erledigte Kanban-Karte schließt den verknüpften Mangel/Befund nicht automatisch.
+- Vereinsflieger-Abgleich (`src/api/vereinsflieger.ts`, im Mockup simuliert): Mängel, Fristen und Verwaltung zeigen den letzten Abgleich, Fehler und „Jetzt abgleichen“ (`VereinsfliegerStatus`). Zugangsdaten gehören auf den Server.
 - Mängel aus Vereinsflieger lassen sich in der App nicht bearbeiten oder löschen (nur eigene Befunde). Rückschreiben nach Vereinsflieger kommt als letzter Schritt.
 - Flugzeuge pflegen Admins in der Verwaltung (anlegen, bearbeiten, ausmustern, löschen); nichts davon ist fest im Code, damit andere Vereine die App mit eigenem Backend nutzen können. Ausgemusterte Flugzeuge (`retired`) behalten ihre Daten, fehlen aber in Seitenleiste, Saisonplan und Auswahllisten (`activeAircraft`, `aircraftTypes`). Welche Flugzeuge an einem Samstag in der Werkstatt sind, ergibt sich aus ihren Zeiträumen (`planesOn`); Admins ändern die Zeiträume im Saisonplan über den Stift per Ziehen.
 - Saisons: Kanban-Karten entstehen aus Vorlagen (Verwaltung → Kanban-Vorlagen, je Flugzeugtyp oder für alle). „Neue Saison starten“ archiviert Karten, Termine und Werkstattleitungen (nur lesen, `archive`), legt die Karten neu aus den Vorlagen an und verschiebt die Werkstattzeiträume um dieselbe Wochenzahl; offene eigene Karten (ohne `templateId`) können mitgehen. Mängel, Inventur, Bestellungen, Dokumente und Fristen sind nicht saisongebunden. Vorlagen ändern bestehende Karten nicht.
+- Dokumente gelten für ein Flugzeug, für alle Flugzeuge eines Typs oder den ganzen Verein (`docsFor`); Art und Ausgabe sind eigene Felder. PDFs öffnen im Viewer, Herunterladen liefert die Originaldatei.
 - Arbeitspakete haben keine Bereiche (Rumpf, Fläche …), nur Eignungsstufen.
 - Inventur: nur Verbrauchsstoffe oder Ersatzteile (kein „Alle“), „leer“ meldet man durch Bestand 0, Statusanzeigen sind Text, keine Buttons.
 - Inventur als Zählliste: Gruppen Leer / Fast leer / Vorhanden (alphabetisch), gezählt wird direkt in der Zeile (Stepper bzw. Genug / Fast leer / Leer, beide gleich breit). „Fast leer“ gibt es nur bei Artikeln ohne Stückzahl (`FLAG` in `utils/stock.ts`). Lagerorte sind nur Freitext, nie Gruppen. Bestellliste steht als Seitenspalte rechts (schmal: oben).

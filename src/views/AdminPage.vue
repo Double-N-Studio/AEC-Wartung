@@ -9,11 +9,12 @@ import ConfirmModal from '../components/ConfirmModal.vue'
 import PersonAvatar from '../components/PersonAvatar.vue'
 import AircraftSection from './admin/AircraftSection.vue'
 import SeasonSection from './admin/SeasonSection.vue'
+import VereinsfliegerStatus from '../components/VereinsfliegerStatus.vue'
 
 const ROLES: Role[] = ['admin', 'wl', 'user']
 const ROLE_TEXT: Record<Role, string> = {
-  admin: 'Alle Rechte, auch Konten, Saison und Werkstattzeiträume. Meldet sich mit Passwort an.',
-  wl: 'Abzeichnen, Werkstatttage planen. Vorerst dieselben Rechte wie Admin. Meldet sich mit Passwort an.',
+  admin: 'Alles wie Werkstattleiter, dazu die Verwaltung: Konten, Saison, Flugzeuge, Kanban-Vorlagen und Werkstattzeiträume. Meldet sich mit Passwort an.',
+  wl: 'Abzeichnen und Werkstatttage planen; auf den Flugzeugseiten dieselben Rechte wie Admins. Keine Verwaltung. Meldet sich mit Passwort an.',
   user: 'Karten bearbeiten, Mängel erfassen, zählen und bestellen. Gibt nur den Namen ein, kein Passwort.',
 }
 
@@ -57,6 +58,12 @@ function confirmRemove() {
       <SeasonSection />
 
       <AircraftSection />
+
+      <section class="card box" aria-labelledby="vf-h">
+        <h2 id="vf-h" class="section-title">Vereinsflieger</h2>
+        <p class="muted small">Mängel und Fristen kommen automatisch aus Vereinsflieger. Die Zugangsdaten liegen auf dem Server, nicht in der App. Rückschreiben nach Vereinsflieger folgt später.</p>
+        <VereinsfliegerStatus what="Mängel und Fristen" />
+      </section>
 
       <section class="card list" aria-labelledby="users-h">
         <div class="box-head pad">
@@ -125,6 +132,7 @@ function confirmRemove() {
 
 <style scoped>
 .denied { padding: 24px; font-size: 14px; color: var(--text-2); }
+.box { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
 .box-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .box-head.pad { padding: 14px 16px; border-bottom: 1px solid var(--border); }
 .section-title { display: flex; align-items: center; gap: 8px; }

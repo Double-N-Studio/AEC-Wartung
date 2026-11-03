@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { fitsAircraft, state, userName } from '../../store'
+import { docsFor, fitsAircraft, state, userName } from '../../store'
 
 const route = useRoute()
 const aircraft = computed(() => state.aircraft.find((a) => a.id === route.params.id))
@@ -13,7 +13,7 @@ const tabs = computed(() => {
   const id = aircraft.value?.id
   return [
     { to: 'kanban', label: 'Kanban', count: tasks.value.length },
-    { to: 'dokumente', label: 'Dokumente', count: state.documents.filter((d) => d.aircraftId === id).length },
+    { to: 'dokumente', label: 'Dokumente', count: id ? docsFor(id).length : 0 },
     { to: 'fristen', label: 'Fristen', count: state.deadlines.filter((d) => d.aircraftId === id).length },
     { to: 'maengel', label: 'Mängel/Befunde', count: state.defects.filter((d) => d.aircraftId === id && d.status === 'open').length },
     { to: 'material', label: 'Material', count: state.inventory.filter((i) => fitsAircraft(i, aircraft.value?.type ?? '')).length },

@@ -1,8 +1,12 @@
-import type { Aircraft, AppState, ArchivedSeason, Task } from '../types'
+import type { Aircraft, AppState, ArchivedSeason, FileRef, Task } from '../types'
 import { addDays, today } from '../utils/date'
 import { initialUsers, SYSTEM, TABLET } from './people'
 
 const ASG = 'asg32'
+
+/** Beispielfotos ohne Datei – die App zeigt dafür Platzhalter. */
+const demoPhotos = (key: string, n: number): FileRef[] =>
+  Array.from({ length: n }, (_, i) => ({ id: `demo-${key}-${i + 1}`, name: `Foto ${i + 1}.jpg`, type: 'image/jpeg', size: 0 }))
 
 const created = { text: 'Angelegt', who: 'HE', at: '2027-01-09' }
 // Dokument-ID des Wartungshandbuchs
@@ -25,7 +29,7 @@ function pkg(
  */
 export function initialState(): AppState {
   const s = baseState()
-  const own = <T extends { aircraftId: string }>(list: T[]) => list.filter((x) => x.aircraftId === ASG)
+  const own = <T extends { aircraftId?: string }>(list: T[]) => list.filter((x) => x.aircraftId === ASG)
   const pre = (id: string, ref?: string) => (ref ? `${id}-${ref}` : undefined)
   // Vorlagen = Karten der ASG32, gültig für alle Flugzeuge; jede Karte merkt sich ihre Vorlage.
   s.templates = own(s.tasks).map((t) => ({
@@ -143,7 +147,7 @@ function applyAsg(t: Task) {
   else if (t.id === 'ru4') {
     startAt(t, 'JO', day1)
     tick(t, 1)
-    t.notes = [{ id: 'n1', text: 'Linkes Radlager hat deutlich Spiel, daher das Klackern. Ersatzlager muss bestellt werden.', photos: 2, who: 'JO', at: `${day1}T15:20` }]
+    t.notes = [{ id: 'n1', text: 'Linkes Radlager hat deutlich Spiel, daher das Klackern. Ersatzlager muss bestellt werden.', photos: demoPhotos('n1', 2), who: 'JO', at: `${day1}T15:20` }]
   }
   else if (t.id === 'ru8') { startAt(t, 'JO', day1); tick(t, 1) }
   else if (t.id === 'hl3') startAt(t, 'LE', `${today()}T09:40`)
@@ -203,6 +207,7 @@ function baseState(): AppState {
 
     templates: [],
     archive: [],
+    vereinsflieger: { lastSync: `${today()}T06:00` },
 
     tasks: [
       // Flügel
@@ -268,37 +273,37 @@ function baseState(): AppState {
     ],
 
     defects: [
-      { id: 'm1', aircraftId: ASG, title: 'Lack-Riss Höhenleitwerk links', source: 'befund', photos: 2, reportedAt: '2027-01-09', reportedBy: 'HE', priority: 'Normal', owner: 'HE', status: 'open',
+      { id: 'm1', aircraftId: ASG, title: 'Lack-Riss Höhenleitwerk links', source: 'befund', photos: demoPhotos('m1', 2), reportedAt: '2027-01-09', reportedBy: 'HE', priority: 'Normal', owner: 'HE', status: 'open',
         desc: 'Haarriss im Lack an der Nasenleiste, ca. 4 cm lang. Beim Polieren entdeckt.',
         history: [{ text: 'Befund mit 2 Fotos erfasst.', who: 'HE', at: '2027-01-09' }] },
-      { id: 'm2', aircraftId: ASG, title: 'Hauben-Fenster hinten', source: 'vf', photos: 0, reportedAt: '2026-06-04', reportedBy: 'LO', priority: 'Normal', owner: 'MA', status: 'open',
+      { id: 'm2', aircraftId: ASG, title: 'Hauben-Fenster hinten', source: 'vf', photos: [], reportedAt: '2026-06-04', reportedBy: 'LO', priority: 'Normal', owner: 'MA', status: 'open',
         desc: 'Die Schiene des hinteren Haubenfensters ist unten gebrochen. Fenster nur mit Vorsicht benutzen.',
         history: [{ text: 'Ersatz ist bestellt, Einbau in der Winterwartung.', who: 'MA', at: '2027-01-09' }, { text: 'Ersatzschiene beim Hersteller angefragt.', who: 'MA', at: '2026-06-12' }] },
-      { id: 'm3', aircraftId: ASG, title: 'Flarm: Fehlermeldung Antenne B', source: 'vf', photos: 0, reportedAt: '2026-05-11', reportedBy: 'JO', priority: 'Normal', owner: 'MA', status: 'open', taskId: 'ru8',
+      { id: 'm3', aircraftId: ASG, title: 'Flarm: Fehlermeldung Antenne B', source: 'vf', photos: [], reportedAt: '2026-05-11', reportedBy: 'JO', priority: 'Normal', owner: 'MA', status: 'open', taskId: 'ru8',
         desc: 'Flarm meldet einen Fehler an Antenne B. Antennenkabel und Antenne prüfen, ggf. ersetzen.',
         history: [{ text: 'Aus Vereinsflieger übernommen.', who: SYSTEM, at: '2026-05-11' }] },
-      { id: 'm4', aircraftId: ASG, title: 'Lager am Hauptfahrwerk schlägt', source: 'vf', photos: 0, reportedAt: '2026-09-21', reportedBy: 'JO', priority: 'Niedrig', owner: 'JO', status: 'open', taskId: 'ru4',
+      { id: 'm4', aircraftId: ASG, title: 'Lager am Hauptfahrwerk schlägt', source: 'vf', photos: [], reportedAt: '2026-09-21', reportedBy: 'JO', priority: 'Niedrig', owner: 'JO', status: 'open', taskId: 'ru4',
         desc: 'Beim Schieben klackt das Hauptfahrwerk einmal pro Umdrehung. Zu Beginn der Winterarbeit prüfen und ggf. das Lager reparieren oder Ersatzteile bestellen.',
         history: [{ text: 'Wird zusammen mit dem Fahrwerk geprüft.', who: 'HE', at: '2027-01-09' }] },
-      { id: 'm5', aircraftId: ASG, title: 'Mückenputzer: Rutschkupplung', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Niedrig', owner: null, status: 'open',
+      { id: 'm5', aircraftId: ASG, title: 'Mückenputzer: Rutschkupplung', source: 'vf', photos: [], reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Niedrig', owner: null, status: 'open',
         desc: 'Die Rutschkupplung am Antrieb des linken Putzflügels ist verschlissen und rutscht beim Einfahren ab ca. 100 km/h.',
         history: [{ text: 'Aus Vereinsflieger übernommen.', who: SYSTEM, at: '2026-06-11' }] },
-      { id: 'm6', aircraftId: ASG, title: 'Mikrofon-Schwanenhals hinterer Sitz', source: 'befund', photos: 1, reportedAt: '2026-05-18', reportedBy: 'LE', priority: 'Sehr niedrig', owner: 'MA', status: 'open',
+      { id: 'm6', aircraftId: ASG, title: 'Mikrofon-Schwanenhals hinterer Sitz', source: 'befund', photos: demoPhotos('m6', 1), reportedAt: '2026-05-18', reportedBy: 'LE', priority: 'Sehr niedrig', owner: 'MA', status: 'open',
         desc: 'Die Buchsen der Schwanenhals-Befestigung sind aus der Bordwand gebrochen. Provisorisch mit Einnietmuttern befestigt und eingeharzt – in der Winterwartung prüfen.',
         history: [{ text: 'Einnietmuttern statt Nieten gesetzt und eingeharzt.', who: 'MA', at: '2026-08-02' }] },
-      { id: 'm7', aircraftId: ASG, title: 'Kratzspuren Haube vorne rechts', source: 'befund', photos: 1, reportedAt: '2025-08-11', reportedBy: 'LE', priority: 'Normal', owner: 'MA', status: 'done', doneAt: '2026-03-08', doneBy: 'MA',
+      { id: 'm7', aircraftId: ASG, title: 'Kratzspuren Haube vorne rechts', source: 'befund', photos: demoPhotos('m7', 1), reportedAt: '2025-08-11', reportedBy: 'LE', priority: 'Normal', owner: 'MA', status: 'done', doneAt: '2026-03-08', doneBy: 'MA',
         desc: 'Rundliche Kratzspuren vorne rechts an der Haube, beim Rundgang gefunden.',
         history: [{ text: 'Mit Schleifpaste rauspoliert.', who: 'MA', at: '2026-03-08' }] },
-      { id: 'm8', aircraftId: ASG, title: 'LX 9000 Softwareupdate', source: 'vf', photos: 0, reportedAt: '2026-03-29', reportedBy: 'LE', priority: 'Sehr niedrig', owner: 'JO', status: 'done', doneAt: '2026-04-02', doneBy: 'JO',
+      { id: 'm8', aircraftId: ASG, title: 'LX 9000 Softwareupdate', source: 'vf', photos: [], reportedAt: '2026-03-29', reportedBy: 'LE', priority: 'Sehr niedrig', owner: 'JO', status: 'done', doneAt: '2026-04-02', doneBy: 'JO',
         desc: 'Neue Softwareversion beim Hersteller anfordern (Seriennummer angeben) und aufspielen.',
         history: [{ text: 'Update aufgespielt.', who: 'JO', at: '2026-04-02' }] },
-      { id: 'm9', aircraftId: ASG, title: 'Höhenmesser hinten: kleiner Zeiger falsch', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Normal', owner: 'MA', status: 'done', doneAt: '2026-12-20', doneBy: 'MA',
+      { id: 'm9', aircraftId: ASG, title: 'Höhenmesser hinten: kleiner Zeiger falsch', source: 'vf', photos: [], reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Normal', owner: 'MA', status: 'done', doneAt: '2026-12-20', doneBy: 'MA',
         desc: 'Am Boden zeigt der große Zeiger richtig an, der kleine steht auf 600 m.',
         history: [{ text: 'Auf Gewährleistung repariert und wieder eingebaut.', who: 'MA', at: '2026-12-20' }, { text: 'Zur Reparatur geschickt.', who: 'MA', at: '2026-11-14' }] },
-      { id: 'm10', aircraftId: ASG, title: 'Fahrwerkswarnung ohne Funktion', source: 'vf', photos: 0, reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Niedrig', owner: 'MA', status: 'done', doneAt: '2027-01-04', doneBy: 'MA',
+      { id: 'm10', aircraftId: ASG, title: 'Fahrwerkswarnung ohne Funktion', source: 'vf', photos: [], reportedAt: '2026-06-11', reportedBy: 'JO', priority: 'Niedrig', owner: 'MA', status: 'done', doneAt: '2027-01-04', doneBy: 'MA',
         desc: 'Die Fahrwerkswarnung funktioniert nicht, der Magnet für den Sensor fehlt.',
         history: [{ text: 'Kein Mangel – so vom Hersteller vorgesehen.', who: 'MA', at: '2027-01-04' }] },
-      { id: 'm11', aircraftId: ASG, title: 'Bordnetz: Spannungsabfall', source: 'vf', photos: 0, reportedAt: '2026-04-29', reportedBy: 'LE', priority: 'Normal', owner: 'HE', status: 'done', doneAt: '2026-05-16', doneBy: 'HE',
+      { id: 'm11', aircraftId: ASG, title: 'Bordnetz: Spannungsabfall', source: 'vf', photos: [], reportedAt: '2026-04-29', reportedBy: 'LE', priority: 'Normal', owner: 'HE', status: 'done', doneAt: '2026-05-16', doneBy: 'HE',
         desc: 'Das Bordnetz bricht zusammen, wenn die Mückenputzer bedient werden.',
         history: [{ text: 'Prüfbericht liegt unter Dokumente. Mückenputzer nur mit Batterie 2 verwenden.', who: 'HE', at: '2026-05-16' }] },
     ],
@@ -311,10 +316,12 @@ function baseState(): AppState {
     ],
 
     documents: [
-      { id: 'd1', aircraftId: ASG, title: 'Flughandbuch', meta: 'PDF · Ausgabe 01.12.2015', image: 'docs/flughandbuch.png' },
-      { id: 'd2', aircraftId: ASG, title: 'Wartungshandbuch', meta: 'PDF · Änderung TM 14 vom 11.04.2023', image: 'docs/wartungshandbuch.png' },
-      { id: 'd3', aircraftId: ASG, title: 'Aufbauanleitung', meta: 'PDF · Version 1.0 (2016)', image: 'docs/aufbauanleitung.webp' },
-      { id: 'd4', aircraftId: ASG, title: 'Gewichtsübersicht', meta: 'PDF · Wägung vom 04.03.2023', image: 'docs/gewichtsuebersicht.webp' },
+      { id: 'd1', aircraftId: ASG, title: 'Flughandbuch', kind: 'Handbuch', version: 'Ausgabe 01.12.2015', image: 'docs/flughandbuch.png', addedAt: '2026-10-03', addedBy: 'LO' },
+      { id: 'd2', aircraftId: ASG, title: 'Wartungshandbuch', kind: 'Handbuch', version: 'Änderung TM 14 vom 11.04.2023', image: 'docs/wartungshandbuch.png', addedAt: '2026-10-03', addedBy: 'LO' },
+      { id: 'd3', aircraftId: ASG, title: 'Aufbauanleitung', kind: 'Anleitung', version: 'Version 1.0 (2016)', image: 'docs/aufbauanleitung.webp', addedAt: '2026-10-03', addedBy: 'LO' },
+      { id: 'd4', aircraftId: ASG, title: 'Gewichtsübersicht', kind: 'Prüfbericht', version: 'Wägung vom 04.03.2023', image: 'docs/gewichtsuebersicht.webp', addedAt: '2026-10-03', addedBy: 'LO' },
+      // Gilt für den ganzen Verein
+      { id: 'd5', title: 'Werkstattordnung', kind: 'Sonstiges', version: 'Stand Oktober 2026', addedAt: '2026-10-10', addedBy: 'MA' },
     ],
 
     inventory: [
