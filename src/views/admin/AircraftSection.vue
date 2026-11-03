@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { aircraftInput, createAircraft, deleteAircraft, state, updateAircraft } from '../../store'
+import { aircraftInput, createAircraft, deleteAircraft, people, state, updateAircraft, userName } from '../../store'
 import type { Aircraft } from '../../types'
 import { fmtDay, isSaturday } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
@@ -23,6 +23,11 @@ const error = computed(() => {
   if (form.end < form.start) return 'Das Ende liegt vor dem Beginn.'
   if (form.start < state.season.start || form.end > state.season.end) return 'Der Werkstattzeitraum muss in der Saison liegen.'
   return ''
+})
+// Ein entferntes Konto bleibt als Pate sichtbar, bis jemand anderes eingetragen wird.
+const managers = computed(() => {
+  const list = people()
+  return form.manager && !list.some((u) => u.id === form.manager) ? [...list, { id: form.manager, name: userName(form.manager) }] : list
 })
 const duplicateReg = computed(() => state.aircraft.some((a) => a !== editing.value && a.reg === form.reg.trim().toUpperCase()))
 
@@ -60,7 +65,7 @@ function confirmRemove() {
           <span class="plane"><AppIcon name="plane" :size="18" /></span>
           <span class="what">
             <strong>{{ a.type }}<span class="reg">{{ a.reg }}</span></strong>
-            <span class="muted">{{ a.serial ? `Werknummer ${a.serial}` : 'Ohne Werknummer' }}</span>
+            <span class="muted">{{ a.manager ? `Pate: ${userName(a.manager)}` : 'Ohne Paten' }}{{ a.serial ? ` · Werknummer ${a.serial}` : '' }}</span>
           </span>
           <span v-if="a.retired" class="pill pill-gray">Ausgemustert</span>
           <span v-else class="muted when">Werkstatt Sa {{ fmtDay(a.start) }} – Sa {{ fmtDay(a.end) }}</span>
@@ -90,9 +95,18 @@ function confirmRemove() {
           <span v-if="duplicateReg" class="error">Dieses Kennzeichen gibt es schon.</span>
         </div>
       </div>
-      <div class="field">
-        <label for="af-serial">Werknummer <span class="muted hint">(optional)</span></label>
-        <input id="af-serial" v-model="form.serial" class="input">
+      <div class="two">
+        <div class="field">
+          <label for="af-serial">Werknummer <span class="muted hint">(optional)</span></label>
+          <input id="af-serial" v-model="form.serial" class="input">
+        </div>
+        <div class="field">
+          <label for="af-manager">Flugzeugpate <span class="muted hint">(optional)</span></label>
+          <select id="af-manager" v-model="form.manager" class="select">
+            <option value="">Kein Pate</option>
+            <option v-for="u in managers" :key="u.id" :value="u.id">{{ u.name }}</option>
+          </select>
+        </div>
       </div>
       <div class="two">
         <div class="field">

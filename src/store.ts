@@ -220,6 +220,8 @@ export interface AircraftInput {
   type: string
   reg: string
   serial: string
+  /** Flugzeugpate (Konto-ID), leer = keiner */
+  manager: UserId | ''
   /** Werkstattzeitraum, jeweils ein Samstag */
   start: string
   end: string
@@ -230,6 +232,7 @@ export const aircraftInput = (a?: Aircraft): AircraftInput => ({
   type: a?.type ?? '',
   reg: a?.reg ?? '',
   serial: a?.serial ?? '',
+  manager: a?.manager ?? '',
   start: a?.start ?? state.season.start,
   end: a?.end ?? addDays(state.season.start, 21),
   retired: !!a?.retired,
@@ -239,6 +242,7 @@ function applyAircraftInput(a: Aircraft, input: AircraftInput) {
   a.type = input.type.trim()
   a.reg = input.reg.trim().toUpperCase()
   a.serial = input.serial.trim() || undefined
+  a.manager = input.manager || undefined
   a.start = input.start
   a.end = input.end
   a.retired = input.retired || undefined
