@@ -18,8 +18,11 @@ COPY backend/package.json backend/package-lock.json ./
 # --ignore-scripts: better-sqlite3 ships prebuilt binaries, npm would otherwise run node-gyp.
 RUN npm ci --ignore-scripts
 COPY backend/tsconfig.json ./
+COPY backend/drizzle ./drizzle
 COPY backend/src ./src
-RUN npm run build && npm prune --omit=dev
+COPY backend/test ./test
+# The tests run on every image build, so a broken server never deploys.
+RUN npm test && rm -rf dist/test && npm prune --omit=dev
 
 FROM node:24-slim
 ENV NODE_ENV=production DATA_DIR=/data PORT=3000 WEB_DIR=/app/web
@@ -34,4 +37,4 @@ COPY backend/package.json ./
 RUN mkdir -p /data && chown node:node /data
 USER node
 EXPOSE 3000
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]
