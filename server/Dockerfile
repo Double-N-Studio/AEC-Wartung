@@ -1,5 +1,5 @@
 # Baut das Backend-Image; GitHub Actions schiebt es nach ghcr.io/double-n-studio/aec-wartung-server.
-FROM node:24-alpine AS build
+FROM node:24-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build && npm prune --omit=dev
 
-FROM node:24-alpine
+FROM node:24-slim
 ENV NODE_ENV=production DATA_DIR=/data PORT=3000
 ARG APP_VERSION=dev
 ENV APP_VERSION=$APP_VERSION
