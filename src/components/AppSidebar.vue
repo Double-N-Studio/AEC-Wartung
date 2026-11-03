@@ -1,18 +1,23 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { activeAircraft, can, currentUser, resetDemo, state } from '../store'
 import AccountMenu from './account/AccountMenu.vue'
 import SyncStatus from './SyncStatus.vue'
 import { setSimulateOffline, sync } from '../sync'
+import { DEMO } from '../api/backend'
 import AppIcon from './AppIcon.vue'
+import ConfirmModal from './ConfirmModal.vue'
 import logoUrl from '../assets/aec-logo.png'
 
 const emit = defineEmits<{ navigate: [] }>()
 const route = useRoute()
 const isAircraftActive = (id: string) => route.path.startsWith(`/flugzeug/${id}`)
 
+const resetting = ref(false)
 function onReset() {
-  if (window.confirm('Alle Änderungen der Demo verwerfen und mit den Ausgangsdaten neu starten?')) resetDemo()
+  resetting.value = false
+  void resetDemo()
 }
 </script>
 
@@ -58,12 +63,17 @@ function onReset() {
     </div>
     <SyncStatus class="sync-line" />
     <AccountMenu />
-    <div class="demo">
-      <button type="button" class="reset" @click="onReset"><AppIcon name="refresh" :size="14" /> Demo zurücksetzen</button>
+    <div v-if="DEMO" class="demo">
+      <button type="button" class="reset" @click="resetting = true"><AppIcon name="refresh" :size="14" /> Demo zurücksetzen</button>
       <button type="button" class="reset" :aria-pressed="sync.simulateOffline" @click="setSimulateOffline(!sync.simulateOffline)">
         <AppIcon name="cloud" :size="14" /> {{ sync.simulateOffline ? 'Wieder online' : 'Offline testen' }}
       </button>
     </div>
+    <ConfirmModal
+      v-if="resetting" title="Demo zurücksetzen?" confirm="Zurücksetzen" icon="refresh"
+      text="Alle Änderungen der Demo verwerfen und mit den Ausgangsdaten neu starten? Das gilt für alle offenen Tabs."
+      @confirm="onReset" @close="resetting = false"
+    />
   </nav>
 </template>
 

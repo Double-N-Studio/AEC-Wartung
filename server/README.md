@@ -1,7 +1,7 @@
 # Server
 
 Backend der Winterwartung: Hono auf Node 24, SQLite über Drizzle. Bisher nur das Grundgerüst mit
-`GET /api/health`; das Datenmodell und die Endpunkte kommen, sobald das Frontend steht.
+`GET /api/health`; was das Frontend an Endpunkten und Datenmodell erwartet, steht in `../docs/backend.md`.
 
 ## Entwickeln
 

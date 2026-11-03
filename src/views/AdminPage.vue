@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { can, createUser, currentUser, removeUser, state, updateUser } from '../store'
+import { can, createUser, currentUser, needsPassword, removeUser, sendPasswordLink, state, updateUser } from '../store'
+import { notify } from '../notify'
 import type { Role, User } from '../types'
 import { ROLE_LABELS } from '../mock/people'
 import AppIcon from '../components/AppIcon.vue'
@@ -36,6 +37,17 @@ function saveUser() {
   editing.value = null
 }
 const editingSelf = computed(() => editing.value !== 'new' && editing.value?.id === currentUser()?.id)
+const linkSending = ref(false)
+async function sendLink(u: User) {
+  linkSending.value = true
+  try {
+    await sendPasswordLink(u)
+    notify(`Link zum Passwort-Setzen an ${u.email} geschickt.`, 'info')
+  } catch {
+    notify('Link konnte nicht gesendet werden. Bitte später erneut versuchen.')
+  }
+  linkSending.value = false
+}
 const removing = ref<User | null>(null)
 function confirmRemove() {
   if (removing.value) removeUser(removing.value)
@@ -115,6 +127,11 @@ function confirmRemove() {
           <span class="muted small">Den Link zum Passwort-Setzen bekommt {{ form.name.trim() || 'die Person' }} per E-Mail.</span>
         </div>
       </form>
+      <template v-if="editing !== 'new' && needsPassword(editing) && editing.email" #meta>
+        <button type="button" class="link-btn" :disabled="linkSending" @click="sendLink(editing)">
+          <AppIcon name="shield" :size="15" />{{ linkSending ? 'Sendet …' : 'Link zum Passwort-Setzen senden' }}
+        </button>
+      </template>
       <template #footer>
         <button type="button" class="btn btn-ghost" @click="editing = null">Abbrechen</button>
         <button type="submit" form="user-form" class="btn btn-primary">{{ editing === 'new' ? 'Anlegen' : 'Speichern' }}</button>

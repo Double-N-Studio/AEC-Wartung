@@ -2,17 +2,19 @@
 import { computed, reactive } from 'vue'
 import { aircraftLabel, createTask, docsFor, state, taskInput, updateTask, userName } from '../../store'
 import { useChangedElsewhere } from '../../sync'
-import type { Task } from '../../types'
+import type { Defect, Task } from '../../types'
 import { DURATIONS, LEVEL_KEYS, LEVELS } from '../../utils/levels'
 import AppModal from '../../components/AppModal.vue'
 import ConflictNote from '../../components/ConflictNote.vue'
 import LevelBars from '../../components/LevelBars.vue'
 
-/** Kanban-Karte anlegen oder (mit task) bearbeiten. */
-const props = defineProps<{ aircraftId: string; task?: Task }>()
+/** Kanban-Karte anlegen oder (mit task) bearbeiten; mit defect vorausgefüllt aus einem Mangel/Befund. */
+const props = defineProps<{ aircraftId: string; task?: Task; defect?: Defect }>()
 const emit = defineEmits<{ close: [] }>()
 
-const form = reactive(taskInput(props.task))
+const form = reactive(props.defect && !props.task
+  ? { ...taskInput(), title: props.defect.title, desc: props.defect.desc === '–' ? '' : props.defect.desc, level: 'erf' as const, defectId: props.defect.id }
+  : taskInput(props.task))
 const { changed, reset } = useChangedElsewhere(() => props.task?.id)
 function reload() {
   Object.assign(form, taskInput(props.task))

@@ -43,6 +43,8 @@ function save() {
 }
 
 const viewing = ref<ArchivedSeason | null>(null)
+/** Neueste zuerst – die Reihenfolge der Liste selbst legt der Server fest. */
+const archive = computed(() => [...state.archive].sort((a, b) => b.start.localeCompare(a.start)))
 </script>
 
 <template>
@@ -62,7 +64,7 @@ const viewing = ref<ArchivedSeason | null>(null)
       <template v-if="state.archive.length">
         <dt>Frühere Saisons</dt>
         <dd class="archive">
-          <button v-for="a in state.archive" :key="a.label + a.start" type="button" class="link-btn" @click="viewing = a">{{ a.label }}</button>
+          <button v-for="a in archive" :key="a.id" type="button" class="link-btn" @click="viewing = a">{{ a.label }}</button>
         </dd>
       </template>
     </dl>

@@ -9,11 +9,20 @@ import { authDialog } from './authDialog'
 const form = reactive({ first: '', last: '' })
 const complete = computed(() => !!form.first.trim() && !!form.last.trim())
 const needsLogin = ref(false)
+const busy = ref(false)
+const failed = ref(false)
 
-function submit() {
-  if (!complete.value) return
-  needsLogin.value = enterName(form.first, form.last) === 'login'
-  if (!needsLogin.value) authDialog.value = null
+async function submit() {
+  if (!complete.value || busy.value) return
+  busy.value = true
+  failed.value = false
+  try {
+    needsLogin.value = (await enterName(form.first, form.last)) === 'login'
+    if (!needsLogin.value) authDialog.value = null
+  } catch {
+    failed.value = true
+  }
+  busy.value = false
 }
 
 /** Schließen ohne Eingabe heißt beim ersten Besuch: erst einmal nur ansehen. */
@@ -24,7 +33,7 @@ function close() {
 </script>
 
 <template>
-  <AppModal title="Wer bist du?" icon="user" subtitle="Dein Name steht dann bei allem, was du einträgst." :width="520" @close="close">
+  <AppModal priority title="Wer bist du?" icon="user" subtitle="Dein Name steht dann bei allem, was du einträgst." :width="520" @close="close">
     <p class="hint">Kein Passwort nötig. Dein Handy merkt sich den Namen, du gibst ihn also nur einmal ein.</p>
     <form id="name-form" class="form" @submit.prevent="submit">
       <div class="two">
@@ -37,6 +46,7 @@ function close() {
           <input id="nm-last" v-model="form.last" class="input" required autocomplete="family-name" @input="needsLogin = false">
         </div>
       </div>
+      <p v-if="failed" class="error">Keine Verbindung zum Server. Bitte gleich noch einmal versuchen.</p>
       <p v-if="needsLogin" class="error">
         Dieses Konto braucht ein Passwort.
         <button type="button" class="link-btn" @click="authDialog = 'login'">Jetzt anmelden</button>
@@ -48,7 +58,7 @@ function close() {
     </template>
     <template #footer>
       <button type="button" class="btn btn-ghost" @click="logout(); authDialog = null">Nur ansehen</button>
-      <button type="submit" form="name-form" class="btn btn-primary" :disabled="!complete">Weiter</button>
+      <button type="submit" form="name-form" class="btn btn-primary" :disabled="!complete || busy">{{ busy ? 'Einen Moment …' : 'Weiter' }}</button>
     </template>
   </AppModal>
 </template>

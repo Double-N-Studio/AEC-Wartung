@@ -1,27 +1,37 @@
 import type { FileRef } from '../types'
+import { newId } from '../utils/id'
+import { backend } from './backend'
 
 /**
  * Dateien (Fotos, PDFs). Datensätze speichern nur die FileRef, nie den Inhalt.
- * Im Mockup liegen die Dateien in IndexedDB dieses Browsers. Mit Backend lädt `uploadFile` zum Server hoch
- * (z. B. POST /files) und `fileUrl` liefert die Server-URL – sonst ändert sich in den Komponenten nichts.
+ * Neue Dateien landen zuerst in IndexedDB dieses Geräts und in einem Postausgang; `flushFiles` lädt sie zum Server
+ * hoch (sync.ts ruft es vor jeder Sendung auf, damit der Server eine Datei kennt, bevor ein Datensatz auf sie zeigt).
+ * So geht ein Foto auch offline. In der Demo ist IndexedDB selbst „der Server“.
  */
 
+/** Größte Datei, die angenommen wird (der Server sollte dieselbe Grenze prüfen). */
+export const MAX_FILE_SIZE = 25 * 1024 * 1024
+
 const DB_NAME = 'aec-winterwartung-dateien'
-const STORE = 'files'
+const FILES = 'files'
+const OUTBOX = 'outbox'
 let dbPromise: Promise<IDBDatabase> | null = null
 
 function db() {
   dbPromise ??= new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1)
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE)
+    const req = indexedDB.open(DB_NAME, 2)
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(FILES)) req.result.createObjectStore(FILES)
+      if (!req.result.objectStoreNames.contains(OUTBOX)) req.result.createObjectStore(OUTBOX)
+    }
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error)
   })
   return dbPromise
 }
 
-async function run<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>) {
-  const store = (await db()).transaction(STORE, mode).objectStore(STORE)
+async function run<T>(storeName: string, mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>) {
+  const store = (await db()).transaction(storeName, mode).objectStore(storeName)
   return new Promise<T>((resolve, reject) => {
     const req = fn(store)
     req.onsuccess = () => resolve(req.result)
@@ -29,10 +39,36 @@ async function run<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => I
   })
 }
 
+/** Datei auf dem Gerät ablegen und zum Hochladen vormerken. Wirft nur, wenn sie zu groß ist oder das Gerät sie nicht speichern kann. */
 export async function uploadFile(blob: Blob, name: string): Promise<FileRef> {
-  const ref: FileRef = { id: `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`, name, type: blob.type, size: blob.size }
-  await run('readwrite', (s) => s.put(blob, ref.id))
+  if (blob.size > MAX_FILE_SIZE) throw new Error(`Die Datei ist größer als ${fmtSize(MAX_FILE_SIZE)}.`)
+  const ref: FileRef = { id: newId(), name, type: blob.type, size: blob.size }
+  await run(FILES, 'readwrite', (s) => s.put(blob, ref.id))
+  await run(OUTBOX, 'readwrite', (s) => s.put(ref, ref.id))
   return ref
+}
+
+let flushing: Promise<void> | null = null
+
+/** Vorgemerkte Dateien hochladen. Netzfehler werfen (später erneut); vom Server abgelehnte Dateien fallen aus dem Postausgang. */
+export function flushFiles(): Promise<void> {
+  flushing ??= (async () => {
+    try {
+      const refs = await run<FileRef[]>(OUTBOX, 'readonly', (s) => s.getAll())
+      for (const ref of refs) {
+        const blob = await run<Blob | undefined>(FILES, 'readonly', (s) => s.get(ref.id))
+        try {
+          if (blob) await backend.putFile(ref, blob)
+        } catch (e) {
+          if (!(e as { permanent?: boolean }).permanent) throw e
+        }
+        await run(OUTBOX, 'readwrite', (s) => s.delete(ref.id))
+      }
+    } finally {
+      flushing = null
+    }
+  })()
+  return flushing
 }
 
 const urls = new Map<string, string>()
@@ -41,14 +77,16 @@ const urls = new Map<string, string>()
 export async function fileUrl(ref: FileRef): Promise<string | null> {
   if (urls.has(ref.id)) return urls.get(ref.id)!
   try {
-    const blob = await run<Blob | undefined>('readonly', (s) => s.get(ref.id))
-    if (!blob) return null
-    const url = URL.createObjectURL(blob)
-    urls.set(ref.id, url)
-    return url
+    const blob = await run<Blob | undefined>(FILES, 'readonly', (s) => s.get(ref.id))
+    if (blob) {
+      const url = URL.createObjectURL(blob)
+      urls.set(ref.id, url)
+      return url
+    }
   } catch {
-    return null
+    // Kein IndexedDB – dann vom Server.
   }
+  return backend.fileUrl(ref)
 }
 
 export async function downloadFile(ref: FileRef) {

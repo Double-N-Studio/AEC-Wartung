@@ -4,6 +4,7 @@ import InventoryPage from './views/InventoryPage.vue'
 import FaqPage from './views/FaqPage.vue'
 import MyStuffPage from './views/MyStuffPage.vue'
 import AdminPage from './views/AdminPage.vue'
+import PasswordPage from './views/PasswordPage.vue'
 import TemplatesPage from './views/admin/TemplatesPage.vue'
 import AircraftLayout from './views/aircraft/AircraftLayout.vue'
 import TasksPage from './views/aircraft/TasksPage.vue'
@@ -23,6 +24,7 @@ export const router = createRouter({
     { path: '/meine-sachen', component: MyStuffPage },
     { path: '/verwaltung', component: AdminPage },
     { path: '/verwaltung/vorlagen', component: TemplatesPage },
+    { path: '/passwort', component: PasswordPage },
     {
       path: '/flugzeug/:id',
       component: AircraftLayout,

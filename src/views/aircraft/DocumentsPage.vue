@@ -56,24 +56,24 @@ const editing = ref<DocumentItem | 'new' | null>(null)
 const form = reactive(docInput())
 function openForm(doc: DocumentItem | 'new') {
   Object.assign(form, docInput(doc === 'new' ? undefined : doc))
-  uploadError.value = false
+  uploadError.value = ''
   editing.value = doc
 }
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
-const uploadError = ref(false)
+const uploadError = ref('')
 async function onFile(e: Event) {
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
   target.value = ''
   if (!file) return
   uploading.value = true
-  uploadError.value = false
+  uploadError.value = ''
   try {
     form.file = await uploadFile(file, file.name)
     if (!form.title.trim()) form.title = file.name.replace(/\.\w+$/, '')
-  } catch {
-    uploadError.value = true
+  } catch (e) {
+    uploadError.value = e instanceof Error && e.message.startsWith('Die Datei') ? e.message : 'Die Datei konnte nicht gespeichert werden.'
   }
   uploading.value = false
 }
@@ -150,7 +150,7 @@ function confirmRemove() {
         <button v-else type="button" class="drop" :disabled="uploading" @click="fileInput?.click()">
           <AppIcon name="upload" :size="24" :stroke="1.8" />{{ uploading ? 'Lädt hoch …' : 'PDF oder Bild auswählen' }}
         </button>
-        <span v-if="uploadError" class="error">Die Datei konnte nicht hochgeladen werden.</span>
+        <span v-if="uploadError" class="error">{{ uploadError }}</span>
       </div>
       <div class="field">
         <label for="ad-title">Titel</label>

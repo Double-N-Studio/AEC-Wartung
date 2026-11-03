@@ -1,74 +1,44 @@
-import { nextTick, reactive, watch } from 'vue'
+import { reactive, watch } from 'vue'
 import type { Aircraft, AppState, Defect, DocumentItem, FileRef, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskNote, TaskTemplate, User, UserId } from './types'
-import { initialState } from './mock/data'
-import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
+import { backend } from './api/backend'
+import { emptyState } from './api/records'
+import { needsPassword, SYSTEM, TABLET } from './mock/people'
 import { addDays, daysBetween, fmtDay, now, today } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
-import { applyRemote, isOffline, noteChange } from './sync'
+import { newId } from './utils/id'
+import { connect, discardQueue, isOffline, refresh } from './sync'
 
-const STORAGE_KEY = 'aec-winterwartung-demo-v20'
-const SESSION_KEY = 'aec-winterwartung-sitzung'
+/**
+ * Gemeinsamer Zustand. Aktionen ändern ihn nur synchron; was sich geändert hat, ermittelt sync.ts
+ * und schickt es an den Server. Bis der erste Stand geladen ist (sync.ready), ist er leer.
+ */
+export const state = reactive<AppState>(emptyState())
 
-function load(): AppState {
+const SESSION_KEY = 'aec-winterwartung-konto'
+
+/** Beim Start: erst fragen, wer an diesem Gerät angemeldet ist, dann den Stand laden. */
+export async function boot() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as AppState
+    const info = await backend.session()
+    Object.assign(session, info, info.userId ? { chosen: true } : {})
   } catch {
-    // Kein Zugriff auf localStorage (z. B. privater Modus) – mit Ausgangsdaten starten.
+    // Offline bleibt die zuletzt bekannte Sitzung.
   }
-  return initialState()
+  await connect(state)
 }
 
-export const state = reactive<AppState>(load())
-
-/** Eingespielte Änderungen eines anderen Geräts nicht gleich wieder als eigene senden. */
-let applyingRemote = false
-
-watch(state, (value) => {
-  if (applyingRemote) return
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
-  } catch {
-    // Speichern ist optional.
-  }
-  noteChange()
-}, { deep: true })
-
-/*
- * Andere Browser-Tabs spielen andere Geräte: ihre Änderungen kommen an, solange beide online sind.
- * Ein Tab, der offline arbeitet, setzt OFFLINE_KEY; seine Änderungen kommen erst nach dem Wiederverbinden an.
- */
-const OFFLINE_KEY = `${STORAGE_KEY}-offline`
-watch(isOffline, (off) => {
-  try {
-    if (off) localStorage.setItem(OFFLINE_KEY, '1')
-    else localStorage.removeItem(OFFLINE_KEY)
-  } catch {
-    // Ohne localStorage gibt es keine anderen Geräte.
-  }
-}, { immediate: true })
-
-window.addEventListener('storage', (e) => {
-  if ((e.key !== STORAGE_KEY && e.key !== OFFLINE_KEY) || isOffline()) return
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw || localStorage.getItem(OFFLINE_KEY)) return
-    applyingRemote = true
-    applyRemote(state as unknown as Record<string, unknown>, JSON.parse(raw))
-    nextTick(() => { applyingRemote = false })
-  } catch {
-    applyingRemote = false
-  }
-})
-
-export function resetDemo() {
-  Object.assign(state, initialState())
+/** Nur Demo: Ausgangsdaten wiederherstellen. */
+export async function resetDemo() {
+  await backend.reset?.()
+  discardQueue()
+  await refresh()
 }
 
 /* ---------- Konto und Rechte ---------- */
 
 /**
  * Mitglieder geben nur Vor- und Nachnamen ein (ohne Passwort), Sonderkonten (Werkstattleitung, Admin, Tablet) melden sich an.
+ * Die Sitzung selbst hält der Server (Cookie); hier steht die zuletzt bekannte, damit die App auch offline weiß, wer man ist.
  * chosen: Auswahl schon einmal getroffen – sonst fragt die App beim Öffnen „Wer bist du?“.
  */
 interface Session {
@@ -98,38 +68,54 @@ watch(session, (value) => {
   }
 }, { deep: true })
 
-/** Sonderkonten brauchen ein Passwort, Mitglieder nicht. */
-export const needsPassword = (u: User) => !!u.device || u.role !== 'user'
+export { needsPassword }
 
-/** Mitglied ohne Passwort im Browser eintragen. */
-function chooseName(id: UserId) {
-  Object.assign(session, { userId: id, auth: 'name', chosen: true })
+/** Für Aufrufe, die nur mit Server gehen (Anmelden, Vereinsflieger). */
+function requireOnline() {
+  if (isOffline()) throw new Error('Keine Verbindung')
 }
 
 /**
- * Mitglied gibt Vor- und Nachnamen ein (keine Namensliste). Gleicher Name = dasselbe Konto, sonst wird eines angelegt.
- * 'login': Der Name gehört einem Sonderkonto, das sich mit Passwort anmelden muss.
+ * Mitglied gibt Vor- und Nachnamen ein (keine Namensliste). Gleicher Name = dasselbe Konto, sonst legt der Server eines an.
+ * 'login': Der Name gehört einem Sonderkonto, das sich mit Passwort anmelden muss. Wirft ohne Verbindung.
  */
-export function enterName(first: string, last: string): 'ok' | 'login' {
+export async function enterName(first: string, last: string): Promise<'ok' | 'login'> {
+  requireOnline()
   const name = `${first.trim()} ${last.trim()}`.replace(/\s+/g, ' ')
-  const same = state.users.find((u) => !u.removed && u.name.toLowerCase() === name.toLowerCase())
-  if (same && needsPassword(same)) return 'login'
-  chooseName(same?.id ?? createUser(name, 'user').id)
+  const result = await backend.enterName(name)
+  if (!result.ok) return 'login'
+  await refresh()
+  Object.assign(session, { userId: result.user.id, auth: 'name', chosen: true })
   return 'ok'
 }
 
-/** Anmeldung für Sonderkonten. Im Mockup wird das Passwort nicht geprüft. */
-export function login(email: string, password: string) {
-  const mail = email.trim().toLowerCase()
-  const u = state.users.find((x) => !x.removed && needsPassword(x) && x.email?.toLowerCase() === mail)
-  if (!u || !password) return false
-  Object.assign(session, { userId: u.id, auth: 'password', chosen: true })
+/** Anmeldung für Sonderkonten. Wirft ohne Verbindung. */
+export async function login(email: string, password: string) {
+  requireOnline()
+  const result = await backend.login(email.trim(), password)
+  if (!result.ok) return false
+  Object.assign(session, { userId: result.user.id, auth: 'password', chosen: true })
   return true
 }
 
 /** Abmelden bzw. Namen vergessen – danach nur ansehen. */
 export function logout() {
   Object.assign(session, { userId: null, auth: null, chosen: true })
+  backend.logout().catch(() => {
+    // Offline: Der Server vergisst die Sitzung spätestens, wenn sie abläuft.
+  })
+}
+
+/** Admin schickt einem Sonderkonto den Link zum Passwort-Setzen (erneut). Wirft ohne Verbindung. */
+export async function sendPasswordLink(user: User) {
+  requireOnline()
+  await backend.sendPasswordLink(user.id)
+}
+
+/** Passwort über den Link aus der E-Mail setzen. false: Link abgelaufen oder schon benutzt. Wirft ohne Verbindung. */
+export async function setPassword(token: string, password: string) {
+  requireOnline()
+  return backend.setPassword(token, password)
 }
 
 export const userById = (id: UserId | null | undefined) => state.users.find((u) => u.id === id)
@@ -190,11 +176,6 @@ export function fitsAircraft(item: InventoryItem, type: string) {
   return item.kind === 'et' && (item.fits === 'alle Flugzeuge' || (item.fits ?? '').split(', ').includes(type))
 }
 
-function nextId(prefix: string) {
-  state.counter += 1
-  return `${prefix}${state.counter}`
-}
-
 const log = (list: HistoryEntry[], text: string, at: string = today(), who: UserId = actor()) => {
   list.unshift({ text, who, at })
 }
@@ -252,6 +233,7 @@ export function setDayClosed(date: string, closed: boolean, reason = '') {
 export function startSeason(input: Season, carryOver: boolean) {
   const oldStart = state.season.start
   state.archive.unshift(JSON.parse(JSON.stringify({
+    id: newId(),
     ...state.season,
     aircraft: state.aircraft.map(({ id, type, reg, start, end }) => ({ id, type, reg, start, end })),
     tasks: state.tasks,
@@ -290,7 +272,7 @@ export function cardsFromTemplates(a: Aircraft) {
   for (const v of templatesFor(a.type)) {
     if (used.has(v.id)) continue
     state.tasks.push({
-      id: nextId('t'), aircraftId: a.id, templateId: v.id, status: 'offen', level: v.level, title: v.title, desc: v.desc || '–',
+      id: newId(), aircraftId: a.id, templateId: v.id, status: 'offen', level: v.level, title: v.title, desc: v.desc || '–',
       duration: v.duration, checklist: v.checklist.map((text) => ({ text, done: false })),
       docId: v.docTitle ? docsFor(a.id).find((d) => d.title === v.docTitle)?.id : undefined,
       history: [{ text: 'Aus Vorlage angelegt', who: actor(), at: today() }],
@@ -333,7 +315,7 @@ function applyTemplateInput(v: TaskTemplate, input: TemplateInput) {
 
 /** Vorlagen wirken erst beim nächsten Saisonstart oder neuen Flugzeug; bestehende Karten bleiben, wie sie sind. */
 export function createTemplate(input: TemplateInput) {
-  const v: TaskTemplate = { id: nextId('v'), aircraftType: '', level: 'ein', title: '', desc: '', duration: '', checklist: [] }
+  const v: TaskTemplate = { id: newId(), aircraftType: '', level: 'ein', title: '', desc: '', duration: '', checklist: [] }
   applyTemplateInput(v, input)
   state.templates.push(v)
 }
@@ -382,7 +364,7 @@ function applyAircraftInput(a: Aircraft, input: AircraftInput) {
 
 /** withCards: gleich die Kanban-Karten aus den Vorlagen anlegen. */
 export function createAircraft(input: AircraftInput, withCards = false): Aircraft {
-  const a: Aircraft = { id: nextId('a'), type: '', reg: '', start: '', end: '' }
+  const a: Aircraft = { id: newId(), type: '', reg: '', start: '', end: '' }
   applyAircraftInput(a, input)
   state.aircraft.push(a)
   if (withCards) cardsFromTemplates(state.aircraft[state.aircraft.length - 1])
@@ -413,8 +395,7 @@ export function deleteAircraft(a: Aircraft) {
 
 /** email: Anmeldename der Sonderkonten; Mitglieder brauchen keine. */
 export function createUser(name: string, role: Role, email = ''): User {
-  const [bg, fg] = AVATAR_COLORS[state.users.length % AVATAR_COLORS.length]
-  const user: User = { id: nextId('u'), name: name.trim(), role, bg, fg }
+  const user: User = { id: newId(), name: name.trim(), role }
   if (role !== 'user') user.email = email.trim()
   state.users.push(user)
   return user
@@ -504,7 +485,7 @@ const photoCount = (n: number) => (n === 1 ? '1 Foto' : `${n} Fotos`)
 export function addTaskNote(task: Task, text: string, photos: FileRef[]) {
   if (!text.trim() && !photos.length) return
   task.notes ??= []
-  task.notes.push({ id: nextId('n'), text: text.trim(), photos, who: actor(), at: now() })
+  task.notes.push({ id: newId(), text: text.trim(), photos, who: actor(), at: now() })
   log(task.history, photos.length ? `Notiz mit ${photoCount(photos.length)}` : 'Notiz hinzugefügt', now())
 }
 
@@ -568,7 +549,7 @@ function applyTaskInput(task: Task, input: TaskInput) {
 
 export function createTask(aircraftId: string, input: TaskInput): Task {
   const task: Task = {
-    id: nextId('t'), aircraftId, status: 'offen', level: input.level, title: '', desc: '', duration: '', checklist: [],
+    id: newId(), aircraftId, status: 'offen', level: input.level, title: '', desc: '', duration: '', checklist: [],
     history: [{ text: 'Angelegt', who: actor(), at: today() }],
   }
   applyTaskInput(task, input)
@@ -608,10 +589,6 @@ export function addDefectNote(defect: Defect, text: string) {
   log(defect.history, text)
 }
 
-export function createTaskFromDefect(defect: Defect) {
-  createTask(defect.aircraftId, { ...taskInput(), title: defect.title, level: 'erf', desc: defect.desc, defectId: defect.id })
-}
-
 export function unlinkDefectTask(defect: Defect) {
   const task = state.tasks.find((t) => t.id === defect.taskId)
   if (task) {
@@ -632,7 +609,7 @@ export interface DefectInput {
 export function createDefect(aircraftId: string, input: DefectInput) {
   const photoText = input.photos.length ? `Befund mit ${photoCount(input.photos.length)} erfasst.` : 'Befund erfasst.'
   state.defects.push({
-    id: nextId('m'),
+    id: newId(),
     aircraftId,
     title: input.title.trim(),
     desc: input.desc.trim() || '–',
@@ -664,10 +641,11 @@ export function deleteDefect(defect: Defect) {
 
 /* ---------- Vereinsflieger ---------- */
 
-/** Ergebnis eines Abgleichs festhalten. Bei einem Fehler bleibt der Zeitpunkt des letzten erfolgreichen stehen. */
-export function recordVereinsfliegerSync(error?: string) {
-  if (error) state.vereinsflieger.error = error
-  else state.vereinsflieger = { lastSync: now() }
+/** Abgleich anstoßen. Mängel, Fristen und `vereinsflieger` schreibt nur der Server; danach den neuen Stand holen. Wirft ohne Verbindung. */
+export async function syncVereinsflieger() {
+  requireOnline()
+  await backend.vereinsfliegerSync()
+  await refresh()
 }
 
 /* ---------- Dokumente ---------- */
@@ -713,7 +691,7 @@ function applyDocInput(d: DocumentItem, aircraftId: string, input: DocInput) {
 }
 
 export function addDocument(aircraftId: string, input: DocInput) {
-  const d: DocumentItem = { id: nextId('d'), title: '', kind: 'Handbuch', version: '', addedAt: today(), addedBy: actor() }
+  const d: DocumentItem = { id: newId(), title: '', kind: 'Handbuch', version: '', addedAt: today(), addedBy: actor() }
   applyDocInput(d, aircraftId, input)
   state.documents.push(d)
 }
@@ -781,7 +759,7 @@ function applyItemInput(item: InventoryItem, input: ItemInput) {
 }
 
 export function createItem(input: ItemInput): InventoryItem {
-  const item: InventoryItem = { id: nextId('i'), kind: 'vs', name: '', location: '', mode: 'count', qty: 0, unit: ['', ''], history: [] }
+  const item: InventoryItem = { id: newId(), kind: 'vs', name: '', location: '', mode: 'count', qty: 0, unit: ['', ''], history: [] }
   applyItemInput(item, input)
   log(item.history, `Angelegt · ${stockText(item)}`)
   state.inventory.push(item)
@@ -816,7 +794,7 @@ export function addItemToOrders(item: InventoryItem, forWhat?: string, comment =
   if (openOrderFor(item.id)) return
   state.orders.push({
     ...lastOrderDetails(item.id),
-    id: nextId('o'),
+    id: newId(),
     itemId: item.id,
     name: item.name,
     forWhat: forWhat ?? (item.kind === 'et' ? item.fits ?? 'Lager' : 'Lager'),
@@ -830,7 +808,7 @@ export function addItemToOrders(item: InventoryItem, forWhat?: string, comment =
 
 export function addFreeOrder(name: string, forWhat: string, comment: string) {
   state.orders.push({
-    id: nextId('o'),
+    id: newId(),
     name: name.trim(),
     forWhat,
     state: 'list',

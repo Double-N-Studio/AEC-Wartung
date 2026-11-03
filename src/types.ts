@@ -14,8 +14,6 @@ export interface User {
   device?: boolean
   /** Entfernte Konten bleiben für den Verlauf erhalten, tauchen aber in keiner Auswahl mehr auf. */
   removed?: boolean
-  bg: string
-  fg: string
 }
 
 /** Verweis auf eine hochgeladene Datei (Foto, PDF); den Inhalt liefert src/api/files.ts. */
@@ -119,6 +117,7 @@ export interface TaskTemplate {
 
 /** Abgeschlossene Saison, nur noch zum Nachlesen. */
 export interface ArchivedSeason extends Season {
+  id: string
   aircraft: Pick<Aircraft, 'id' | 'type' | 'reg' | 'start' | 'end'>[]
   tasks: Task[]
   schedule: Record<string, ScheduleDay>
@@ -223,7 +222,7 @@ export interface AppState {
   schedule: Record<string, ScheduleDay>
   tasks: Task[]
   templates: TaskTemplate[]
-  /** Frühere Saisons, neueste zuerst */
+  /** Frühere Saisons */
   archive: ArchivedSeason[]
   defects: Defect[]
   deadlines: Deadline[]
@@ -232,5 +231,4 @@ export interface AppState {
   orders: Order[]
   /** Letzter Abgleich mit Vereinsflieger; error, wenn er fehlgeschlagen ist */
   vereinsflieger: { lastSync: string; error?: string }
-  counter: number
 }

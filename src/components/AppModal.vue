@@ -7,29 +7,36 @@ import AppIcon from './AppIcon.vue'
  * Kopf: Typ-Symbol, Titel, Untertitel, Status-Chips (#status), Werkzeuge wie Bearbeiten/Löschen (#tools).
  * Fuß: Info links (#meta), Aktionen rechts (#footer).
  */
-const props = withDefaults(defineProps<{ title: string; icon: string; subtitle?: string; width?: number }>(), { width: 640 })
+/** priority: liegt über allen anderen Popups (Name/Anmelden beim ersten Öffnen über einem verlinkten Popup). */
+const props = withDefaults(defineProps<{ title: string; icon: string; subtitle?: string; width?: number; priority?: boolean }>(), { width: 640 })
 const emit = defineEmits<{ close: [] }>()
 
 // Escape schließt nur das oberste Popup, z. B. die Rückfrage vor dem Löschen.
 const token = Symbol('modal')
 const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && openModals[openModals.length - 1] === token) emit('close') }
 onMounted(() => {
-  openModals.push(token)
+  // Vorrangige Popups bleiben oben, auch wenn danach ein anderes aufgeht.
+  const firstPriority = openModals.findIndex((t) => priorityModals.has(t))
+  if (props.priority) priorityModals.add(token)
+  if (props.priority || firstPriority < 0) openModals.push(token)
+  else openModals.splice(firstPriority, 0, token)
   document.addEventListener('keydown', onKey)
 })
 onBeforeUnmount(() => {
   openModals.splice(openModals.indexOf(token), 1)
+  priorityModals.delete(token)
   document.removeEventListener('keydown', onKey)
 })
 </script>
 
 <script lang="ts">
 const openModals: symbol[] = []
+const priorityModals = new Set<symbol>()
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="overlay" @click.self="emit('close')">
+    <div class="overlay" :class="{ priority: props.priority }" @click.self="emit('close')">
       <div class="modal" role="dialog" aria-modal="true" :aria-label="props.title" :style="{ maxWidth: `${props.width}px` }">
         <header class="modal-head">
           <span class="modal-icon"><AppIcon :name="props.icon" :size="24" :stroke="1.9" /></span>
@@ -58,6 +65,7 @@ const openModals: symbol[] = []
   position: fixed; inset: 0; z-index: 100; background: rgba(23, 32, 43, 0.45);
   display: flex; align-items: center; justify-content: center; padding: 24px;
 }
+.overlay.priority { z-index: 110; }
 .modal {
   width: 100%; max-height: calc(100vh - 48px); overflow: hidden;
   background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-modal);

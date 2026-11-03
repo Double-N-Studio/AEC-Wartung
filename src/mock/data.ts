@@ -77,7 +77,7 @@ function previousSeason(s: AppState): ArchivedSeason {
     })
   }
   const schedule = Object.fromEntries(Object.entries(s.schedule).map(([d, day]) => [back(d), { leader: day.leader, closed: day.closed, reason: day.reason }]))
-  return { label: '2025/26', start: back(s.season.start), end: back(s.season.end), aircraft, tasks, schedule, closedAt: addDays(s.season.start, -30), closedBy: 'MA' }
+  return { id: 'saison-2025', label: '2025/26', start: back(s.season.start), end: back(s.season.end), aircraft, tasks, schedule, closedAt: addDays(s.season.start, -30), closedBy: 'MA' }
 }
 
 const HELPERS = ['JO', 'LE']
@@ -168,8 +168,6 @@ function applyLs8(t: Task) {
 
 function baseState(): AppState {
   return {
-    counter: 100,
-
     users: initialUsers(),
 
     season: { label: '2026/27', start: '2026-11-07', end: '2027-03-27' },

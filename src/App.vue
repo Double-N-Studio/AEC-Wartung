@@ -8,19 +8,30 @@ import LoginModal from './components/account/LoginModal.vue'
 import { authDialog } from './components/account/authDialog'
 import { currentUser, session } from './store'
 import SyncStatus from './components/SyncStatus.vue'
-import { isOffline } from './sync'
+import AppToasts from './components/AppToasts.vue'
+import { isOffline, refresh, sync } from './sync'
 import logoUrl from './assets/aec-logo.png'
 
 const drawerOpen = ref(false)
 const route = useRoute()
 watch(() => route.fullPath, () => { drawerOpen.value = false })
 
-// Beim ersten Besuch nach dem Namen fragen.
-if (!session.chosen) authDialog.value = 'name'
+// Beim ersten Besuch nach dem Namen fragen, sobald die Sitzung bekannt ist – nicht auf der Seite zum Passwort-Setzen.
+watch(() => sync.ready, (ready) => {
+  if (ready && !session.chosen && !route.path.startsWith('/passwort')) authDialog.value = 'name'
+}, { immediate: true })
 </script>
 
 <template>
-  <div class="shell">
+  <div v-if="!sync.ready" class="boot">
+    <img :src="logoUrl" alt="Aero-Club Bad Nauheim" class="boot-logo">
+    <template v-if="sync.loadError">
+      <p class="boot-text">Der Server ist gerade nicht erreichbar ({{ sync.loadError }}).</p>
+      <button type="button" class="btn btn-primary" @click="refresh()">Erneut versuchen</button>
+    </template>
+    <p v-else class="boot-text">Lädt …</p>
+  </div>
+  <div v-else class="shell">
     <header class="topbar">
       <button type="button" class="icon-btn" aria-label="Menü öffnen" :aria-expanded="drawerOpen" @click="drawerOpen = true">
         <AppIcon name="menu" />
@@ -52,9 +63,13 @@ if (!session.chosen) authDialog.value = 'name'
     <NameModal v-if="authDialog === 'name'" />
     <LoginModal v-else-if="authDialog === 'login'" />
   </div>
+  <AppToasts />
 </template>
 
 <style scoped>
+.boot { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; text-align: center; }
+.boot-logo { width: 120px; height: auto; }
+.boot-text { font-size: 14px; color: var(--text-2); max-width: 420px; }
 .shell { display: flex; height: 100%; }
 .topbar { display: none; }
 .sidebar-wrap { height: 100%; }

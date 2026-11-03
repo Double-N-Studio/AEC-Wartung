@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
-  addDefectNote, aircraftLabel, can, createTaskFromDefect, deleteDefect, people, setDefectOwner, setDefectStatus, state,
+  addDefectNote, aircraftLabel, can, deleteDefect, people, setDefectOwner, setDefectStatus, state,
   unlinkDefectTask, userName,
 } from '../../store'
 import type { Defect } from '../../types'
@@ -12,6 +12,7 @@ import ConfirmModal from '../../components/ConfirmModal.vue'
 import HistoryList from '../../components/HistoryList.vue'
 import PhotoStrip from '../../components/PhotoStrip.vue'
 import PriorityBadge from '../../components/PriorityBadge.vue'
+import TaskFormModal from './TaskFormModal.vue'
 
 const props = defineProps<{ defect: Defect }>()
 const emit = defineEmits<{ close: []; edit: [] }>()
@@ -38,6 +39,7 @@ function saveNote() {
 // Mängel kommen aus Vereinsflieger und werden dort bearbeitet; eigene Befunde hier.
 const ownFinding = computed(() => props.defect.source === 'befund' && can('edit'))
 const confirming = ref(false)
+const creatingTask = ref(false)
 function remove() {
   deleteDefect(props.defect)
   emit('close')
@@ -77,7 +79,7 @@ function remove() {
           </RouterLink>
           <button v-if="can('edit')" type="button" class="link-btn" @click="unlinkDefectTask(defect)"><AppIcon name="unlink" :size="14" />Verknüpfung lösen</button>
         </template>
-        <button v-else-if="can('edit')" type="button" class="btn btn-sm" @click="createTaskFromDefect(defect)">Kanban-Karte erstellen</button>
+        <button v-else-if="can('edit')" type="button" class="btn btn-sm" @click="creatingTask = true">Kanban-Karte erstellen</button>
         <span v-else class="muted">–</span>
       </span>
     </div>
@@ -99,6 +101,7 @@ function remove() {
       <button v-else type="button" class="btn" @click="emit('close')">Schließen</button>
     </template>
   </AppModal>
+  <TaskFormModal v-if="creatingTask" :aircraft-id="defect.aircraftId" :defect="defect" @close="creatingTask = false" />
 
   <ConfirmModal
     v-if="confirming" title="Befund löschen?" :text="`„${defect.title}“ wird mit Fotos und Verlauf gelöscht. Eine verknüpfte Kanban-Karte bleibt bestehen.`"

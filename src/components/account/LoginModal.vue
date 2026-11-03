@@ -1,24 +1,33 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { login, needsPassword, session, state } from '../../store'
+import { DEMO } from '../../api/backend'
 import AppIcon from '../AppIcon.vue'
 import AppModal from '../AppModal.vue'
 import { authDialog } from './authDialog'
 
-/** Anmeldung der Sonderkonten. Im Mockup gilt jedes Passwort; die Demo-Konten füllen die E-Mail aus. */
+/** Anmeldung der Sonderkonten. In der Demo gilt jedes Passwort; die Demo-Konten füllen die E-Mail aus. */
 const form = reactive({ email: '', password: '' })
-const failed = ref(false)
+const failed = ref<'' | 'wrong' | 'offline'>('')
+const busy = ref(false)
 
-function submit() {
-  failed.value = !login(form.email, form.password)
-  if (!failed.value) authDialog.value = null
+async function submit() {
+  if (busy.value) return
+  busy.value = true
+  try {
+    failed.value = (await login(form.email, form.password)) ? '' : 'wrong'
+    if (!failed.value) authDialog.value = null
+  } catch {
+    failed.value = 'offline'
+  }
+  busy.value = false
 }
 
 const demoAccounts = computed(() => state.users.filter((u) => !u.removed && needsPassword(u) && u.email))
 function fill(email: string) {
   form.email = email
   form.password = 'demo'
-  failed.value = false
+  failed.value = ''
 }
 
 /** Beim ersten Besuch geht es ohne Anmeldung zurück zur Namensauswahl. */
@@ -26,21 +35,22 @@ const close = () => { authDialog.value = session.chosen ? null : 'name' }
 </script>
 
 <template>
-  <AppModal title="Anmelden" icon="shield" subtitle="Für Werkstattleitung, Admins und das Werkstatt-Tablet" :width="480" @close="close">
+  <AppModal priority title="Anmelden" icon="shield" subtitle="Für Werkstattleitung, Admins und das Werkstatt-Tablet" :width="480" @close="close">
     <form id="login-form" class="form" @submit.prevent="submit">
       <div class="field">
         <label for="lg-email">E-Mail</label>
-        <input id="lg-email" v-model="form.email" type="email" class="input" required autocomplete="username" @input="failed = false">
+        <input id="lg-email" v-model="form.email" type="email" class="input" required autocomplete="username" @input="failed = ''">
       </div>
       <div class="field">
         <label for="lg-pw">Passwort</label>
-        <input id="lg-pw" v-model="form.password" type="password" class="input" required autocomplete="current-password" @input="failed = false">
+        <input id="lg-pw" v-model="form.password" type="password" class="input" required autocomplete="current-password" @input="failed = ''">
       </div>
-      <p v-if="failed" class="error">E-Mail oder Passwort stimmt nicht.</p>
+      <p v-if="failed === 'wrong'" class="error">E-Mail oder Passwort stimmt nicht.</p>
+      <p v-else-if="failed === 'offline'" class="error">Keine Verbindung zum Server. Bitte gleich noch einmal versuchen.</p>
       <p class="muted small">Passwort vergessen? Ein Admin schickt dir einen neuen Link.</p>
     </form>
 
-    <div class="demo">
+    <div v-if="DEMO" class="demo">
       <span class="field-label">Demo: Konto antippen, Passwort ist beliebig</span>
       <div class="chips">
         <button v-for="u in demoAccounts" :key="u.id" type="button" class="chip" @click="fill(u.email!)">
@@ -54,7 +64,7 @@ const close = () => { authDialog.value = session.chosen ? null : 'name' }
     </template>
     <template #footer>
       <button type="button" class="btn btn-ghost" @click="close">Abbrechen</button>
-      <button type="submit" form="login-form" class="btn btn-primary">Anmelden</button>
+      <button type="submit" form="login-form" class="btn btn-primary" :disabled="busy">{{ busy ? 'Einen Moment …' : 'Anmelden' }}</button>
     </template>
   </AppModal>
 </template>
