@@ -1,5 +1,5 @@
 // npm run password-link -- <email>: new set-password link for a special account, e.g. when the admin lost the password
-// (there are no e-mails). In the container: docker compose exec app node dist/cli.js <email>
+// (there are no e-mails). In the container: docker compose exec app node dist/src/cli.js <email>
 import { join } from 'node:path'
 import { createPasswordToken } from './auth.js'
 import { openDb } from './db.js'

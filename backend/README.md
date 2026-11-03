@@ -52,17 +52,21 @@ Local first start: put `ADMIN_NAME`, `ADMIN_EMAIL` and `APP_URL=http://localhost
 | `SEASON_LABEL`, `SEASON_START`, `SEASON_END` | this winter | first season; default first Saturday of November to last Saturday of March |
 
 On the VPS these go into **`/srv/wartung/data/app.env`**, which `docker-compose.yml` loads if it exists
-(`data/` is excluded from the deploy rsync, so the file survives deploys). The operator creates it once:
+(`data/` is excluded from the deploy rsync, so the file survives deploys). The operator creates it once
+as `root` (the `deploy` user only accepts the key from the GitHub secret) and hands it to `deploy`:
 
 ```bash
-# /srv/wartung/data/app.env
+ssh root@178.105.54.205 'cat > /srv/wartung/data/app.env <<EOF
 APP_URL=https://wartung.nuno-ferreira.de
 ADMIN_NAME=Vorname Nachname
 ADMIN_EMAIL=admin@example.org
 NODE_ENV=production
+EOF
+chown deploy:deploy /srv/wartung/data/app.env && chmod 600 /srv/wartung/data/app.env
+cd /srv/wartung && docker compose up -d --force-recreate && sleep 3 && docker compose logs app | grep passwort'
 ```
 
-then `cd /srv/wartung && docker compose up -d` (or wait for the next deploy).
+`--force-recreate` is needed because a plain `up -d` doesn't notice a new env file (the next deploy recreates the container anyway).
 
 ## First start
 

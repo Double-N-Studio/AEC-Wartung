@@ -5,7 +5,7 @@ Notes for working on this repo.
 ## What this is
 
 Web app for the winter maintenance of the club gliders of Aero-Club Bad Nauheim.
-The frontend is ready for a backend (contract in `docs/backend.md`, server in `backend/`). Without `VITE_API_URL` it runs as a **demo** against a fake server in the browser – that's what's on GitHub Pages as a clickable preview for the board. The real app (built with `VITE_API_URL=/api`) is served by the server on the Hetzner VPS.
+Frontend in `frontend/`, server in `backend/` (Hono + SQLite), contract between them in `docs/backend.md`. Without `VITE_API_URL` the frontend runs as a **demo** against a fake server in the browser – that's what's on GitHub Pages as a clickable preview for the board. The real app (built with `VITE_API_URL=/api`) is served by the server on the Hetzner VPS, which stores the records, checks permissions, holds sessions and files and pushes new revisions via SSE.
 In the demo all data is sample data; "today" is fixed to **2027-01-16** (`VITE_DEMO_DATE` in `frontend/.env`). Without that entry the real date applies. In code always use `today()` / `now()` from `frontend/src/utils/date.ts`, never `new Date()` directly.
 
 ## Commands
@@ -18,16 +18,25 @@ npm run build      # type check (vue-tsc) + production build to dist/
 npm run preview    # view the build locally
 ```
 
-Against the local backend: `VITE_API_URL=/api` in `frontend/.env.local`; the dev server proxies `/api` to port 3000.
+```bash
+cd backend
+npm install
+npm run build && npm run dev   # http://localhost:3000/api, database in backend/data/
+npm test                       # build + node:test (in-memory database)
+npm run db:generate            # new migration after changes to src/schema.ts – commit it
+```
+
+Against the local backend: `VITE_API_URL=/api` in `frontend/.env.local` (plus an empty `VITE_DEMO_DATE=`, so the real date applies); the dev server proxies `/api` to port 3000. The first start needs `ADMIN_NAME`, `ADMIN_EMAIL` and `APP_URL=http://localhost:5173` in `backend/.env`; the set-password link is in the server log. Both env files are gitignored.
 
 Simple changes that don't need the owner's feedback (fixes, small tweaks, refactors, docs) are committed and pushed to `main` right away. Changes that need feedback (UX or product decisions, larger redesigns, anything uncertain) are left uncommitted until approved – use judgement.
 
-Run `npm run build` in `frontend/` before every commit (and in `backend/` when it changed) – there are no tests, the type check is the check.
+Run `npm run build` in `frontend/` before every commit (no tests there, the type check is the check) and `npm test` in `backend/` when it changed (the Docker build runs the tests too, a failing test stops the deploy). Pushing to `main` deploys the server to the VPS.
 
 ## Stack
 
 - Vue 3 with `<script setup lang="ts">`, Vue Router (hash mode), Vite, TypeScript (pinned to 5.9 because `vue-tsc` doesn't support TS 7 yet)
 - No UI framework, no state library: own CSS and a reactive store
+- Backend: Hono 4 on Node 24, better-sqlite3 + Drizzle (migrations in `backend/drizzle/`), zod for shape checks, node:test; ESM with `.js` import suffixes
 - Deployment: demo on GitHub Pages via `.github/workflows/deploy.yml` on push to `main`; app image (backend + frontend) to the VPS via `.github/workflows/deploy-server.yml` (see `backend/README.md`)
 
 ## Structure
@@ -52,7 +61,19 @@ frontend/                       Vue app (own package.json, Vite config, .env)
     views/aircraft/             aircraft tabs: kanban, documents, deadlines, defects/findings, material
     views/inventory/            popups of the inventory
   public/docs/                  preview images of the documents
-backend/                        server (Hono + SQLite), Docker image, VPS notes
+backend/                        server, Docker image, VPS notes (README.md: config, first start, operations)
+  src/
+    index.ts                    entry: env, database, first start, static frontend
+    app.ts                      all /api routes (createApp, the tests use it via app.request())
+    changes.ts                  POST /changes: retry → 401 → 409 → 422/403 → apply, aircraft cascade, one transaction
+    rules.ts                    permission rules as pure functions (no database)
+    validate.ts                 shape checks per collection (zod)
+    state.ts                    records ↔ AppState, revision
+    auth.ts                     cookie sessions, scrypt, set-password tokens, rate limit
+    events.ts, files.ts         SSE, file uploads (DATA_DIR/files/<id>)
+    seed.ts, cli.ts             first start, password link from the command line
+    schema.ts, db.ts            tables, openDb(path)
+  test/                         node:test suites: rules, changes, auth, files
 docs/backend.md                 contract with the server: endpoints, records, conflicts, permissions
 ```
 
@@ -64,7 +85,9 @@ docs/backend.md                 contract with the server: endpoints, records, co
 - **People are account IDs** (`UserId`) in all fields (`who`, `doneBy`, `owner` …); displayed via `userName()`. Removed accounts are kept with `removed` so history stays readable. `SYSTEM` stands for entries from Vereinsflieger.
 - **Edit/delete** in the popup header via `#tools` (pencil, trash), delete always with `ConfirmModal`. Create and edit forms are the same component (`TaskFormModal`, `DefectFormModal`, `ItemFormModal`).
 - **Saving and conflicts:** after every action `sync.ts` compares the state with the known revision (`records.ts`) and queues the changed records as one batch (in device storage, sent later when offline). The server announces new revisions; the state is then reloaded and own pending changes go on top. `applyRemote` merges by ID so open popups keep their objects. If the server rejects (conflict, no permission), a message appears (`notify`) and the server state wins. Forms with a save button show via `useChangedElsewhere` + `ConflictNote` when someone else changed the same record. What only the server can do (sign-in, Vereinsflieger, password link) goes through `backend` and throws without a connection. In the demo "Offline testen" bottom left simulates losing the connection; a second tab plays a second device (own queue in sessionStorage).
-- **Data model changed?** Bump `MODEL_VERSION` in `api/records.ts`, otherwise browsers load old, incompatible states and queues. Register new collections there in `LISTS`/`SINGLES` and update `docs/backend.md`.
+- **Data model changed?** Bump `MODEL_VERSION` in `api/records.ts`, otherwise browsers load old, incompatible states and queues. Register new collections there in `LISTS`/`SINGLES`, in `backend/src/state.ts` and `validate.ts`, and update `docs/backend.md`.
+- **Server rules:** the frontend only hides controls; `backend/src/rules.ts` enforces them (who may change which fields, signed-off cards, append-only history, admin self-protection). A new action in `store.ts` that changes fields in a new way needs the matching rule and a test in `backend/test/`. Rejections are German texts in `{ error }`, the app shows them verbatim. Keep `docs/backend.md` in step with both sides.
+- **Server tables** change through `backend/src/schema.ts` + `npm run db:generate`; the migration file is committed and runs on every start.
 - **All aircraft have the same content as the ASG32.** `initialState()` copies the ASG32 records per aircraft with own IDs (`<aircraft>-<id>`). So maintain new records for an aircraft in the ASG32 lists. The kanban templates (`templates`) are derived from the ASG32 cards and apply to all aircraft; the 2025/26 season in the archive is generated from them (`previousSeason`).
 - **Inventory and material tab share the data.** The material tab only filters (`fitsAircraft`, `order.forWhat === type`).
 - **Popups** always via `AppModal` (Escape, click outside, bottom sheet on mobile). Layout: blue header with type icon (`icon`), title, `subtitle` and status chips (`#status`, classes `pill pill-…`); content with collapsed `HistoryList` at the end; the main action is always in the footer (`#footer` right, info in `#meta` left), never in the content. Popovers that must stick out of scrollable areas go through `<Teleport to="body">`.
