@@ -7,7 +7,7 @@ import InventoryWorkspace from '../components/inventory/InventoryWorkspace.vue'
   <div class="page">
     <header>
       <h1 class="page-title">Inventur</h1>
-      <p class="page-sub">Direkt in der Liste zählen. Was leer ist, steht oben.</p>
+      <p class="page-sub">Direkt in der Liste zählen.</p>
     </header>
 
     <InventoryWorkspace :items="state.inventory" :orders="state.orders" />

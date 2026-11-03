@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { can, linkOrderToItem, openOrderFor, state, userName } from '../../store'
+import { can, defaultDelivery, linkOrderToItem, openOrderFor, state, userName } from '../../store'
 import type { Order } from '../../types'
 import { fmtDate, fmtDay } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
@@ -9,9 +9,10 @@ import HistoryList from '../../components/HistoryList.vue'
 import OrderActions, { type OrderStep } from './OrderActions.vue'
 import OrderSection from './OrderSection.vue'
 
-const props = defineProps<{ order: Order }>()
+const props = defineProps<{ order: Order; start?: 'order' | 'deliver' }>()
 const emit = defineEmits<{ close: []; linked: [itemId: string]; createItem: [] }>()
-const step = reactive<OrderStep>({ step: null, qty: 1, date: '' })
+// start: aus der Bestellliste direkt mit dem nächsten Schritt öffnen
+const step = reactive<OrderStep>({ step: props.start ?? null, qty: 1, date: props.start ? defaultDelivery() : '' })
 
 // Nachträglich einem Inventur-Artikel zuordnen; Artikel mit eigener offener Bestellung scheiden aus.
 const linkable = computed(() => state.inventory

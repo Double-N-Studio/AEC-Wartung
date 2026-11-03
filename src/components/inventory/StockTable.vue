@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { addItemToOrders, aircraftTypes, can, countItem, openOrderFor } from '../../store'
 import type { InventoryItem } from '../../types'
 import { fmtDay } from '../../utils/date'
-import { stockLevel, stockText, unitOf, type StockLevel } from '../../utils/stock'
+import { stockText, unitOf } from '../../utils/stock'
 import AppIcon from '../AppIcon.vue'
 import DropdownSelect from '../DropdownSelect.vue'
 import LevelPicker from '../LevelPicker.vue'
 import QtyStepper from '../QtyStepper.vue'
 
 /**
- * Bestand als Zählliste: gruppiert nach Leer / Fast leer / Vorhanden, gezählt wird direkt in der Zeile.
+ * Bestand als alphabetische Zählliste, gezählt wird direkt in der Zeile.
  * kinds: welche Arten angezeigt werden (mit Umschalter, wenn beide).
  * forWhat: wird bei "Auf Bestellliste" als Verwendungszweck gespeichert (z. B. Flugzeugtyp).
  */
@@ -25,12 +25,6 @@ const query = ref('')
 const plane = ref('Alle')
 const PLANES = computed(() => [{ value: 'Alle', label: 'Alle' }, ...aircraftTypes().map((t) => ({ value: t, label: t }))])
 
-const GROUPS: { level: StockLevel; title: string; dot: string }[] = [
-  { level: 'empty', title: 'Leer', dot: 'var(--today)' },
-  { level: 'low', title: 'Fast leer', dot: 'var(--amber)' },
-  { level: 'ok', title: 'Vorhanden', dot: 'var(--green)' },
-]
-
 const countOf = (k: 'vs' | 'et') => props.items.filter((i) => i.kind === k).length
 
 const rows = computed(() => {
@@ -44,24 +38,13 @@ const rows = computed(() => {
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'de'))
 })
-
-// Gruppe pro Artikel nur bei Filterwechsel neu bestimmen, nicht beim Zählen –
-// sonst springt die Zeile unter dem Finger in eine andere Gruppe.
-const levelOf = ref(new Map<string, StockLevel>())
-watch([kind, query, plane, () => props.items.length], () => {
-  levelOf.value = new Map(props.items.map((i) => [i.id, stockLevel(i)]))
-}, { immediate: true })
-
-const groups = computed(() =>
-  GROUPS.map((g) => ({ ...g, list: rows.value.filter((i) => (levelOf.value.get(i.id) ?? stockLevel(i)) === g.level) })).filter((g) => g.list.length),
-)
 </script>
 
 <template>
   <section class="card stock" aria-labelledby="stock-h">
     <div class="toolbar">
       <div class="left">
-        <h2 id="stock-h" class="section-title">Bestand</h2>
+        <h2 id="stock-h" class="sr-only">Bestand</h2>
         <div v-if="props.kinds.length > 1" class="segmented" role="group" aria-label="Art">
           <button type="button" :aria-pressed="kind === 'vs'" @click="kind = 'vs'">Verbrauchsstoffe · {{ countOf('vs') }}</button>
           <button type="button" :aria-pressed="kind === 'et'" @click="kind = 'et'">Ersatzteile · {{ countOf('et') }}</button>
@@ -78,30 +61,27 @@ const groups = computed(() =>
       </div>
     </div>
 
-    <div v-for="g in groups" :key="g.level" class="group">
-      <h3 class="group-head"><span class="dot" :style="{ background: g.dot }" />{{ g.title }}<span class="count">{{ g.list.length }}</span></h3>
-      <ul class="rows">
-        <li v-for="i in g.list" :key="i.id" class="row">
-          <div class="info">
-            <button type="button" class="name" @click="emit('open', i)">{{ i.name }}</button>
-            <span class="meta">
-              <span class="meta-item"><AppIcon name="pin" :size="13" />{{ i.location }}</span>
-              <span v-if="i.kind === 'et' && i.fits" class="meta-item">Passt für {{ i.fits }}</span>
-            </span>
-          </div>
-          <div v-if="!can('edit')" class="control readonly" :class="{ zero: i.qty === 0 }">{{ stockText(i) }}</div>
-          <div v-else class="control">
-            <QtyStepper v-if="i.mode === 'count'" :model-value="i.qty" :label="`${i.qty} ${unitOf(i, i.qty)}`" boxed @update:model-value="countItem(i, $event)" />
-            <LevelPicker v-else :model-value="i.qty" @update:model-value="countItem(i, $event)" />
-          </div>
-          <div class="order">
-            <span v-if="openOrderFor(i.id)?.state === 'list'" class="state list"><span class="state-dot" />Auf Bestellliste</span>
-            <span v-else-if="openOrderFor(i.id)?.state === 'ordered'" class="state ordered"><span class="state-dot" />Bestellt · {{ fmtDay(openOrderFor(i.id)!.delivery!) }}</span>
-            <button v-else-if="can('edit')" type="button" class="btn btn-sm" @click="addItemToOrders(i, props.forWhat)">Auf Bestellliste</button>
-          </div>
-        </li>
-      </ul>
-    </div>
+    <ul v-if="rows.length" class="rows">
+      <li v-for="i in rows" :key="i.id" class="row">
+        <div class="info">
+          <button type="button" class="name" @click="emit('open', i)">{{ i.name }}</button>
+          <span class="meta">
+            <span class="meta-item"><AppIcon name="pin" :size="13" />{{ i.location }}</span>
+            <span v-if="i.kind === 'et' && i.fits" class="meta-item">Passt für {{ i.fits }}</span>
+          </span>
+        </div>
+        <div v-if="!can('edit')" class="control readonly" :class="{ zero: i.qty === 0 }">{{ stockText(i) }}</div>
+        <div v-else class="control">
+          <QtyStepper v-if="i.mode === 'count'" :model-value="i.qty" :label="`${i.qty} ${unitOf(i, i.qty)}`" boxed @update:model-value="countItem(i, $event)" />
+          <LevelPicker v-else :model-value="i.qty" @update:model-value="countItem(i, $event)" />
+        </div>
+        <div class="order">
+          <span v-if="openOrderFor(i.id)?.state === 'list'" class="state list"><span class="state-dot" />Auf Bestellliste</span>
+          <span v-else-if="openOrderFor(i.id)?.state === 'ordered'" class="state ordered"><span class="state-dot" />Bestellt · {{ fmtDay(openOrderFor(i.id)!.delivery!) }}</span>
+          <button v-else-if="can('edit')" type="button" class="btn btn-sm" @click="addItemToOrders(i, props.forWhat)">Auf Bestellliste</button>
+        </div>
+      </li>
+    </ul>
     <p v-if="!rows.length" class="muted empty">Keine Artikel gefunden.</p>
   </section>
 </template>
@@ -113,12 +93,7 @@ const groups = computed(() =>
 .search { position: relative; }
 .search .input { width: 220px; height: 40px; padding-left: 36px; font-size: 13.5px; }
 .search-icon { position: absolute; left: 12px; top: 12px; color: var(--muted); pointer-events: none; }
-.group-head {
-  display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 14px; font-weight: 700;
-  background: var(--subtle); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-}
-.dot { width: 10px; height: 10px; border-radius: 50%; }
-.rows { list-style: none; margin: 0; padding: 0; }
+.rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
 .row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-height: 60px; padding: 9px 16px; border-bottom: 1px solid var(--border-soft); }
 .row:last-child { border-bottom: 0; }
 .info { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }

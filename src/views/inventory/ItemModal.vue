@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { addItemToOrders, can, countItem, deleteItem, openOrderFor, userName } from '../../store'
+import { addItemToOrders, can, defaultDelivery, countItem, deleteItem, openOrderFor, userName } from '../../store'
 import type { InventoryItem } from '../../types'
 import { fmtDate, fmtDay } from '../../utils/date'
 import { stockText, unitOf } from '../../utils/stock'
@@ -13,11 +13,12 @@ import QtyStepper from '../../components/QtyStepper.vue'
 import OrderActions, { type OrderStep } from './OrderActions.vue'
 import OrderSection from './OrderSection.vue'
 
-const props = defineProps<{ item: InventoryItem; forWhat?: string }>()
+const props = defineProps<{ item: InventoryItem; forWhat?: string; start?: 'order' | 'deliver' }>()
 const emit = defineEmits<{ close: []; edit: [] }>()
 
 const order = computed(() => openOrderFor(props.item.id))
-const step = reactive<OrderStep>({ step: null, qty: 1, date: '' })
+// start: aus der Bestellliste direkt mit dem nächsten Schritt öffnen
+const step = reactive<OrderStep>({ step: props.start ?? null, qty: 1, date: props.start ? defaultDelivery() : '' })
 const unit = (n: number) => unitOf(props.item, n)
 const qty = computed({
   get: () => props.item.qty,

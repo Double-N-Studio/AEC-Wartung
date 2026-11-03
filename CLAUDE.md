@@ -39,7 +39,7 @@ src/
   utils/                        Datums-Formatierung, Eignungsstufen
   styles/base.css               Design-Tokens (CSS-Variablen) und Basisklassen
   components/                   wiederverwendbare Bausteine (AppModal, Badges, DropdownSelect …)
-  components/inventory/         Bestellliste + Bestandstabelle + Popups (InventoryWorkspace, Inventur und Material-Reiter)
+  components/inventory/         Reiter Bestand / Bestellliste + Popups (InventoryWorkspace, Inventur und Material-Reiter)
   views/                        Seiten: Zeitplan, Inventur, Meine Sachen, Verwaltung (Konten, Saison), FAQ
   views/aircraft/               Flugzeug-Reiter: Kanban, Dokumente, Fristen, Mängel/Befunde, Material
   views/inventory/              Popups der Inventur
@@ -80,15 +80,16 @@ public/docs/                    Vorschaubilder der Dokumente
 - Dokumente gelten für ein Flugzeug, für alle Flugzeuge eines Typs oder den ganzen Verein (`docsFor`); Art und Ausgabe sind eigene Felder. PDFs öffnen im Viewer, Herunterladen liefert die Originaldatei.
 - Arbeitspakete haben keine Bereiche (Rumpf, Fläche …), nur Eignungsstufen.
 - Inventur: nur Verbrauchsstoffe oder Ersatzteile (kein „Alle“), „leer“ meldet man durch Bestand 0, Statusanzeigen sind Text, keine Buttons.
-- Inventur als Zählliste: Gruppen Leer / Fast leer / Vorhanden (alphabetisch), gezählt wird direkt in der Zeile (Stepper bzw. Genug / Fast leer / Leer, beide gleich breit). „Fast leer“ gibt es nur bei Artikeln ohne Stückzahl (`FLAG` in `utils/stock.ts`). Lagerorte sind nur Freitext, nie Gruppen. Bestellliste steht als Seitenspalte rechts (schmal: oben).
+- Inventur als Zählliste: eine alphabetische Liste ohne Gruppen nach Bestand, gezählt wird direkt in der Zeile (Stepper bzw. Genug / Fast leer / Leer, beide gleich breit). „Fast leer“ gibt es nur bei Artikeln ohne Stückzahl (`FLAG` in `utils/stock.ts`). Lagerorte sind nur Freitext, nie Gruppen.
+- Inventur und Material-Reiter haben zwei Reiter: „Bestand“ und „Bestellliste“ (Zähler = offen zu bestellen). Die Bestellliste ist eine Tabelle über die volle Breite (`OrderTable`), gruppiert nach „Muss bestellt werden“ / „Bestellt“; der Button pro Zeile öffnet das Popup direkt im nächsten Schritt (`start`). Wird die Karte schmaler als die Tabelle, werden die Zeilen per Container-Abfrage zu Karten. `?bestellung=` öffnet den Reiter Bestellliste.
 - Der Button „Auf Bestellliste“ ist immer weiß (sekundär).
 - Kalender heißt „Werkstatt-Termine“: Flugzeuge sind der Titel eines Samstags, die Werkstattleitung steht als Untertitel ohne Avatar. „Leitung offen“ ist kein Warnstatus (keine gelbe Fläche, kein Warnsymbol).
 - Mängel/Befunde-Reiter: Zähler ohne gelbe Markierung (offene Mängel sind Dauerzustand).
 - Arbeitspaket ↔ Mangel/Befund: Kanban-Karte zeigt den Ursprung („Befund: …“), Popups verlinken gegenseitig direkt auf den Eintrag (`?befund=` / `?paket=`).
 - Kanban: Checklisten-Fortschritt (z. B. 2/4) erst ab „In Arbeit“, nicht bei „Offen“.
 - Kanban-Karten: Eignungs-Tag rechts neben dem Titel, darunter die Beschreibung (max. 2 Zeilen); Mindesthöhe, damit Karten ohne Beschreibung keine dünnen Streifen werden.
-- Neue Bestellung über den „+“-Button auf der Karte „Muss bestellt werden“ (gleiches Design wie im Kanban), nicht oben rechts auf der Seite.
-- Bestellungen haben Bestelldaten (Händler, Artikelnummer, Link, Gesamtpreis), die beim nächsten Mal vom selben Artikel übernommen werden; wer bestellt hat, ergibt sich aus dem Konto. Gelieferte Bestellungen stehen im Bestellverlauf (Link unter der Bestellliste) mit Summe der Saison.
+- Neue Bestellung über den „+“-Button in der Gruppe „Muss bestellt werden“ (gleiches Design wie im Kanban), nicht oben rechts auf der Seite.
+- Bestellungen haben Bestelldaten (Händler, Artikelnummer, Link, Gesamtpreis), die beim nächsten Mal vom selben Artikel übernommen werden; wer bestellt hat, ergibt sich aus dem Konto. Gelieferte Bestellungen stehen in der Bestellliste unter „Geliefert“ (Bestellverlauf) mit Summe der Saison.
 - Bestellliste: Bei ähnlichem Namen schlägt das Formular dezent „Meinst du …?“ (Textlink unter dem Feld) einen Inventur-Artikel vor, damit die Bestellung dem Artikel zugeordnet wird.
 - Tages-Popup im Kalender: Werkstattleitung über den Stift neben dem Namen ändern, dazu ein Kommentarfeld pro Tag. Keine „Abnahme“-Einträge und keine Saisonstart-Tage im Kalender.
 - Flugzeug-Seite: Kopf nur mit Typ, Kennzeichen und Pate (`manager`, Konto-ID); der Fortschritt (x von y erledigt) steht im Saisonplan (Gantt-Balken und Popover).

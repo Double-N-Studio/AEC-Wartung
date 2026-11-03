@@ -48,13 +48,4 @@ const tabs = computed(() => {
 .name { display: flex; align-items: baseline; gap: 12px; }
 .reg { font-size: 20px; color: var(--muted); font-weight: 500; }
 .meta { font-size: 13px; }
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; }
-.tab {
-  display: inline-flex; align-items: center; gap: 8px; padding: 12px 14px; white-space: nowrap;
-  font-size: 14px; font-weight: 500; color: var(--text-2); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
-}
-.tab.active { font-weight: 600; color: var(--accent-ink); border-bottom-color: var(--accent); }
-.tab.disabled { cursor: default; color: var(--faint); }
-.tab-count { font-size: 12px; color: var(--muted); background: #E9EDF2; border-radius: 999px; padding: 1px 7px; }
-.tab.active .tab-count { background: var(--accent-soft); color: var(--accent-ink); }
 </style>
