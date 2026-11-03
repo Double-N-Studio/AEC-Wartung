@@ -1,6 +1,13 @@
-/** Fester "Heute"-Tag des Mockups. */
-export const TODAY = '2027-01-16'
-export const NOW = '2027-01-16T11:30'
+import { ref } from 'vue'
+
+/**
+ * Für die Demo steht „heute“ fest auf VITE_DEMO_DATE (passend zu den Beispieldaten, siehe .env),
+ * sonst gilt das echte Datum. Die Uhrzeit läuft immer mit; `clock` tickt jede Minute,
+ * damit Anzeigen wie „heute“ um Mitternacht umspringen. Zeiten sind Ortszeit des Geräts.
+ */
+const DEMO_DATE = import.meta.env.VITE_DEMO_DATE || undefined
+const clock = ref(new Date())
+setInterval(() => { clock.value = new Date() }, 60_000)
 
 const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 const WEEKDAYS_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
@@ -19,6 +26,12 @@ export function toIso(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+/** Heutiges Datum (YYYY-MM-DD) */
+export const today = () => DEMO_DATE ?? toIso(clock.value)
+
+/** Jetzt (YYYY-MM-DDTHH:mm) */
+export const now = () => `${today()}T${pad(clock.value.getHours())}:${pad(clock.value.getMinutes())}`
+
 /** 09.01.2027 */
 export function fmtDate(iso: string): string {
   const d = parse(iso)
@@ -35,8 +48,8 @@ export function fmtDay(iso: string): string {
 export function fmtWhen(iso: string): string {
   const d = parse(iso)
   const time = iso.includes('T') ? `, ${pad(d.getHours())}:${pad(d.getMinutes())}` : ''
-  if (iso.slice(0, 10) === TODAY) return `heute${time}`
-  if (d.getFullYear() !== parse(TODAY).getFullYear()) return fmtDate(iso) + time
+  if (iso.slice(0, 10) === today()) return `heute${time}`
+  if (d.getFullYear() !== parse(today()).getFullYear()) return fmtDate(iso) + time
   return `${WEEKDAYS[d.getDay()]} ${fmtDay(iso)}${time}`
 }
 

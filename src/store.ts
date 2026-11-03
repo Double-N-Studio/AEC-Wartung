@@ -2,7 +2,7 @@ import { reactive, watch } from 'vue'
 import type { Aircraft, AppState, Defect, DocumentItem, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskNote, TaskTemplate, User, UserId } from './types'
 import { initialState } from './mock/data'
 import { AVATAR_COLORS, SYSTEM, TABLET } from './mock/people'
-import { addDays, daysBetween, fmtDate, fmtDay, NOW, TODAY } from './utils/date'
+import { addDays, daysBetween, fmtDate, fmtDay, now, today } from './utils/date'
 import { FLAG, stockText, unitOf } from './utils/stock'
 
 const STORAGE_KEY = 'aec-winterwartung-demo-v16'
@@ -161,7 +161,7 @@ function nextId(prefix: string) {
   return `${prefix}${state.counter}`
 }
 
-const log = (list: HistoryEntry[], text: string, at: string = TODAY, who: UserId = actor()) => {
+const log = (list: HistoryEntry[], text: string, at: string = today(), who: UserId = actor()) => {
   list.unshift({ text, who, at })
 }
 
@@ -192,7 +192,7 @@ export function planesOn(date: string) {
 }
 
 const scheduleDay = (date: string) => state.schedule[date] ?? (state.schedule[date] = {})
-const dayLog = (date: string, text: string) => log(scheduleDay(date).history ??= [], text, NOW)
+const dayLog = (date: string, text: string) => log(scheduleDay(date).history ??= [], text, now())
 
 export function setLeader(date: string, leader: UserId | null) {
   if ((scheduleDay(date).leader ?? null) === leader) return
@@ -222,7 +222,7 @@ export function startSeason(input: Season, carryOver: boolean) {
     aircraft: state.aircraft.map(({ id, type, reg, start, end }) => ({ id, type, reg, start, end })),
     tasks: state.tasks,
     schedule: state.schedule,
-    closedAt: TODAY,
+    closedAt: today(),
     closedBy: actor(),
   })))
   // Eigene Karten (z. B. aus Mängeln), die noch nicht erledigt sind, gehen in die neue Saison mit.
@@ -259,7 +259,7 @@ export function cardsFromTemplates(a: Aircraft) {
       id: nextId('t'), aircraftId: a.id, templateId: v.id, status: 'offen', level: v.level, title: v.title, desc: v.desc || '–',
       duration: v.duration, checklist: v.checklist.map((text) => ({ text, done: false })),
       docId: v.docTitle ? state.documents.find((d) => d.aircraftId === a.id && d.title === v.docTitle)?.id : undefined,
-      history: [{ text: 'Aus Vorlage angelegt', who: actor(), at: TODAY }],
+      history: [{ text: 'Aus Vorlage angelegt', who: actor(), at: today() }],
     })
   }
 }
@@ -404,17 +404,17 @@ export function removeUser(user: User) {
 /** Wer gestartet hat, ergibt sich aus dem angemeldeten Konto. */
 export function startTask(task: Task) {
   task.status = 'arbeit'
-  log(task.history, 'Arbeit gestartet', NOW)
+  log(task.history, 'Arbeit gestartet', now())
 }
 
 export function finishTask(task: Task) {
   const starter = task.history.find((h) => h.text === 'Arbeit gestartet')
   task.status = 'erledigt'
   task.doneBy = starter?.who ?? actor()
-  task.doneAt = NOW
+  task.doneAt = now()
   delete task.signedBy
   delete task.signedAt
-  log(task.history, 'Als erledigt gemeldet', NOW, task.doneBy)
+  log(task.history, 'Als erledigt gemeldet', now(), task.doneBy)
 }
 
 /** Rücknahme von „Erledigt“, solange noch nicht abgezeichnet. */
@@ -423,14 +423,14 @@ export function reopenTask(task: Task) {
   task.status = 'arbeit'
   delete task.doneBy
   delete task.doneAt
-  log(task.history, 'Wieder in Arbeit', NOW)
+  log(task.history, 'Wieder in Arbeit', now())
 }
 
 /** Zurück auf „Offen“, z. B. wenn versehentlich gestartet. Die Checkliste beginnt von vorn. */
 export function resetTaskToOpen(task: Task) {
   task.status = 'offen'
   task.checklist.forEach((c) => { c.done = false })
-  log(task.history, 'Zurück auf Offen', NOW)
+  log(task.history, 'Zurück auf Offen', now())
 }
 
 /**
@@ -449,32 +449,32 @@ export function setChecklistItem(task: Task, index: number, done: boolean) {
 /** Wer abzeichnet: das angemeldete Konto, am Werkstatt-Tablet die Werkstattleitung des Tages. */
 export function signer(): UserId {
   const u = currentUser()
-  if (u?.device) return state.schedule[TODAY]?.leader ?? u.id
+  if (u?.device) return state.schedule[today()]?.leader ?? u.id
   return u?.id ?? TABLET
 }
 
 export function signTask(task: Task) {
   task.signedBy = signer()
-  task.signedAt = TODAY
-  log(task.history, 'Abgezeichnet', TODAY, task.signedBy)
+  task.signedAt = today()
+  log(task.history, 'Abgezeichnet', today(), task.signedBy)
 }
 
 export function unsignTask(task: Task) {
   delete task.signedBy
   delete task.signedAt
-  log(task.history, 'Abzeichnung zurückgenommen', NOW)
+  log(task.history, 'Abzeichnung zurückgenommen', now())
 }
 
 export function addTaskNote(task: Task, text: string, photos: number) {
   if (!text.trim() && !photos) return
   task.notes ??= []
-  task.notes.push({ id: nextId('n'), text: text.trim(), photos, who: actor(), at: NOW })
-  log(task.history, photos ? `Notiz mit ${photos === 1 ? '1 Foto' : `${photos} Fotos`}` : 'Notiz hinzugefügt', NOW)
+  task.notes.push({ id: nextId('n'), text: text.trim(), photos, who: actor(), at: now() })
+  log(task.history, photos ? `Notiz mit ${photos === 1 ? '1 Foto' : `${photos} Fotos`}` : 'Notiz hinzugefügt', now())
 }
 
 export function deleteTaskNote(task: Task, note: TaskNote) {
   if (task.notes) remove(task.notes, note)
-  log(task.history, 'Notiz gelöscht', NOW)
+  log(task.history, 'Notiz gelöscht', now())
 }
 
 export interface TaskInput {
@@ -533,7 +533,7 @@ function applyTaskInput(task: Task, input: TaskInput) {
 export function createTask(aircraftId: string, input: TaskInput): Task {
   const task: Task = {
     id: nextId('t'), aircraftId, status: 'offen', level: input.level, title: '', desc: '', duration: '', checklist: [],
-    history: [{ text: 'Angelegt', who: actor(), at: TODAY }],
+    history: [{ text: 'Angelegt', who: actor(), at: today() }],
   }
   applyTaskInput(task, input)
   state.tasks.push(task)
@@ -542,7 +542,7 @@ export function createTask(aircraftId: string, input: TaskInput): Task {
 
 export function updateTask(task: Task, input: TaskInput) {
   applyTaskInput(task, input)
-  log(task.history, 'Bearbeitet', NOW)
+  log(task.history, 'Bearbeitet', now())
 }
 
 export function deleteTask(task: Task) {
@@ -555,7 +555,7 @@ export function deleteTask(task: Task) {
 export function setDefectStatus(defect: Defect, status: Defect['status']) {
   defect.status = status
   if (status === 'done') {
-    defect.doneAt = TODAY
+    defect.doneAt = today()
     defect.doneBy = actor()
     log(defect.history, 'Als erledigt markiert.')
   } else {
@@ -580,7 +580,7 @@ export function unlinkDefectTask(defect: Defect) {
   const task = state.tasks.find((t) => t.id === defect.taskId)
   if (task) {
     linkDefect(task, '')
-    log(task.history, 'Verknüpfung zum Mangel/Befund gelöst', NOW)
+    log(task.history, 'Verknüpfung zum Mangel/Befund gelöst', now())
   } else {
     delete defect.taskId
   }
@@ -602,12 +602,12 @@ export function createDefect(aircraftId: string, input: DefectInput) {
     desc: input.desc.trim() || '–',
     source: 'befund',
     photos: input.photos,
-    reportedAt: TODAY,
+    reportedAt: today(),
     reportedBy: actor(),
     priority: input.priority,
     owner: null,
     status: 'open',
-    history: [{ text: photoText, who: actor(), at: TODAY }],
+    history: [{ text: photoText, who: actor(), at: today() }],
   })
 }
 
@@ -629,14 +629,14 @@ export function deleteDefect(defect: Defect) {
 /* ---------- Dokumente ---------- */
 
 export function addDocument(aircraftId: string, title: string, kind: string) {
-  state.documents.push({ id: nextId('d'), aircraftId, title: title.trim(), meta: `PDF · ${kind} · hinzugefügt ${fmtDate(TODAY)}` })
+  state.documents.push({ id: nextId('d'), aircraftId, title: title.trim(), meta: `PDF · ${kind} · hinzugefügt ${fmtDate(today())}` })
 }
 
 /** replaced: neue Datei hochgeladen (im Mockup simuliert). */
 export function updateDocument(doc: DocumentItem, title: string, replaced: boolean) {
   doc.title = title.trim()
   if (replaced) {
-    doc.meta = `PDF · neue Version vom ${fmtDate(TODAY)}`
+    doc.meta = `PDF · neue Version vom ${fmtDate(today())}`
     delete doc.image
   }
 }
@@ -664,7 +664,7 @@ export function countItem(item: InventoryItem, qty: number) {
 export function logCount(item: InventoryItem) {
   const text = `Gezählt: ${stockText(item)}`
   const last = item.history[0]
-  if (last && last.at === TODAY && last.who === actor() && last.text.startsWith('Gezählt')) last.text = text
+  if (last && last.at === today() && last.who === actor() && last.text.startsWith('Gezählt')) last.text = text
   else log(item.history, text)
 }
 
@@ -741,9 +741,9 @@ export function addItemToOrders(item: InventoryItem, forWhat?: string, comment =
     forWhat: forWhat ?? (item.kind === 'et' ? item.fits ?? 'Lager' : 'Lager'),
     state: 'list',
     reportedBy: actor(),
-    reportedAt: TODAY,
+    reportedAt: today(),
     comment: comment.trim(),
-    history: [{ text: 'Auf Bestellliste gesetzt', who: actor(), at: TODAY }],
+    history: [{ text: 'Auf Bestellliste gesetzt', who: actor(), at: today() }],
   })
 }
 
@@ -754,20 +754,20 @@ export function addFreeOrder(name: string, forWhat: string, comment: string) {
     forWhat,
     state: 'list',
     reportedBy: actor(),
-    reportedAt: TODAY,
+    reportedAt: today(),
     comment: comment.trim(),
-    history: [{ text: 'Auf Bestellliste gesetzt', who: actor(), at: TODAY }],
+    history: [{ text: 'Auf Bestellliste gesetzt', who: actor(), at: today() }],
   })
 }
 
 /** Vorschlag für die erwartete Lieferung beim Bestellen. */
-export const defaultDelivery = () => addDays(TODAY, 14)
+export const defaultDelivery = () => addDays(today(), 14)
 
 export function markOrdered(order: Order, delivery: string) {
   order.state = 'ordered'
   order.delivery = delivery
   order.orderedBy = actor()
-  order.orderedAt = TODAY
+  order.orderedAt = today()
   log(order.history, `Bestellt · Lieferung ca. ${fmtDay(delivery)}`)
 }
 
@@ -830,7 +830,7 @@ export function cancelOrder(order: Order) {
 
 export function markDelivered(order: Order, qty: number) {
   order.state = 'delivered'
-  order.deliveredAt = TODAY
+  order.deliveredAt = today()
   const item = order.itemId ? state.inventory.find((i) => i.id === order.itemId) : undefined
   if (item) {
     item.qty = item.mode === 'flag' ? FLAG.full : item.qty + qty

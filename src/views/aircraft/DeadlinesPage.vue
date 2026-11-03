@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { state } from '../../store'
-import { daysBetween, fmtDate, TODAY } from '../../utils/date'
+import { daysBetween, fmtDate, today } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
 
 const WARN_DAYS = 30
@@ -11,7 +11,7 @@ const route = useRoute()
 const rows = computed(() => state.deadlines
   .filter((d) => d.aircraftId === route.params.id)
   .map((d) => {
-    const days = d.due ? daysBetween(TODAY, d.due) : null
+    const days = d.due ? daysBetween(today(), d.due) : null
     const warn = days !== null && days <= WARN_DAYS
     const remaining = days !== null
       ? days < 0 ? `seit ${-days} Tagen überfällig` : `noch ${days} ${days === 1 ? 'Tag' : 'Tage'}`

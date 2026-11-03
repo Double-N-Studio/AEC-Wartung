@@ -1,5 +1,5 @@
 import type { Aircraft, AppState, ArchivedSeason, Task } from '../types'
-import { addDays, TODAY } from '../utils/date'
+import { addDays, today } from '../utils/date'
 import { initialUsers, SYSTEM, TABLET } from './people'
 
 const ASG = 'asg32'
@@ -43,11 +43,11 @@ export function initialState(): AppState {
   // ASG32 und LS8 gemischt, Arcus-T noch gar nicht angefangen.
   for (const a of s.aircraft) {
     const tasks = s.tasks.filter((t) => t.aircraftId === a.id)
-    if (a.end < TODAY) completeAll(s, a, tasks)
+    if (a.end < today()) completeAll(s, a, tasks)
     else if (a.id === ASG) tasks.forEach((t) => applyAsg(t))
     else if (a.id === 'ls8') tasks.forEach((t) => applyLs8(t))
     else tasks.forEach((t) => resetTask(t))
-    if (a.id !== ASG) tasks.forEach((t) => { t.history[t.history.length - 1] = { ...created, at: a.start < TODAY ? a.start : TODAY } })
+    if (a.id !== ASG) tasks.forEach((t) => { t.history[t.history.length - 1] = { ...created, at: a.start < today() ? a.start : today() } })
   }
   s.archive = [previousSeason(s)]
   return s
@@ -138,7 +138,7 @@ function applyAsg(t: Task) {
     fl2: ['JO', '14:20'], ru2: ['JO', '15:35'], hl2: ['JO', '16:10'],
   }
   if (doneDay1[t.id]) finishAt(t, doneDay1[t.id][0], `${day1}T${doneDay1[t.id][1]}`, 'HE')
-  else if (t.id === 'an2') finishAt(t, 'LE', `${TODAY}T09:20`, 'MA')
+  else if (t.id === 'an2') finishAt(t, 'LE', `${today()}T09:20`, 'MA')
   else if (t.id === 'ru3') { startAt(t, 'HE', day1); tick(t, 1) }
   else if (t.id === 'ru4') {
     startAt(t, 'JO', day1)
@@ -146,20 +146,20 @@ function applyAsg(t: Task) {
     t.notes = [{ id: 'n1', text: 'Linkes Radlager hat deutlich Spiel, daher das Klackern. Ersatzlager muss bestellt werden.', photos: 2, who: 'JO', at: `${day1}T15:20` }]
   }
   else if (t.id === 'ru8') { startAt(t, 'JO', day1); tick(t, 1) }
-  else if (t.id === 'hl3') startAt(t, 'LE', `${TODAY}T09:40`)
-  else if (t.id === 'fl3') { startAt(t, 'LO', `${TODAY}T09:50`); tick(t, 1) }
+  else if (t.id === 'hl3') startAt(t, 'LE', `${today()}T09:40`)
+  else if (t.id === 'fl3') { startAt(t, 'LO', `${today()}T09:50`); tick(t, 1) }
 }
 
 /** LS8: erster Werkstatttag ist heute. */
 function applyLs8(t: Task) {
   const id = t.id.replace('ls8-', '')
   resetTask(t)
-  if (id === 'an1') finishAt(t, 'LE', `${TODAY}T10:10`, 'MA')
-  else if (id === 'hl1') finishAt(t, 'LO', `${TODAY}T10:55`)
-  else if (id === 'ru1') { startAt(t, 'LE', `${TODAY}T10:30`); tick(t, 2) }
-  else if (id === 'fl1') startAt(t, 'JO', `${TODAY}T10:40`)
-  else if (id === 'an4') startAt(t, 'LE', `${TODAY}T11:05`)
-  else if (id === 'fl2') startAt(t, 'JO', `${TODAY}T11:20`)
+  if (id === 'an1') finishAt(t, 'LE', `${today()}T10:10`, 'MA')
+  else if (id === 'hl1') finishAt(t, 'LO', `${today()}T10:55`)
+  else if (id === 'ru1') { startAt(t, 'LE', `${today()}T10:30`); tick(t, 2) }
+  else if (id === 'fl1') startAt(t, 'JO', `${today()}T10:40`)
+  else if (id === 'an4') startAt(t, 'LE', `${today()}T11:05`)
+  else if (id === 'fl2') startAt(t, 'JO', `${today()}T11:20`)
 }
 
 function baseState(): AppState {

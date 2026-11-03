@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { activeAircraft, can, leaders, planesOn, setAircraftPeriod, setDayClosed, setDayComment, setLeader, state, userName } from '../store'
 import type { Aircraft } from '../types'
-import { addDays, daysBetween, fmtDay, fmtLong, fmtWhen, MONTHS, parse, toIso, TODAY } from '../utils/date'
+import { addDays, daysBetween, fmtDay, fmtLong, fmtWhen, MONTHS, parse, today, toIso } from '../utils/date'
 import AppIcon from '../components/AppIcon.vue'
 import AppModal from '../components/AppModal.vue'
 import HistoryList from '../components/HistoryList.vue'
@@ -23,7 +23,7 @@ function isoWeek(iso: string) {
 
 const weeks = computed(() => Array.from({ length: weekCount.value }, (_, i) => {
   const start = addDays(ganttStart.value, i * 7)
-  return { start, kw: isoWeek(start), month: parse(addDays(start, 3)).getMonth(), isNow: daysBetween(start, TODAY) >= 0 && daysBetween(start, TODAY) < 7 }
+  return { start, kw: isoWeek(start), month: parse(addDays(start, 3)).getMonth(), isNow: daysBetween(start, today()) >= 0 && daysBetween(start, today()) < 7 }
 }))
 
 const months = computed(() => {
@@ -37,7 +37,7 @@ const months = computed(() => {
 })
 
 const weekIndex = (iso: string) => Math.max(0, Math.min(weekCount.value - 1, Math.floor(daysBetween(ganttStart.value, iso) / 7)))
-const todayPct = computed(() => (daysBetween(ganttStart.value, TODAY) / (weekCount.value * 7)) * 100)
+const todayPct = computed(() => (daysBetween(ganttStart.value, today()) / (weekCount.value * 7)) * 100)
 const showToday = computed(() => todayPct.value >= 0 && todayPct.value <= 100)
 
 /* Zeiträume ziehen (Admin): Balken verschieben oder an den Enden verlängern/kürzen, immer in ganzen Wochen. */
@@ -107,7 +107,7 @@ const bars = computed(() => activeAircraft()
   .sort((a, b) => a.start.localeCompare(b.start))
   .map((a) => {
     const p = periodOf(a)
-    const status = a.end < TODAY ? 'done' : a.start <= TODAY ? 'running' : 'planned'
+    const status = a.end < today() ? 'done' : a.start <= today() ? 'running' : 'planned'
     const tasks = state.tasks.filter((t) => t.aircraftId === a.id)
     const doneCount = tasks.filter((t) => t.status === 'erledigt').length
     const pct = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0
@@ -162,7 +162,7 @@ const calMonths = computed(() => {
   }
   return out
 })
-const todayMonth = calMonths.value.findIndex((c) => c.y === parse(TODAY).getFullYear() && c.m === parse(TODAY).getMonth())
+const todayMonth = calMonths.value.findIndex((c) => c.y === parse(today()).getFullYear() && c.m === parse(today()).getMonth())
 const monthIdx = ref(Math.max(0, todayMonth))
 const calMonth = computed(() => calMonths.value[Math.min(monthIdx.value, calMonths.value.length - 1)])
 const monthLabel = computed(() => `${MONTHS[calMonth.value.m]} ${calMonth.value.y}`)
@@ -281,7 +281,7 @@ function closeDay() {
             </div>
             <template v-if="showToday">
               <div class="g-today" :style="{ left: `${todayPct}%` }" />
-              <span class="g-today-label" :style="{ left: `${todayPct}%` }">Heute · {{ fmtDay(TODAY) }}</span>
+              <span class="g-today-label" :style="{ left: `${todayPct}%` }">Heute · {{ fmtDay(today()) }}</span>
             </template>
           </div>
         </div>
@@ -303,11 +303,11 @@ function closeDay() {
         <template v-for="c in cells" :key="c.iso">
           <div v-if="!c.inMonth" class="cell out">{{ c.day }}</div>
           <div v-else-if="!c.isSat" class="cell plain">{{ c.day }}</div>
-          <button v-else type="button" class="cell sat-cell" :class="{ closed: dayInfo(c.iso).closed, today: c.iso === TODAY }" @click="openDay = c.iso">
+          <button v-else type="button" class="cell sat-cell" :class="{ closed: dayInfo(c.iso).closed, today: c.iso === today() }" @click="openDay = c.iso">
             <span class="cell-top">
               <span class="cell-day">{{ c.day }}</span>
               <AppIcon v-if="dayInfo(c.iso).comment" name="note" :size="14" class="note-icon" />
-              <span v-if="c.iso === TODAY" class="today-pill">Heute</span>
+              <span v-if="c.iso === today()" class="today-pill">Heute</span>
             </span>
             <template v-if="dayInfo(c.iso).closed"><span class="cell-sub">{{ dayInfo(c.iso).reason }}</span></template>
             <template v-else>
@@ -320,11 +320,11 @@ function closeDay() {
 
       <ul class="cal-list">
         <li v-for="c in saturdays" :key="c.iso">
-          <button type="button" class="list-item" :class="{ today: c.iso === TODAY }" @click="openDay = c.iso">
+          <button type="button" class="list-item" :class="{ today: c.iso === today() }" @click="openDay = c.iso">
             <span class="list-date">
               <strong>Sa {{ fmtDay(c.iso) }}</strong>
               <AppIcon v-if="dayInfo(c.iso).comment" name="note" :size="14" class="note-icon" />
-              <span v-if="c.iso === TODAY" class="today-pill">Heute</span>
+              <span v-if="c.iso === today()" class="today-pill">Heute</span>
             </span>
             <span v-if="dayInfo(c.iso).closed" class="muted">{{ dayInfo(c.iso).reason }} – geschlossen</span>
             <template v-else>

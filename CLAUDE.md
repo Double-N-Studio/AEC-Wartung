@@ -6,7 +6,7 @@ Hinweise für die Arbeit an diesem Repo.
 
 Web-App für die Winterwartung der Vereins-Segelflugzeuge des Aero-Club Bad Nauheim.
 Aktueller Stand ist eine **statische Mock-Seite** ohne Backend, gedacht als klickbare Vorschau für den Vorstand.
-Alle Daten sind Beispieldaten; „heute“ ist fest der **16.01.2027** (`src/utils/date.ts`).
+Alle Daten sind Beispieldaten; „heute“ steht für die Demo fest auf dem **16.01.2027** (`VITE_DEMO_DATE` in `.env`). Ohne den Eintrag gilt das echte Datum. Im Code immer `today()` / `now()` aus `src/utils/date.ts` verwenden, nie `new Date()` direkt.
 
 ## Befehle
 
