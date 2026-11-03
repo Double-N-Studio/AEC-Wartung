@@ -1,21 +1,24 @@
 // Entry point: API under /api and the built frontend. nginx on the VPS forwards https://wartung.… to this process.
+import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
-import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
-import { db } from './db.js'
-import { meta } from './schema.js'
-
-const app = new Hono()
-app.use(logger())
+import { createApp } from './app.js'
+import { openDb } from './db.js'
+import { seed } from './seed.js'
 
 const version = process.env.APP_VERSION ?? 'dev'
+const dataDir = process.env.DATA_DIR ?? 'data'
+mkdirSync(dataDir, { recursive: true })
+const db = openDb(join(dataDir, 'wartung.db'))
+seed(db, process.env, new Date())
 
-app.get('/api/health', (c) => {
-  const firstStart = db.select().from(meta).where(eq(meta.key, 'firstStart')).get()
-  return c.json({ ok: true, version, firstStart: firstStart?.value ?? null })
-})
+const app = new Hono()
+// The SSE stream stays open for hours; logging it on close would only be noise.
+app.use((c, next) => (c.req.path === '/api/events' ? next() : logger()(c, next)))
+app.route('/', createApp({ db, dataDir, version }))
 
 // Frontend build (dist/ of the app, built with VITE_API_URL=/api), so app and API share one origin.
 // Without WEB_DIR (local development: Vite serves the frontend) the root only answers with a note.
