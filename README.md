@@ -42,11 +42,14 @@ Alles an einem Ort – am Werkstatt-Tablet genauso wie zu Hause im Browser.
 Voraussetzung: Node.js 22 oder neuer.
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
 
 Die Seite läuft dann unter http://localhost:5173.
+
+Der Code liegt in `frontend/` (Vue-App) und `backend/` (Server); die Befehle gelten im Ordner `frontend/`.
 
 | Befehl | Zweck |
 | --- | --- |
@@ -59,13 +62,13 @@ Die Seite läuft dann unter http://localhost:5173.
 Jeder Push auf `main` baut die Seite über GitHub Actions (`.github/workflows/deploy.yml`) und veröffentlicht sie auf GitHub Pages.
 Einmalig im Repository unter *Settings → Pages* als Quelle „GitHub Actions“ auswählen.
 Durch Hash-Routing und relative Pfade funktioniert die Seite unter jedem Repo-Namen.
-Das ist die Demo mit Beispieldaten. Die echte App (mit Backend) liefert der Server auf dem Hetzner-VPS aus, siehe `server/README.md`.
+Das ist die Demo mit Beispieldaten. Die echte App (mit Backend) liefert der Server auf dem Hetzner-VPS aus, siehe `backend/README.md`.
 
 ## Technik
 
 - Vue 3, Vue Router, Vite, TypeScript
-- eigenes CSS mit Design-Tokens in `src/styles/base.css`
-- Beispieldaten in `src/mock/`, gemeinsamer Zustand in `src/store.ts`
+- eigenes CSS mit Design-Tokens in `frontend/src/styles/base.css`
+- Beispieldaten in `frontend/src/mock/`, gemeinsamer Zustand in `frontend/src/store.ts`
 - responsiv für Tablet, Desktop und Handy
 
 Mehr zur Code-Struktur und zu den Konventionen steht in [CLAUDE.md](CLAUDE.md).
@@ -76,4 +79,4 @@ Mehr zur Code-Struktur und zu den Konventionen steht in [CLAUDE.md](CLAUDE.md).
 - **Anbindung an Vereinsflieger** für Fristen und Mängel
 - **Echte Anmeldung** der Sonderkonten (Passwort, Link zum Passwort-Setzen), Rechte zusätzlich im Backend prüfen
 - **PWA** für die Nutzung am Tablet auch ohne Netz
-- Dateien auf dem Server statt im Browser (`src/api/files.ts`), Vereinsflieger-Abgleich auf dem Server (`src/api/vereinsflieger.ts`)
+- Dateien auf dem Server statt im Browser (`frontend/src/api/files.ts`), Vereinsflieger-Abgleich auf dem Server (`frontend/src/api/vereinsflieger.ts`)

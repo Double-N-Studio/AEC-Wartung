@@ -1,21 +1,15 @@
 name: Deploy to VPS
 
-# Builds the app image (backend + frontend), pushes it to GHCR, copies server/ to the VPS and restarts Compose.
+# Builds the app image (backend + frontend), pushes it to GHCR, copies backend/ to the VPS and restarts Compose.
 # Runs when the server or the frontend changed. GitHub Pages keeps the demo (deploy.yml).
-# Secret DEPLOY_SSH_KEY: private key of the "deploy" user (see server/setup/deploy-user.sh).
+# Secret DEPLOY_SSH_KEY: private key of the "deploy" user (see backend/setup/deploy-user.sh).
 
 on:
   push:
     branches: [main]
     paths:
-      - 'server/**'
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'tsconfig.json'
+      - 'backend/**'
+      - 'frontend/**'
       - '.dockerignore'
       - '.github/workflows/deploy-server.yml'
   workflow_dispatch:
@@ -47,7 +41,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: server/Dockerfile
+          file: backend/Dockerfile
           push: true
           tags: |
             ${{ env.IMAGE }}:latest
@@ -70,7 +64,7 @@ jobs:
           printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
 
       - name: Copy files
-        run: rsync -az --delete --exclude data/ --exclude node_modules/ --exclude dist/ server/ deploy@$HOST:/srv/wartung/
+        run: rsync -az --delete --exclude data/ --exclude node_modules/ --exclude dist/ backend/ deploy@$HOST:/srv/wartung/
 
       - name: Start containers
         run: ssh deploy@$HOST 'cd /srv/wartung && docker compose pull --quiet && docker compose up -d --remove-orphans && docker compose ps && docker image prune -f >/dev/null'

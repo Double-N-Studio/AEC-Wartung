@@ -1,4 +1,4 @@
-# Runs on the VPS under /srv/wartung (see server/README.md).
+# Runs on the VPS under /srv/wartung (see backend/README.md).
 # nginx forwards https://wartung.nuno-ferreira.de to 127.0.0.1:8081.
 # The image is built by .github/workflows/deploy-server.yml on every push to main.
 services:

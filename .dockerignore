@@ -1,7 +1,7 @@
-# Build context of server/Dockerfile is the repo root.
+# Build context of backend/Dockerfile is the repo root.
 **/node_modules
 **/dist
-server/data
+backend/data
 .env
 .env.*
 .git

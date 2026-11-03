@@ -5,51 +5,55 @@ Notes for working on this repo.
 ## What this is
 
 Web app for the winter maintenance of the club gliders of Aero-Club Bad Nauheim.
-The frontend is ready for a backend (contract in `docs/backend.md`, server scaffold in `server/`). Without `VITE_API_URL` it runs as a **demo** against a fake server in the browser – that's what's on GitHub Pages as a clickable preview for the board. The real app (built with `VITE_API_URL=/api`) is served by the server on the Hetzner VPS.
-In the demo all data is sample data; "today" is fixed to **2027-01-16** (`VITE_DEMO_DATE` in `.env`). Without that entry the real date applies. In code always use `today()` / `now()` from `src/utils/date.ts`, never `new Date()` directly.
+The frontend is ready for a backend (contract in `docs/backend.md`, server in `backend/`). Without `VITE_API_URL` it runs as a **demo** against a fake server in the browser – that's what's on GitHub Pages as a clickable preview for the board. The real app (built with `VITE_API_URL=/api`) is served by the server on the Hetzner VPS.
+In the demo all data is sample data; "today" is fixed to **2027-01-16** (`VITE_DEMO_DATE` in `frontend/.env`). Without that entry the real date applies. In code always use `today()` / `now()` from `frontend/src/utils/date.ts`, never `new Date()` directly.
 
 ## Commands
 
 ```bash
+cd frontend
 npm install        # dependencies
 npm run dev        # dev server (http://localhost:5173)
 npm run build      # type check (vue-tsc) + production build to dist/
 npm run preview    # view the build locally
 ```
 
-Against the local backend: `VITE_API_URL=/api` in `.env.local`; the dev server proxies `/api` to port 3000.
+Against the local backend: `VITE_API_URL=/api` in `frontend/.env.local`; the dev server proxies `/api` to port 3000.
 
-Run `npm run build` before every commit – there are no tests, the type check is the check.
+Simple changes that don't need the owner's feedback (fixes, small tweaks, refactors, docs) are committed and pushed to `main` right away. Changes that need feedback (UX or product decisions, larger redesigns, anything uncertain) are left uncommitted until approved – use judgement.
+
+Run `npm run build` in `frontend/` before every commit (and in `backend/` when it changed) – there are no tests, the type check is the check.
 
 ## Stack
 
 - Vue 3 with `<script setup lang="ts">`, Vue Router (hash mode), Vite, TypeScript (pinned to 5.9 because `vue-tsc` doesn't support TS 7 yet)
 - No UI framework, no state library: own CSS and a reactive store
-- Deployment: demo on GitHub Pages via `.github/workflows/deploy.yml` on push to `main`; app image (backend + frontend) to the VPS via `.github/workflows/deploy-server.yml` (see `server/README.md`)
+- Deployment: demo on GitHub Pages via `.github/workflows/deploy.yml` on push to `main`; app image (backend + frontend) to the VPS via `.github/workflows/deploy-server.yml` (see `backend/README.md`)
 
 ## Structure
 
 ```
-src/
-  main.ts, App.vue, router.ts   entry, layout (sidebar / mobile menu), routes
-  store.ts                      shared state + all actions, sign-in, startup (boot)
-  sync.ts                       sync with the server: detect changes, queue, reload, conflicts
-  notify.ts                     short messages (AppToasts), e.g. rejected changes
-  types.ts                      data model
-  mock/data.ts                  initial data (initialState)
-  mock/people.ts                test accounts (people + workshop tablet), role labels
-  api/                          backend.ts (interface, picks demo or server), records.ts (state as records),
+frontend/                       Vue app (own package.json, Vite config, .env)
+  src/
+    main.ts, App.vue, router.ts entry, layout (sidebar / mobile menu), routes
+    store.ts                    shared state + all actions, sign-in, startup (boot)
+    sync.ts                     sync with the server: detect changes, queue, reload, conflicts
+    notify.ts                   short messages (AppToasts), e.g. rejected changes
+    types.ts                    data model
+    mock/data.ts                initial data (initialState)
+    mock/people.ts              test accounts (people + workshop tablet), role labels
+    api/                        backend.ts (interface, picks demo or server), records.ts (state as records),
                                 mock.ts (fake server of the demo), http.ts (real backend), files.ts (files with outbox)
-  utils/                        date formatting, skill levels, IDs (newId)
-  styles/base.css               design tokens (CSS variables) and base classes
-  components/                   reusable building blocks (AppModal, badges, DropdownSelect …)
-  components/inventory/         tabs stock / order list + popups (InventoryWorkspace, inventory and material tab)
-  views/                        pages: schedule, inventory, my stuff, admin (accounts, season), FAQ
-  views/aircraft/               aircraft tabs: kanban, documents, deadlines, defects/findings, material
-  views/inventory/              popups of the inventory
-public/docs/                    preview images of the documents
+    utils/                      date formatting, skill levels, IDs (newId)
+    styles/base.css             design tokens (CSS variables) and base classes
+    components/                 reusable building blocks (AppModal, badges, DropdownSelect …)
+    components/inventory/       tabs stock / order list + popups (InventoryWorkspace, inventory and material tab)
+    views/                      pages: schedule, inventory, my stuff, admin (accounts, season), FAQ
+    views/aircraft/             aircraft tabs: kanban, documents, deadlines, defects/findings, material
+    views/inventory/            popups of the inventory
+  public/docs/                  preview images of the documents
+backend/                        server (Hono + SQLite), Docker image, VPS notes
 docs/backend.md                 contract with the server: endpoints, records, conflicts, permissions
-server/                         backend (Hono + SQLite), Docker image, VPS notes
 ```
 
 ## Conventions

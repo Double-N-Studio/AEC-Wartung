@@ -1,8 +1,8 @@
 # Backend contract
 
-What the frontend expects from the server. The frontend side is `src/api/http.ts`; the demo replays the same contract in `src/api/mock.ts`. With `VITE_API_URL=/api` (e.g. in `.env.local`) the app talks to the backend; without it, the demo runs. `npm run dev` proxies `/api` to `http://localhost:3000`.
+What the frontend expects from the server. The frontend side is `frontend/src/api/http.ts`; the demo replays the same contract in `frontend/src/api/mock.ts`. With `VITE_API_URL=/api` (e.g. in `.env.local`) the app talks to the backend; without it, the demo runs. `npm run dev` proxies `/api` to `http://localhost:3000`.
 
-The frontend assumes the API is on the **same origin** (relative `VITE_API_URL`, cookie session). Serving it from another origin would need CORS with credentials and `SameSite=None` cookies, so the server serves both: the image (`server/Dockerfile`) contains the frontend built with `VITE_API_URL=/api` and serves it from `WEB_DIR` next to `/api`. GitHub Pages keeps the demo.
+The frontend assumes the API is on the **same origin** (relative `VITE_API_URL`, cookie session). Serving it from another origin would need CORS with credentials and `SameSite=None` cookies, so the server serves both: the image (`backend/Dockerfile`) contains the frontend built with `VITE_API_URL=/api` and serves it from `WEB_DIR` next to `/api`. GitHub Pages keeps the demo.
 
 ## Core idea
 
