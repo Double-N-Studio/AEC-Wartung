@@ -22,7 +22,7 @@ const LEVEL_TEXT = {
   <div class="page">
     <header>
       <h1 class="page-title">Häufige Fragen</h1>
-      <p class="page-sub">Alles Wichtige zur Winterwartung – besonders für Neue und Flugschüler.</p>
+      <p class="page-sub">Alles Wichtige zur Winterwartung, besonders für Neue und Flugschüler.</p>
     </header>
     <div class="layout">
       <section class="faq" aria-label="Fragen und Antworten">
@@ -51,7 +51,7 @@ const LEVEL_TEXT = {
         </section>
         <section class="card box note" aria-labelledby="vf-h">
           <h2 id="vf-h" class="box-title"><AppIcon name="alert" :size="18" />Vereinsflieger</h2>
-          <p class="note-text">Die Anbindung an Vereinsflieger ist noch nicht fertig. Mängel und Fristen aus Vereinsflieger kommen später automatisch in die App – bis dahin bitte weiter wie gewohnt in Vereinsflieger eintragen.</p>
+          <p class="note-text">Die Anbindung an Vereinsflieger ist noch nicht fertig. Mängel und Fristen aus Vereinsflieger kommen später automatisch in die App. Bis dahin bitte weiter wie gewohnt in Vereinsflieger eintragen.</p>
         </section>
         <section class="card box" aria-labelledby="contact-h">
           <h2 id="contact-h" class="box-title">Werkstattleitung</h2>
