@@ -98,13 +98,16 @@ const form = ref<Task | 'new' | null>(null)
         <span class="dot" :style="{ background: col.dot }" />
         <h2>{{ col.title }}</h2>
         <span class="count">{{ column(col.status).length }}</span>
+        <button
+          v-if="col.status === 'offen' && importable" type="button" class="btn btn-sm import"
+          :title="`${importable} ${importable === 1 ? 'Karte' : 'Karten'} aus den Vorlagen anlegen`" @click="importTemplates"
+        >
+          <AppIcon name="download" :size="15" :stroke="2" />Vorlagen importieren
+        </button>
         <button v-if="col.status === 'offen' && can('edit')" type="button" class="add" aria-label="Kanban-Karte anlegen" @click="form = 'new'">
           <AppIcon name="plus" :stroke="2.2" />
         </button>
       </div>
-      <button v-if="col.status === 'offen' && importable" type="button" class="btn btn-sm import" @click="importTemplates">
-        <AppIcon name="download" :size="15" :stroke="2" />Vorlagen importieren ({{ importable }} {{ importable === 1 ? 'Karte' : 'Karten' }})
-      </button>
       <div class="col-scroll">
       <div :ref="(el) => setList(col.status, el as HTMLElement | null)" class="col-list" :data-status="col.status" @scroll.passive="measure(col.status)">
         <button v-for="t in column(col.status)" :key="t.id" type="button" class="task" @click="openId = t.id">
@@ -153,7 +156,8 @@ const form = ref<Task | 'new' | null>(null)
   font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
 }
 .chip[aria-pressed='true'] { background: var(--text); border-color: var(--text); color: #fff; }
-.import { width: 100%; gap: 6px; }
+.import { margin-left: auto; height: 36px; padding: 0 12px; gap: 6px; }
+.import + .add { margin-left: 0; }
 
 .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .column { background: var(--column); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
