@@ -59,8 +59,6 @@ const archive = computed(() => [...state.archive].sort((a, b) => b.start.localeC
     <dl class="facts">
       <dt>Erster Werkstatttag</dt><dd>Sa {{ fmtDate(state.season.start) }}</dd>
       <dt>Letzter Werkstatttag</dt><dd>Sa {{ fmtDate(state.season.end) }}</dd>
-      <dt>Kanban-Vorlagen</dt>
-      <dd><RouterLink to="/verwaltung/vorlagen" class="link">{{ state.templates.length }} Vorlagen bearbeiten</RouterLink></dd>
       <template v-if="state.archive.length">
         <dt>Frühere Saisons</dt>
         <dd class="archive">

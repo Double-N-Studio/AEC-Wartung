@@ -5,7 +5,6 @@ import FaqPage from './views/FaqPage.vue'
 import MyStuffPage from './views/MyStuffPage.vue'
 import AdminPage from './views/AdminPage.vue'
 import PasswordPage from './views/PasswordPage.vue'
-import TemplatesPage from './views/admin/TemplatesPage.vue'
 import AircraftLayout from './views/aircraft/AircraftLayout.vue'
 import TasksPage from './views/aircraft/TasksPage.vue'
 import DocumentsPage from './views/aircraft/DocumentsPage.vue'
@@ -23,7 +22,7 @@ export const router = createRouter({
     { path: '/faq', component: FaqPage },
     { path: '/meine-sachen', component: MyStuffPage },
     { path: '/verwaltung', component: AdminPage },
-    { path: '/verwaltung/vorlagen', component: TemplatesPage },
+    { path: '/verwaltung/vorlagen', redirect: '/verwaltung' },
     { path: '/passwort', component: PasswordPage },
     {
       path: '/flugzeug/:id',

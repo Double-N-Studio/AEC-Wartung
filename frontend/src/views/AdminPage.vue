@@ -10,6 +10,7 @@ import ConfirmModal from '../components/ConfirmModal.vue'
 import PersonAvatar from '../components/PersonAvatar.vue'
 import AircraftSection from './admin/AircraftSection.vue'
 import SeasonSection from './admin/SeasonSection.vue'
+import TemplatesSection from './admin/TemplatesSection.vue'
 
 const ROLES: Role[] = ['admin', 'wl', 'user']
 const ROLE_TEXT: Record<Role, string> = {
@@ -83,20 +84,13 @@ function confirmRemove() {
   <div class="page">
     <header>
       <h1 class="page-title">Verwaltung</h1>
-      <p class="page-sub">Saison, Kanban-Vorlagen, Flugzeuge und Konten. Mitglieder tragen sich selbst mit Vor- und Nachnamen ein; Werkstattleitung, Admins und das Tablet melden sich mit Passwort an. Die Werkstattzeiträume der Flugzeuge änderst du im Zeitplan über den Stift.</p>
+      <p class="page-sub">Saison, Konten, Kanban-Vorlagen und Flugzeuge. Mitglieder tragen sich selbst mit Vor- und Nachnamen ein; Werkstattleitung, Admins und das Tablet melden sich mit Passwort an. Die Werkstattzeiträume der Flugzeuge änderst du im Zeitplan über den Stift.</p>
     </header>
 
     <p v-if="!can('admin')" class="card denied">Dieser Bereich ist nur für Admins.</p>
 
     <template v-else>
       <SeasonSection />
-
-      <AircraftSection />
-
-      <section class="card box" aria-labelledby="vf-h">
-        <h2 id="vf-h" class="section-title">Vereinsflieger</h2>
-        <p class="muted small">Die Anbindung an Vereinsflieger ist noch nicht fertig. Mängel und Fristen aus Vereinsflieger kommen später automatisch in die App. Bis dahin bitte weiter wie gewohnt in Vereinsflieger eintragen.</p>
-      </section>
 
       <section class="card list" aria-labelledby="users-h">
         <div class="box-head pad">
@@ -118,6 +112,16 @@ function confirmRemove() {
           </li>
         </ul>
       </section>
+
+      <TemplatesSection />
+
+      <section class="card box" aria-labelledby="vf-h">
+        <h2 id="vf-h" class="section-title">Vereinsflieger</h2>
+        <p class="muted small">Die Anbindung an Vereinsflieger ist noch nicht fertig. Mängel und Fristen aus Vereinsflieger kommen später automatisch in die App. Bis dahin bitte weiter wie gewohnt in Vereinsflieger eintragen.</p>
+      </section>
+
+      <!-- Rarely changed after setup, so last and compact. -->
+      <AircraftSection />
     </template>
 
     <AppModal
@@ -183,7 +187,7 @@ function confirmRemove() {
 .box-head.pad { padding: 14px 16px; border-bottom: 1px solid var(--border); }
 .section-title { display: flex; align-items: center; gap: 8px; }
 .section-title .count { background: var(--gray-soft); }
-.rows { list-style: none; margin: 0; padding: 0; }
+.rows { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
 .row {
   width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 16px;
   border: 0; border-bottom: 1px solid var(--border-soft); background: transparent; text-align: left;

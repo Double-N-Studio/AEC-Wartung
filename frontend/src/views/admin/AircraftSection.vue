@@ -53,12 +53,12 @@ function confirmRemove() {
   <section class="card list" aria-labelledby="aircraft-h">
     <div class="head">
       <h2 id="aircraft-h" class="section-title">Flugzeuge <span class="count">{{ list.length }}</span></h2>
-      <button type="button" class="btn btn-sm" @click="open('new')"><AppIcon name="plus" :size="16" :stroke="2.2" />Flugzeug hinzufügen</button>
+      <button type="button" class="link-btn" @click="open('new')"><AppIcon name="plus" :size="15" :stroke="2.2" />Flugzeug hinzufügen</button>
     </div>
     <ul class="rows">
       <li v-for="a in list" :key="a.id">
         <button type="button" class="row" @click="open(a)">
-          <span class="plane"><AppIcon name="plane" :size="18" /></span>
+          <span class="plane"><AppIcon name="plane" :size="15" /></span>
           <span class="what">
             <strong>{{ a.type }}<span class="reg">{{ a.reg }}</span></strong>
           </span>
@@ -116,22 +116,22 @@ function confirmRemove() {
 </template>
 
 <style scoped>
-.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--border); }
-.section-title { display: flex; align-items: center; gap: 8px; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.section-title { display: flex; align-items: center; gap: 8px; font-size: 15px; }
 .section-title .count { background: var(--gray-soft); }
 .rows { list-style: none; margin: 0; padding: 0; }
 .row {
-  width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 16px;
+  width: 100%; display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 16px;
   border: 0; border-bottom: 1px solid var(--border-soft); background: transparent; text-align: left;
 }
 .rows li:last-child .row { border-bottom: 0; }
 .row:hover { background: var(--subtle); }
 .plane {
-  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent-ink);
 }
 .what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.what strong { display: flex; align-items: baseline; gap: 8px; font-size: 14.5px; }
+.what strong { display: flex; align-items: baseline; gap: 8px; font-size: 13.5px; }
 .reg { font-size: 13px; font-weight: 500; color: var(--muted); }
 .what .muted, .when { font-size: 12.5px; }
 .empty { padding: 20px 16px; font-size: 14px; }

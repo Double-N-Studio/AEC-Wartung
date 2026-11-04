@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { aircraftTypes, can, state, templatesFor } from '../../store'
+import { aircraftTypes, state, templatesFor } from '../../store'
 import type { TaskTemplate } from '../../types'
 import AppIcon from '../../components/AppIcon.vue'
 import DropdownSelect from '../../components/DropdownSelect.vue'
@@ -8,7 +8,7 @@ import LevelBadge from '../../components/LevelBadge.vue'
 import TemplateFormModal from './TemplateFormModal.vue'
 import { LEVEL_KEYS } from '../../utils/levels'
 
-/** Kanban templates: the cards are created from them at season start and for new aircraft. */
+/** Kanban templates (admin area): the cards are created from them at season start and for new aircraft. */
 const scope = ref('alle')
 const scopes = computed(() => [{ value: 'alle', label: 'Alle' }, { value: '', label: 'Alle Flugzeuge' }, ...aircraftTypes().map((t) => ({ value: t, label: t }))])
 
@@ -22,51 +22,50 @@ const editing = ref<TaskTemplate | 'new' | null>(null)
 </script>
 
 <template>
-  <div class="page">
-    <header>
-      <RouterLink to="/verwaltung" class="back"><AppIcon name="chevronLeft" :size="16" />Verwaltung</RouterLink>
-      <h1 class="page-title">Kanban-Vorlagen</h1>
-      <p class="page-sub">Zu Beginn jeder Saison und bei neuen Flugzeugen entsteht aus jeder Vorlage eine Kanban-Karte. Bestehende Karten ändern sich nicht.</p>
-    </header>
-
-    <p v-if="!can('admin')" class="card denied">Dieser Bereich ist nur für Admins.</p>
-
-    <section v-else class="card list" aria-label="Vorlagen">
-      <div class="toolbar">
+  <section class="card list" aria-labelledby="templates-h">
+    <div class="toolbar">
+      <div class="title">
+        <h2 id="templates-h" class="section-title">Kanban-Vorlagen <span class="count">{{ state.templates.length }}</span></h2>
+        <p class="muted small">Zu Beginn jeder Saison und bei neuen Flugzeugen entsteht aus jeder Vorlage eine Kanban-Karte. Bestehende Karten ändern sich nicht.</p>
+      </div>
+      <div class="actions">
         <DropdownSelect v-model="scope" label="Gilt für" :options="scopes" />
         <button type="button" class="btn btn-sm tall" @click="editing = 'new'"><AppIcon name="plus" :size="16" :stroke="2.2" />Vorlage anlegen</button>
       </div>
-      <!-- Same look as an open card on the kanban board, so the template shows what the card will be. -->
-      <ul class="grid">
-        <li v-for="v in list" :key="v.id">
-          <button type="button" class="task" @click="editing = v">
-            <span class="task-top">
-              <span class="task-title">{{ v.title }}</span>
-              <LevelBadge :level="v.level" class="task-tag" />
-            </span>
-            <span v-if="v.desc" class="task-desc">{{ v.desc }}</span>
-            <span class="task-meta">
-              <span><AppIcon name="clock" :size="14" />{{ v.duration }}</span>
-              <span v-if="v.checklist.length"><AppIcon name="list" :size="14" />{{ v.checklist.length }} Schritte</span>
-              <span class="applies" :class="{ only: v.aircraftTypes.length }">{{ appliesTo(v) }}</span>
-            </span>
-          </button>
-        </li>
-      </ul>
-      <p v-if="!list.length" class="muted empty">Keine Vorlagen.</p>
-    </section>
+    </div>
+    <!-- Same look as an open card on the kanban board, so the template shows what the card will be. -->
+    <ul class="grid">
+      <li v-for="v in list" :key="v.id">
+        <button type="button" class="task" @click="editing = v">
+          <span class="task-top">
+            <span class="task-title">{{ v.title }}</span>
+            <LevelBadge :level="v.level" class="task-tag" />
+          </span>
+          <span v-if="v.desc" class="task-desc">{{ v.desc }}</span>
+          <span class="task-meta">
+            <span><AppIcon name="clock" :size="14" />{{ v.duration }}</span>
+            <span v-if="v.checklist.length"><AppIcon name="list" :size="14" />{{ v.checklist.length }} Schritte</span>
+            <span class="applies" :class="{ only: v.aircraftTypes.length }">{{ appliesTo(v) }}</span>
+          </span>
+        </button>
+      </li>
+    </ul>
+    <p v-if="!list.length" class="muted empty">Keine Vorlagen.</p>
+  </section>
 
-    <TemplateFormModal
-      v-if="editing" :template="editing === 'new' ? undefined : editing"
-      :preset="{ aircraftTypes: scope && scope !== 'alle' ? [scope] : [] }" @close="editing = null"
-    />
-  </div>
+  <TemplateFormModal
+    v-if="editing" :template="editing === 'new' ? undefined : editing"
+    :preset="{ aircraftTypes: scope && scope !== 'alle' ? [scope] : [] }" @close="editing = null"
+  />
 </template>
 
 <style scoped>
-.back { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--accent-ink); text-decoration: none; }
-.denied { padding: 24px; font-size: 14px; color: var(--text-2); }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.title { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.section-title { display: flex; align-items: center; gap: 8px; }
+.section-title .count { background: var(--gray-soft); }
+.small { font-size: 12.5px; line-height: 1.4; }
+.actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .tall { height: 40px; }
 .grid {
   list-style: none; margin: 0; padding: 16px; display: grid; gap: 12px;
