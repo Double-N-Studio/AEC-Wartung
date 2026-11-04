@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { docsFor, fitsAircraft, state, userName } from '../../store'
+import { docsFor, fitsAircraft, state } from '../../store'
 
 const route = useRoute()
 const aircraft = computed(() => state.aircraft.find((a) => a.id === route.params.id))
@@ -24,8 +24,7 @@ const tabs = computed(() => {
 <template>
   <div v-if="aircraft" class="page aircraft">
     <header class="titles">
-      <div class="name"><h1 class="page-title">{{ aircraft.type }}</h1><span class="reg">{{ aircraft.reg }}</span><span v-if="aircraft.retired" class="pill pill-gray">Ausgemustert</span></div>
-      <span v-if="aircraft.manager" class="muted meta">Flugzeugpate: {{ userName(aircraft.manager) }}</span>
+      <div class="name"><h1 class="page-title">{{ aircraft.type }}</h1><span class="reg">{{ aircraft.reg }}</span></div>
     </header>
 
     <nav class="tabs" aria-label="Bereiche des Flugzeugs">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { activeAircraft, aircraftLabel, can, currentUser, state, userName } from '../store'
+import { aircraftLabel, can, currentUser, state, userName } from '../store'
 import type { Task } from '../types'
 import { fmtDay, fmtWhen } from '../utils/date'
 import AppIcon from '../components/AppIcon.vue'
@@ -9,13 +9,12 @@ import PriorityBadge from '../components/PriorityBadge.vue'
 /** Everything currently assigned to the logged-in person – with links straight into the popups. */
 const me = computed(() => currentUser())
 const myId = computed(() => me.value?.id)
-const active = computed(() => new Set(activeAircraft().map((a) => a.id)))
 
 const startedBy = (t: Task) => t.history.find((h) => h.text === 'Arbeit gestartet')?.who
 
-const myDefects = computed(() => state.defects.filter((d) => d.status === 'open' && d.owner === myId.value && active.value.has(d.aircraftId)))
+const myDefects = computed(() => state.defects.filter((d) => d.status === 'open' && d.owner === myId.value))
 const myTasks = computed(() => state.tasks.filter((t) => t.status === 'arbeit' && startedBy(t) === myId.value))
-const toSign = computed(() => (can('lead') ? state.tasks.filter((t) => t.status === 'erledigt' && !t.signedBy && active.value.has(t.aircraftId)) : []))
+const toSign = computed(() => (can('lead') ? state.tasks.filter((t) => t.status === 'erledigt' && !t.signedBy) : []))
 const myOrders = computed(() => state.orders.filter((o) => o.state !== 'delivered' && o.reportedBy === myId.value))
 const myFindings = computed(() => state.defects.filter((d) => d.status === 'open' && d.source === 'befund' && d.reportedBy === myId.value && d.owner !== myId.value))
 const doneCount = computed(() => state.tasks.filter((t) => t.doneBy === myId.value).length)

@@ -171,11 +171,8 @@ export function aircraftLabel(id: string) {
   return a ? `${a.type} · ${a.reg}` : ''
 }
 
-/** Aircraft in the club (without retired ones). */
-export const activeAircraft = () => state.aircraft.filter((a) => !a.retired)
-
-/** Aircraft types in the club, once per type – for spare parts and orders. */
-export const aircraftTypes = () => [...new Set(activeAircraft().map((a) => a.type))]
+/** Aircraft types in the club, once per type – for spare parts, orders and templates. */
+export const aircraftTypes = () => [...new Set(state.aircraft.map((a) => a.type))]
 
 /** Does the spare part fit this aircraft type? */
 export function fitsAircraft(item: InventoryItem, type: string) {
@@ -205,7 +202,7 @@ export function setAircraftPeriod(aircraft: Aircraft, start: string, end: string
 
 /** Aircraft that are in the workshop on this day – derived from the periods, not maintained by hand. */
 export function planesOn(date: string) {
-  return activeAircraft()
+  return state.aircraft
     .filter((a) => a.start <= date && date <= a.end)
     .sort((a, b) => a.start.localeCompare(b.start))
     .map((a) => a.type)
@@ -258,7 +255,7 @@ export function startSeason(input: Season, carryOver: boolean) {
   state.schedule = {}
   setSeason(input)
   const weeks = Math.round(daysBetween(oldStart, state.season.start) / 7)
-  for (const a of activeAircraft()) {
+  for (const a of state.aircraft) {
     const len = daysBetween(a.start, a.end)
     a.start = addDays(a.start, weeks * 7)
     if (a.start < state.season.start || a.start > state.season.end) a.start = state.season.start
@@ -270,7 +267,7 @@ export function startSeason(input: Season, carryOver: boolean) {
 
 /* ---------- Kanban templates ---------- */
 
-export const templatesFor = (type: string) => state.templates.filter((v) => !v.aircraftType || v.aircraftType === type)
+export const templatesFor = (type: string) => state.templates.filter((v) => !v.aircraftTypes.length || v.aircraftTypes.includes(type))
 
 /** Create cards from all templates that are still missing for this aircraft. */
 export function cardsFromTemplates(a: Aircraft) {
@@ -280,48 +277,45 @@ export function cardsFromTemplates(a: Aircraft) {
     state.tasks.push({
       id: newId(), aircraftId: a.id, templateId: v.id, status: 'offen', level: v.level, title: v.title, desc: v.desc || '–',
       duration: v.duration, checklist: v.checklist.map((text) => ({ text, done: false })),
-      docId: v.docTitle ? docsFor(a.id).find((d) => d.title === v.docTitle)?.id : undefined,
       history: [{ text: 'Aus Vorlage angelegt', who: actor(), at: today() }],
     })
   }
 }
 
 export interface TemplateInput {
-  aircraftType: string
+  /** Empty = all aircraft */
+  aircraftTypes: string[]
   level: TaskTemplate['level']
   title: string
   desc: string
   duration: string
   /** One step per line */
   checklist: string
-  docTitle: string
 }
 
 export const templateInput = (v?: TaskTemplate): TemplateInput => ({
-  aircraftType: v?.aircraftType ?? '',
+  aircraftTypes: [...(v?.aircraftTypes ?? [])],
   level: v?.level ?? 'ein',
   title: v?.title ?? '',
   desc: v?.desc ?? '',
   duration: v?.duration ?? '~1 h',
   checklist: v?.checklist.join('\n') ?? '',
-  docTitle: v?.docTitle ?? '',
 })
 
 function applyTemplateInput(v: TaskTemplate, input: TemplateInput) {
   Object.assign(v, {
-    aircraftType: input.aircraftType,
+    aircraftTypes: [...input.aircraftTypes],
     level: input.level,
     title: input.title.trim(),
     desc: input.desc.trim(),
     duration: input.duration,
     checklist: input.checklist.split('\n').map((t) => t.trim()).filter(Boolean),
-    docTitle: input.docTitle.trim() || undefined,
   })
 }
 
 /** Templates only take effect at the next season start or for a new aircraft; existing cards stay as they are. */
 export function createTemplate(input: TemplateInput) {
-  const v: TaskTemplate = { id: newId(), aircraftType: '', level: 'ein', title: '', desc: '', duration: '', checklist: [] }
+  const v: TaskTemplate = { id: newId(), aircraftTypes: [], level: 'ein', title: '', desc: '', duration: '', checklist: [] }
   applyTemplateInput(v, input)
   state.templates.push(v)
 }
@@ -339,33 +333,23 @@ export function deleteTemplate(v: TaskTemplate) {
 export interface AircraftInput {
   type: string
   reg: string
-  serial: string
-  /** Aircraft sponsor (account ID), empty = none */
-  manager: UserId | ''
   /** Workshop period, each a Saturday */
   start: string
   end: string
-  retired: boolean
 }
 
 export const aircraftInput = (a?: Aircraft): AircraftInput => ({
   type: a?.type ?? '',
   reg: a?.reg ?? '',
-  serial: a?.serial ?? '',
-  manager: a?.manager ?? '',
   start: a?.start ?? state.season.start,
   end: a?.end ?? addDays(state.season.start, 21),
-  retired: !!a?.retired,
 })
 
 function applyAircraftInput(a: Aircraft, input: AircraftInput) {
   a.type = input.type.trim()
   a.reg = input.reg.trim().toUpperCase()
-  a.serial = input.serial.trim() || undefined
-  a.manager = input.manager || undefined
   a.start = input.start
   a.end = input.end
-  a.retired = input.retired || undefined
 }
 
 /** withCards: create the Kanban cards from the templates right away. */

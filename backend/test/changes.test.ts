@@ -25,7 +25,7 @@ describe('GET /state', () => {
   it('round-trips the records unchanged and keeps the insertion order across updates', async () => {
     const admin = login(t.db, ADMIN)
     const a2 = aircraft({ id: 'z', reg: 'D-0002' })
-    const a1 = aircraft({ id: 'a', reg: 'D-0001', serial: '21', retired: true, extra: { nested: [1, 2] } })
+    const a1 = aircraft({ id: 'a', reg: 'D-0001', extra: { nested: [1, 2] } })
     assert.equal((await push(t.app, admin, [{ coll: 'aircraft', id: 'z', value: a2 }, { coll: 'aircraft', id: 'a', value: a1 }])).status, 200)
     assert.equal((await push(t.app, admin, [{ coll: 'aircraft', id: 'z', value: { ...a2, reg: 'D-0003' } }])).status, 200)
     assert.equal((await push(t.app, admin, [{ coll: 'schedule', id: '2026-11-14', value: { leader: LEAD.id, history: [entry(ADMIN.id)] } }])).status, 200)
@@ -92,6 +92,14 @@ describe('POST /changes', () => {
     assert.deepEqual(await getState(t.app), before)
   })
 
+  it('accepts templates for all aircraft or a list of types', async () => {
+    const admin = login(t.db, ADMIN)
+    const v = (id: string, aircraftTypes: string[]) => ({ id, aircraftTypes, level: 'ein', title: 'Putzen', desc: '', duration: '~1 h', checklist: ['Waschen'] })
+    const changes = [{ coll: 'templates', id: 'v1', value: v('v1', []) }, { coll: 'templates', id: 'v2', value: v('v2', ['ASK21', 'LS8']) }]
+    assert.equal((await push(t.app, admin, changes)).status, 200)
+    assert.deepEqual((await getState(t.app)).state.templates, [v('v1', []), v('v2', ['ASK21', 'LS8'])])
+  })
+
   it('422 for malformed records, with German text', async () => {
     const admin = login(t.db, ADMIN)
     const cases = [
@@ -106,6 +114,8 @@ describe('POST /changes', () => {
       { coll: 'users', id: 'new', value: { id: 'new', name: 'Neu', role: 'wl', email: 'WERNER@example.org ' } },
       { coll: 'users', id: 'new', value: { id: 'new', name: 'Neu', role: 'wl' } },
       { coll: 'users', id: 'new', value: { id: 'new', name: 'Neu', role: 'user', email: 'neu@example.org' } },
+      { coll: 'templates', id: 'v1', value: { id: 'v1', aircraftType: 'ASK21', level: 'ein', title: 'Putzen', desc: '', duration: '~1 h', checklist: [] } },
+      { coll: 'templates', id: 'v1', value: { id: 'v1', aircraftTypes: [''], level: 'ein', title: 'Putzen', desc: '', duration: '~1 h', checklist: [] } },
     ]
     for (const c of cases) {
       const res = await push(t.app, admin, [c])

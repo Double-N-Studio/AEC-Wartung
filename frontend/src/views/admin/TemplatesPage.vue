@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { aircraftTypes, can, state } from '../../store'
+import { aircraftTypes, can, state, templatesFor } from '../../store'
 import type { TaskTemplate } from '../../types'
 import AppIcon from '../../components/AppIcon.vue'
 import DropdownSelect from '../../components/DropdownSelect.vue'
@@ -11,12 +11,11 @@ import TemplateFormModal from './TemplateFormModal.vue'
 const scope = ref('alle')
 const scopes = computed(() => [{ value: 'alle', label: 'Alle' }, { value: '', label: 'Alle Flugzeuge' }, ...aircraftTypes().map((t) => ({ value: t, label: t }))])
 
-const groups = computed(() => {
-  const keys = scope.value === 'alle' ? ['', ...new Set(state.templates.map((v) => v.aircraftType).filter(Boolean))] : [scope.value]
-  return keys
-    .map((k) => ({ key: k, title: k ? `Nur ${k}` : 'Alle Flugzeuge', list: state.templates.filter((v) => v.aircraftType === k) }))
-    .filter((g) => g.list.length || scope.value !== 'alle')
-})
+// Filter by one type: the templates for all aircraft plus those that name it. Templates for all aircraft come first.
+const list = computed(() => state.templates
+  .filter((v) => scope.value === 'alle' || (scope.value ? templatesFor(scope.value).includes(v) : !v.aircraftTypes.length))
+  .sort((a, b) => Number(!!a.aircraftTypes.length) - Number(!!b.aircraftTypes.length)))
+const appliesTo = (v: TaskTemplate) => (v.aircraftTypes.length ? `Nur ${v.aircraftTypes.join(', ')}` : 'Alle Flugzeuge')
 
 const editing = ref<TaskTemplate | 'new' | null>(null)
 </script>
@@ -36,27 +35,24 @@ const editing = ref<TaskTemplate | 'new' | null>(null)
         <DropdownSelect v-model="scope" label="Gilt für" :options="scopes" />
         <button type="button" class="btn btn-sm tall" @click="editing = 'new'"><AppIcon name="plus" :size="16" :stroke="2.2" />Vorlage anlegen</button>
       </div>
-      <div v-for="g in groups" :key="g.key" class="group">
-        <h2 class="group-head">{{ g.title }}<span class="count">{{ g.list.length }}</span></h2>
-        <ul class="rows">
-          <li v-for="v in g.list" :key="v.id">
-            <button type="button" class="row" @click="editing = v">
-              <span class="what">
-                <strong>{{ v.title }}</strong>
-                <span class="muted">{{ v.duration }}{{ v.checklist.length ? ` · ${v.checklist.length} Schritte` : '' }}{{ v.docTitle ? ` · ${v.docTitle}` : '' }}</span>
-              </span>
-              <LevelBadge :level="v.level" />
-              <AppIcon name="chevronRight" :size="16" class="muted" />
-            </button>
-          </li>
-        </ul>
-        <p v-if="!g.list.length" class="muted empty">Keine Vorlagen.</p>
-      </div>
+      <ul class="rows">
+        <li v-for="v in list" :key="v.id">
+          <button type="button" class="row" @click="editing = v">
+            <span class="what">
+              <strong>{{ v.title }}</strong>
+              <span class="muted"><span :class="{ only: v.aircraftTypes.length }">{{ appliesTo(v) }}</span> · {{ v.duration }}{{ v.checklist.length ? ` · ${v.checklist.length} Schritte` : '' }}</span>
+            </span>
+            <LevelBadge :level="v.level" />
+            <AppIcon name="chevronRight" :size="16" class="muted" />
+          </button>
+        </li>
+      </ul>
+      <p v-if="!list.length" class="muted empty">Keine Vorlagen.</p>
     </section>
 
     <TemplateFormModal
       v-if="editing" :template="editing === 'new' ? undefined : editing"
-      :preset="{ aircraftType: scope === 'alle' ? '' : scope }" @close="editing = null"
+      :preset="{ aircraftTypes: scope && scope !== 'alle' ? [scope] : [] }" @close="editing = null"
     />
   </div>
 </template>
@@ -66,8 +62,6 @@ const editing = ref<TaskTemplate | 'new' | null>(null)
 .denied { padding: 24px; font-size: 14px; color: var(--text-2); }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--border); }
 .tall { height: 40px; }
-.group-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px; font-size: 13px; font-weight: 700; color: var(--text-2); }
-.group-head .count { background: var(--gray-soft); }
 .rows { list-style: none; margin: 0; padding: 0; }
 .row {
   width: 100%; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px;
@@ -77,5 +71,7 @@ const editing = ref<TaskTemplate | 'new' | null>(null)
 .what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .what strong { font-size: 14.5px; }
 .what .muted { font-size: 12.5px; }
-.empty { padding: 8px 16px 16px; font-size: 14px; }
+.only { font-weight: 600; color: var(--accent-ink); }
+.rows li:last-child .row { border-bottom: 0; }
+.empty { padding: 16px; font-size: 14px; }
 </style>

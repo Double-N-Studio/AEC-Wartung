@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { activeAircraft, can, leaders, planesOn, setAircraftPeriod, setDayClosed, setDayComment, setLeader, state, userName } from '../store'
+import { can, leaders, planesOn, setAircraftPeriod, setDayClosed, setDayComment, setLeader, state, userName } from '../store'
 import type { Aircraft } from '../types'
 import { addDays, daysBetween, fmtDay, fmtLong, fmtWhen, MONTHS, parse, today, toIso } from '../utils/date'
 import AppIcon from '../components/AppIcon.vue'
@@ -103,7 +103,7 @@ const workDays = (p: { start: string; end: string }) => {
   return n
 }
 
-const bars = computed(() => activeAircraft()
+const bars = computed(() => state.aircraft
   .sort((a, b) => a.start.localeCompare(b.start))
   .map((a) => {
     const p = periodOf(a)

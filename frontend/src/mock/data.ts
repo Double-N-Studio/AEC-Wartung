@@ -33,8 +33,8 @@ export function initialState(): AppState {
   const pre = (id: string, ref?: string) => (ref ? `${id}-${ref}` : undefined)
   // Templates = cards of the ASG32, valid for all aircraft; every card remembers its template.
   s.templates = own(s.tasks).map((t) => ({
-    id: `v-${t.id}`, aircraftType: '', level: t.level, title: t.title, desc: t.desc, duration: t.duration,
-    checklist: t.checklist.map((c) => c.text), docTitle: s.documents.find((d) => d.id === t.docId)?.title,
+    id: `v-${t.id}`, aircraftTypes: [], level: t.level, title: t.title, desc: t.desc, duration: t.duration,
+    checklist: t.checklist.map((c) => c.text),
   }))
   own(s.tasks).forEach((t) => { t.templateId = `v-${t.id}` })
   for (const a of s.aircraft.filter((x) => x.id !== ASG)) {
@@ -173,9 +173,9 @@ function baseState(): AppState {
     season: { label: '2026/27', start: '2026-11-07', end: '2027-03-27' },
 
     aircraft: [
-      { id: 'ask21', type: 'ASK21', reg: 'D-5071', manager: 'MA', start: '2026-11-07', end: '2026-12-05' },
+      { id: 'ask21', type: 'ASK21', reg: 'D-5071', start: '2026-11-07', end: '2026-12-05' },
       { id: 'ask23', type: 'ASK23', reg: 'D-6987', start: '2026-11-14', end: '2026-12-12' },
-      { id: ASG, type: 'ASG32', reg: 'D-3362', serial: '32031', manager: 'LO', start: '2027-01-09', end: '2027-01-30' },
+      { id: ASG, type: 'ASG32', reg: 'D-3362', start: '2027-01-09', end: '2027-01-30' },
       { id: 'arcus', type: 'Arcus-T', reg: 'D-KSBN', start: '2027-02-06', end: '2027-03-13' },
       { id: 'discus', type: 'Discus-2b', reg: 'D-9596', start: '2026-12-05', end: '2027-01-09' },
       { id: 'ls8', type: 'LS8', reg: 'D-0169', start: '2027-01-16', end: '2027-02-13' },

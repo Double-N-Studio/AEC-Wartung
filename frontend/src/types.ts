@@ -36,11 +36,6 @@ export interface Aircraft {
   id: string
   type: string
   reg: string
-  serial?: string
-  /** Sold or similar: kept with all its data, but no longer appears in the sidebar, season plan and selection lists. */
-  retired?: boolean
-  /** Aircraft sponsor (account ID) */
-  manager?: UserId
   /** Workshop period, each a Saturday */
   start: string
   end: string
@@ -104,15 +99,13 @@ export interface Task {
 /** Template for Kanban cards; at season start the cards of every aircraft are created from it. */
 export interface TaskTemplate {
   id: string
-  /** Aircraft type, empty = all aircraft */
-  aircraftType: string
+  /** Aircraft types the template applies to, empty = all aircraft */
+  aircraftTypes: string[]
   level: Level
   title: string
   desc: string
   duration: string
   checklist: string[]
-  /** Documents belong to the individual aircraft; the document with this title gets linked. */
-  docTitle?: string
 }
 
 /** Completed season, read-only for reference. */

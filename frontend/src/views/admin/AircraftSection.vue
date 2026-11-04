@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { aircraftInput, createAircraft, deleteAircraft, people, state, templatesFor, updateAircraft, userName } from '../../store'
+import { aircraftInput, createAircraft, deleteAircraft, state, templatesFor, updateAircraft } from '../../store'
 import type { Aircraft } from '../../types'
 import { fmtDay, isSaturday } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
 import ConfirmModal from '../../components/ConfirmModal.vue'
 
-/** Create, edit and retire the club's aircraft. Nothing is hard-coded so that other clubs can use the app. */
-const list = computed(() => [...state.aircraft].sort((a, b) => Number(!!a.retired) - Number(!!b.retired) || a.type.localeCompare(b.type, 'de')))
+/** Create, edit and delete the club's aircraft. Nothing is hard-coded so that other clubs can use the app. */
+const list = computed(() => [...state.aircraft].sort((a, b) => a.type.localeCompare(b.type, 'de')))
 
 const editing = ref<Aircraft | 'new' | null>(null)
 const form = reactive(aircraftInput())
@@ -20,16 +20,10 @@ function open(a: Aircraft | 'new') {
 }
 
 const error = computed(() => {
-  if (form.retired) return ''
   if (!isSaturday(form.start) || !isSaturday(form.end)) return 'Beginn und Ende des Werkstattzeitraums müssen Samstage sein.'
   if (form.end < form.start) return 'Das Ende liegt vor dem Beginn.'
   if (form.start < state.season.start || form.end > state.season.end) return 'Der Werkstattzeitraum muss in der Saison liegen.'
   return ''
-})
-// A removed account stays visible as sponsor until someone else is entered.
-const managers = computed(() => {
-  const list = people()
-  return form.manager && !list.some((u) => u.id === form.manager) ? [...list, { id: form.manager, name: userName(form.manager) }] : list
 })
 const duplicateReg = computed(() => state.aircraft.some((a) => a !== editing.value && a.reg === form.reg.trim().toUpperCase()))
 
@@ -46,7 +40,7 @@ const removeText = computed(() => {
   if (!a) return ''
   const tasks = state.tasks.filter((t) => t.aircraftId === a.id).length
   const defects = state.defects.filter((d) => d.aircraftId === a.id).length
-  return `${a.type} · ${a.reg} wird mit ${tasks} Kanban-Karten, ${defects} Mängeln/Befunden, allen Fristen und Dokumenten gelöscht; in Vereinsflieger ändert sich nichts. Verkaufte Flugzeuge besser ausmustern – dann bleibt alles erhalten.`
+  return `${a.type} · ${a.reg} wird mit ${tasks} Kanban-Karten, ${defects} Mängeln/Befunden, allen Fristen und Dokumenten gelöscht; in Vereinsflieger ändert sich nichts.`
 })
 function confirmRemove() {
   if (removing.value) deleteAircraft(removing.value)
@@ -58,19 +52,17 @@ function confirmRemove() {
 <template>
   <section class="card list" aria-labelledby="aircraft-h">
     <div class="head">
-      <h2 id="aircraft-h" class="section-title">Flugzeuge <span class="count">{{ list.filter((a) => !a.retired).length }}</span></h2>
+      <h2 id="aircraft-h" class="section-title">Flugzeuge <span class="count">{{ list.length }}</span></h2>
       <button type="button" class="btn btn-sm" @click="open('new')"><AppIcon name="plus" :size="16" :stroke="2.2" />Flugzeug hinzufügen</button>
     </div>
     <ul class="rows">
       <li v-for="a in list" :key="a.id">
-        <button type="button" class="row" :class="{ retired: a.retired }" @click="open(a)">
+        <button type="button" class="row" @click="open(a)">
           <span class="plane"><AppIcon name="plane" :size="18" /></span>
           <span class="what">
             <strong>{{ a.type }}<span class="reg">{{ a.reg }}</span></strong>
-            <span class="muted">{{ a.manager ? `Pate: ${userName(a.manager)}` : 'Ohne Paten' }}{{ a.serial ? ` · Werknummer ${a.serial}` : '' }}</span>
           </span>
-          <span v-if="a.retired" class="pill pill-gray">Ausgemustert</span>
-          <span v-else class="muted when">Werkstatt Sa {{ fmtDay(a.start) }} – Sa {{ fmtDay(a.end) }}</span>
+          <span class="muted when">Werkstatt Sa {{ fmtDay(a.start) }} – Sa {{ fmtDay(a.end) }}</span>
           <AppIcon name="chevronRight" :size="16" class="muted" />
         </button>
       </li>
@@ -99,19 +91,6 @@ function confirmRemove() {
       </div>
       <div class="two">
         <div class="field">
-          <label for="af-serial">Werknummer <span class="muted hint">(optional)</span></label>
-          <input id="af-serial" v-model="form.serial" class="input">
-        </div>
-        <div class="field">
-          <label for="af-manager">Flugzeugpate <span class="muted hint">(optional)</span></label>
-          <select id="af-manager" v-model="form.manager" class="select">
-            <option value="">Kein Pate</option>
-            <option v-for="u in managers" :key="u.id" :value="u.id">{{ u.name }}</option>
-          </select>
-        </div>
-      </div>
-      <div class="two">
-        <div class="field">
           <label for="af-start">Werkstatt ab</label>
           <input id="af-start" v-model="form.start" type="date" class="input" required>
         </div>
@@ -124,10 +103,6 @@ function confirmRemove() {
       <label v-if="editing === 'new'" class="check-row">
         <input v-model="withCards" type="checkbox">
         <span><strong>Kanban-Karten aus den Vorlagen anlegen</strong><span class="muted">{{ templatesFor(form.type.trim()).length }} Vorlagen gelten für {{ form.type.trim() || 'dieses Flugzeug' }}.</span></span>
-      </label>
-      <label v-else class="check-row">
-        <input v-model="form.retired" type="checkbox">
-        <span><strong>Ausgemustert</strong><span class="muted">Verkauft o. ä. Kanban, Mängel und Dokumente bleiben erhalten; das Flugzeug verschwindet aus Seitenleiste und Saisonplan.</span></span>
       </label>
     </form>
     <template #meta>Den Werkstattzeitraum kannst du auch im Saisonplan ziehen.</template>
@@ -151,7 +126,6 @@ function confirmRemove() {
 }
 .rows li:last-child .row { border-bottom: 0; }
 .row:hover { background: var(--subtle); }
-.row.retired .what { opacity: 0.6; }
 .plane {
   width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent-ink);
@@ -163,7 +137,6 @@ function confirmRemove() {
 .empty { padding: 20px 16px; font-size: 14px; }
 .form { display: flex; flex-direction: column; gap: 16px; }
 .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.hint { font-weight: 400; }
 .error { font-size: 13px; font-weight: 600; color: var(--red-ink); }
 .check-row { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; cursor: pointer; }
 .check-row input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }

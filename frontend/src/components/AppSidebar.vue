@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { activeAircraft, can, currentUser, resetDemo, state } from '../store'
+import { can, currentUser, resetDemo, state } from '../store'
 import AccountMenu from './account/AccountMenu.vue'
 import SyncStatus from './SyncStatus.vue'
 import { setSimulateOffline, sync } from '../sync'
@@ -43,12 +43,12 @@ function onReset() {
     <div class="group">
       <span class="group-label">FLUGZEUGE</span>
       <RouterLink
-        v-for="a in activeAircraft()" :key="a.id" :to="`/flugzeug/${a.id}`" class="nav-plane"
+        v-for="a in state.aircraft" :key="a.id" :to="`/flugzeug/${a.id}`" class="nav-plane"
         :class="{ active: isAircraftActive(a.id) }" @click="emit('navigate')"
       >
         <AppIcon name="glider" :size="22" class="plane-icon" />{{ a.type }}
       </RouterLink>
-      <span v-if="!activeAircraft().length" class="nav-empty">Noch keine Flugzeuge</span>
+      <span v-if="!state.aircraft.length" class="nav-empty">Noch keine Flugzeuge</span>
     </div>
 
     <div class="spacer" />

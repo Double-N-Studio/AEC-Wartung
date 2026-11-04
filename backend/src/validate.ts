@@ -26,10 +26,10 @@ const SCHEMAS: Record<string, z.ZodType> = {
     id: str, name: z.string().trim().min(1), role: z.enum(['admin', 'wl', 'user']),
     email: opt, device: z.boolean().optional(), removed: z.boolean().optional(),
   }),
-  aircraft: z.looseObject({ id: str, type: str, reg: str, serial: opt, retired: z.boolean().optional(), manager: opt, start: str, end: str }),
+  aircraft: z.looseObject({ id: str, type: str, reg: str, start: str, end: str }),
   tasks: task,
   templates: z.looseObject({
-    id: str, aircraftType: str, level, title: str, desc: str, duration: str, checklist: z.array(str), docTitle: opt,
+    id: str, aircraftTypes: z.array(z.string().trim().min(1)), level, title: str, desc: str, duration: str, checklist: z.array(str),
   }),
   archive: z.looseObject({
     id: str, label: str, start: str, end: str, aircraft: z.array(z.looseObject({ id: str })), tasks: z.array(task),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { activeAircraft, setSeason, startSeason, state, templatesFor } from '../../store'
+import { setSeason, startSeason, state, templatesFor } from '../../store'
 import type { ArchivedSeason } from '../../types'
 import { addDays, fmtDate, isSaturday } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
@@ -32,7 +32,7 @@ const error = computed(() => {
 })
 
 const carried = computed(() => state.tasks.filter((t) => !t.templateId && t.status !== 'erledigt').length)
-const newCards = computed(() => activeAircraft().reduce((n, a) => n + templatesFor(a.type).length, 0))
+const newCards = computed(() => state.aircraft.reduce((n, a) => n + templatesFor(a.type).length, 0))
 
 function save() {
   if (error.value || !form.label.trim()) return
@@ -93,7 +93,7 @@ const archive = computed(() => [...state.archive].sort((a, b) => b.start.localeC
       <template v-if="mode === 'new'">
         <ul class="summary">
           <li>Kanban-Karten, Werkstatt-Termine und Werkstattleitungen der Saison {{ state.season.label }} werden archiviert und bleiben hier nachlesbar.</li>
-          <li>Für {{ activeAircraft().length }} Flugzeuge entstehen {{ newCards }} neue Kanban-Karten aus den Vorlagen.</li>
+          <li>Für {{ state.aircraft.length }} Flugzeuge entstehen {{ newCards }} neue Kanban-Karten aus den Vorlagen.</li>
           <li>Die Werkstattzeiträume rücken um dieselbe Wochenzahl mit; im Saisonplan kannst du sie danach anpassen.</li>
           <li>Mängel, Inventur, Bestellungen, Dokumente und Fristen bleiben, wie sie sind.</li>
         </ul>

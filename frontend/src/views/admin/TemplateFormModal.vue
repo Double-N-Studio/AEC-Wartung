@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { aircraftTypes, createTemplate, deleteTemplate, state, templateInput, updateTemplate } from '../../store'
+import { aircraftTypes, createTemplate, deleteTemplate, templateInput, updateTemplate } from '../../store'
 import type { TaskTemplate } from '../../types'
 import { DURATIONS, LEVEL_KEYS, LEVELS } from '../../utils/levels'
 import AppIcon from '../../components/AppIcon.vue'
@@ -9,14 +9,16 @@ import ConfirmModal from '../../components/ConfirmModal.vue'
 import LevelBars from '../../components/LevelBars.vue'
 
 /** Create a Kanban template or (with template) edit one. */
-const props = defineProps<{ template?: TaskTemplate; preset?: { aircraftType?: string } }>()
+const props = defineProps<{ template?: TaskTemplate; preset?: { aircraftTypes?: string[] } }>()
 const emit = defineEmits<{ close: [] }>()
 
 const form = reactive({ ...templateInput(props.template), ...(props.template ? {} : props.preset) })
 const durations = computed(() => (DURATIONS.includes(form.duration) ? DURATIONS : [form.duration, ...DURATIONS]))
-// The type of a retired aircraft stays selectable as long as the template still names it.
-const types = computed(() => [...new Set([...aircraftTypes(), ...(form.aircraftType ? [form.aircraftType] : [])])])
-const docTitles = computed(() => [...new Set(state.documents.map((d) => d.title))].sort((a, b) => a.localeCompare(b, 'de')))
+// A type without aircraft (deleted) stays selectable as long as the template still names it.
+const types = computed(() => [...new Set([...aircraftTypes(), ...form.aircraftTypes])])
+function toggleType(t: string) {
+  form.aircraftTypes = form.aircraftTypes.includes(t) ? form.aircraftTypes.filter((x) => x !== t) : [...form.aircraftTypes, t]
+}
 
 function submit() {
   if (!form.title.trim()) return
@@ -45,20 +47,21 @@ function remove() {
         <label for="tf-title">Titel</label>
         <input id="tf-title" v-model="form.title" class="input" required placeholder="z. B. Flügel: Putzen">
       </div>
-      <div class="two">
-        <div class="field">
-          <label for="tf-type">Gilt für</label>
-          <select id="tf-type" v-model="form.aircraftType" class="select">
-            <option value="">Alle Flugzeuge</option>
-            <option v-for="t in types" :key="t" :value="t">nur {{ t }}</option>
-          </select>
+      <div class="field">
+        <span class="field-label">Gilt für</span>
+        <div class="chips" role="group" aria-label="Gilt für">
+          <button type="button" class="chip" :aria-pressed="!form.aircraftTypes.length" @click="form.aircraftTypes = []">Alle Flugzeuge</button>
+          <button
+            v-for="t in types" :key="t" type="button" class="chip" :aria-pressed="form.aircraftTypes.includes(t)"
+            @click="toggleType(t)"
+          >{{ t }}</button>
         </div>
-        <div class="field">
-          <label for="tf-dur">Geschätzte Dauer</label>
-          <select id="tf-dur" v-model="form.duration" class="select">
-            <option v-for="d in durations" :key="d" :value="d">{{ d }}</option>
-          </select>
-        </div>
+      </div>
+      <div class="field">
+        <label for="tf-dur">Geschätzte Dauer</label>
+        <select id="tf-dur" v-model="form.duration" class="select dur">
+          <option v-for="d in durations" :key="d" :value="d">{{ d }}</option>
+        </select>
       </div>
       <div class="field">
         <span class="field-label">Geeignet für</span>
@@ -77,12 +80,6 @@ function remove() {
       <div class="field">
         <label for="tf-check">Checkliste <span class="muted hint">(ein Schritt pro Zeile, optional)</span></label>
         <textarea id="tf-check" v-model="form.checklist" rows="3" class="textarea" />
-      </div>
-      <div class="field">
-        <label for="tf-doc">Dokument <span class="muted hint">(Titel, optional)</span></label>
-        <input id="tf-doc" v-model="form.docTitle" class="input" list="tf-doc-titles" placeholder="z. B. Wartungshandbuch">
-        <datalist id="tf-doc-titles"><option v-for="t in docTitles" :key="t" :value="t" /></datalist>
-        <span class="muted hint">Verknüpft wird das Dokument mit diesem Titel beim jeweiligen Flugzeug.</span>
       </div>
     </form>
     <template #meta>Gilt ab der nächsten Saison und für neue Flugzeuge.</template>
@@ -104,9 +101,12 @@ function remove() {
   height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid var(--border-strong); background: var(--surface);
   font-size: 14px; font-weight: 600; color: var(--text-2); display: inline-flex; align-items: center; gap: 8px;
 }
-.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.hint { font-weight: 500; font-size: 12.5px; }
-@media (max-width: 640px) {
-  .two { grid-template-columns: 1fr; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  height: 40px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--border-strong); background: var(--surface);
+  font-size: 14px; font-weight: 600; color: var(--text-2);
 }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+.dur { max-width: 240px; }
+.hint { font-weight: 500; font-size: 12.5px; }
 </style>

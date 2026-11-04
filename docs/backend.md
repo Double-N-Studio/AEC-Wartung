@@ -16,6 +16,7 @@ The whole state (`AppState` in `src/types.ts`) consists of **records**. After ev
 
 - **IDs are assigned by the device** (`newId()` in `src/utils/id.ts`: a UUID, or a random string where `crypto.randomUUID` is unavailable over plain http), so records created offline are final immediately. The server must not rely on any ID format. The demo data uses readable IDs (`asg32`, `an1`); both are just strings.
 - History (`history`), checklists and notes live **inside** the record, not in separate collections.
+- `aircraft` hold only `type`, `reg` and the workshop period `start`/`end`. `templates` name the aircraft types they apply to in `aircraftTypes` (a list, empty = all aircraft) and link no documents; cards created from them carry `templateId`.
 - Return lists in insertion order. The frontend sorts where it matters.
 - Dates are local time without a time zone: `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm`.
 - When the data model changes, bump `MODEL_VERSION` in `src/api/records.ts`: devices then discard their cached state and their queue.
