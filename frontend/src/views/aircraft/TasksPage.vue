@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { can, state, userName } from '../../store'
+import { can, cardsFromTemplates, state, templatesFor, userName } from '../../store'
 import type { Level, Task, TaskStatus } from '../../types'
 import { LEVEL_KEYS, LEVELS } from '../../utils/levels'
 import { fmtDay, fmtWhen } from '../../utils/date'
@@ -13,6 +13,14 @@ import TaskFormModal from './TaskFormModal.vue'
 
 const route = useRoute()
 const aircraftId = computed(() => String(route.params.id))
+
+const aircraft = computed(() => state.aircraft.find((a) => a.id === aircraftId.value))
+// Admins create the cards from the templates once the templates are ready – only as long as the aircraft has none yet.
+const importable = computed(() => {
+  if (!can('admin') || !aircraft.value || state.tasks.some((t) => t.aircraftId === aircraftId.value && t.templateId)) return 0
+  return templatesFor(aircraft.value.type).length
+})
+const importTemplates = () => { if (aircraft.value) cardsFromTemplates(aircraft.value) }
 
 const level = ref<Level | 'alle'>('alle')
 const filtered = computed(() => state.tasks.filter((t) => t.aircraftId === aircraftId.value && (level.value === 'alle' || t.level === level.value)))
@@ -82,6 +90,9 @@ const form = ref<Task | 'new' | null>(null)
     >
       <LevelBars v-if="c.bars" :bars="c.bars" />{{ c.label }}
     </button>
+    <button v-if="importable" type="button" class="btn import" @click="importTemplates">
+      <AppIcon name="download" :size="16" :stroke="2" />Vorlagen importieren ({{ importable }} {{ importable === 1 ? 'Karte' : 'Karten' }})
+    </button>
   </div>
 
   <div class="board">
@@ -142,6 +153,7 @@ const form = ref<Task | 'new' | null>(null)
   font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
 }
 .chip[aria-pressed='true'] { background: var(--text); border-color: var(--text); color: #fff; }
+.import { margin-left: auto; gap: 6px; }
 
 .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .column { background: var(--column); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
