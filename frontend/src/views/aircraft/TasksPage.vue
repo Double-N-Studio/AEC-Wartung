@@ -102,7 +102,7 @@ const form = ref<Task | 'new' | null>(null)
           v-if="col.status === 'offen' && importable" type="button" class="btn btn-sm import"
           :title="`${importable} ${importable === 1 ? 'Karte' : 'Karten'} aus den Vorlagen anlegen`" @click="importTemplates"
         >
-          <AppIcon name="download" :size="15" :stroke="2" />Vorlagen importieren
+          <AppIcon name="download" :size="15" :stroke="2" />Vorlagen importieren ({{ importable }})
         </button>
         <button v-if="col.status === 'offen' && can('edit')" type="button" class="add" aria-label="Kanban-Karte anlegen" @click="form = 'new'">
           <AppIcon name="plus" :stroke="2.2" />
