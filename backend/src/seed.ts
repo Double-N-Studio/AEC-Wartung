@@ -1,5 +1,6 @@
 // First start: empty state with a season, the Vereinsflieger record and the first admin.
 // There are no e-mails, so the admin's set-password link goes to the log.
+import { eq } from 'drizzle-orm'
 import { createPasswordToken } from './auth.js'
 import { DEFAULT_FAQ } from './faq.js'
 import type { Db } from './db.js'
@@ -39,6 +40,7 @@ export function defaultSeason(now: Date) {
  */
 export function seed(db: Db, env: SeedEnv, now: Date, log: Pick<Console, 'log' | 'warn'> = console): string | null {
   db.insert(meta).values({ key: 'firstStart', value: now.toISOString() }).onConflictDoNothing().run()
+  seedFaq(db, now)
   if (listRecords(db, 'users').length) return null
   const name = env.ADMIN_NAME?.trim()
   const email = env.ADMIN_EMAIL?.trim()
@@ -58,11 +60,22 @@ export function seed(db: Db, env: SeedEnv, now: Date, log: Pick<Console, 'log' |
     const origin = { clientId: null, userId: null, at: now.toISOString() }
     if (!listRecords(tx, 'season').length) putRecord(tx, 'season', 'season', season, rev, origin)
     if (!listRecords(tx, 'vereinsflieger').length) putRecord(tx, 'vereinsflieger', 'vereinsflieger', { lastSync: '' }, rev, origin)
-    if (!listRecords(tx, 'faq').length) for (const f of DEFAULT_FAQ) putRecord(tx, 'faq', f.id, f, rev, origin)
     putRecord(tx, 'users', admin.id, admin, rev, origin)
   })
   const token = createPasswordToken(db, admin.id, now)
   const link = `${(env.APP_URL ?? '').replace(/\/$/, '')}/#/passwort?token=${encodeURIComponent(token)}`
   log.log(`Erster Admin ${name} <${email}> angelegt. Passwort setzen (7 Tage gültig): ${link}`)
   return link
+}
+
+/** The default questions, once per database (meta `faqSeeded`) – also for databases from before the FAQ collection. */
+function seedFaq(db: Db, now: Date) {
+  const done = db.select().from(meta).where(eq(meta.key, 'faqSeeded')).get()
+  if (done) return
+  db.transaction((tx) => {
+    const rev = bumpRev(tx)
+    const origin = { clientId: null, userId: null, at: now.toISOString() }
+    for (const f of DEFAULT_FAQ) putRecord(tx, 'faq', f.id, f, rev, origin)
+    tx.insert(meta).values({ key: 'faqSeeded', value: now.toISOString() }).run()
+  })
 }
