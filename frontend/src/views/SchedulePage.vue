@@ -39,6 +39,12 @@ const months = computed(() => {
 const weekIndex = (iso: string) => Math.max(0, Math.min(weekCount.value - 1, Math.floor(daysBetween(ganttStart.value, iso) / 7)))
 const todayPct = computed(() => (daysBetween(ganttStart.value, today()) / (weekCount.value * 7)) * 100)
 const showToday = computed(() => todayPct.value >= 0 && todayPct.value <= 100)
+// The label hangs centred on the line, but near the edges it sits beside it so the scroll area doesn't clip it.
+const todayLabelStyle = computed(() =>
+  todayPct.value < 10 ? { left: `${todayPct.value}%`, transform: 'none' }
+    : todayPct.value > 90 ? { right: `${100 - todayPct.value}%`, transform: 'none' }
+      : { left: `${todayPct.value}%` },
+)
 
 /* Dragging periods (admin): move bars or extend/shorten them at the ends, always in whole weeks. */
 const editPeriods = ref(false)
@@ -258,7 +264,7 @@ function closeDay() {
           <div class="g-row g-weeks">
             <span v-for="(w, i) in weeks" :key="w.start" :class="{ now: w.isNow }">{{ i === 0 ? `KW ${w.kw}` : w.kw }}</span>
           </div>
-          <div class="g-bars">
+          <div class="g-bars" :class="{ 'has-today': showToday }">
             <div v-for="b in bars" :key="b.a.id" class="g-row g-track">
               <div class="g-bar-wrap" :style="{ gridColumn: b.col }">
                 <button
@@ -281,7 +287,7 @@ function closeDay() {
             </div>
             <template v-if="showToday">
               <div class="g-today" :style="{ left: `${todayPct}%` }" />
-              <span class="g-today-label" :style="{ left: `${todayPct}%` }">Heute · {{ fmtDay(today()) }}</span>
+              <span class="g-today-label" :style="todayLabelStyle">Heute · {{ fmtDay(today()) }}</span>
             </template>
           </div>
         </div>
@@ -414,6 +420,7 @@ function closeDay() {
 .g-weeks span { font-size: 11px; color: var(--muted); text-align: center; height: 18px; }
 .g-weeks .now { color: var(--today); font-weight: 700; }
 .g-bars { position: relative; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.g-bars.has-today { padding-top: 24px; } /* room for the "Heute" label above the bars */
 .g-track { height: 30px; background-image: linear-gradient(to right, var(--border-soft) 1px, transparent 1px); background-size: calc(100% / var(--weeks)) 100%; }
 .g-bar-wrap { position: relative; align-self: center; margin: 0 2px; }
 .g-bar {
@@ -449,7 +456,7 @@ function closeDay() {
 }
 .g-today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--today); pointer-events: none; }
 .g-today-label {
-  position: absolute; top: 6px; transform: translateX(-50%); pointer-events: none; white-space: nowrap;
+  position: absolute; top: 0; transform: translateX(-50%); pointer-events: none; white-space: nowrap;
   background: var(--today); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
 }
 .editing .g-today-label { opacity: 0.35; }
