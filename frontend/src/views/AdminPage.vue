@@ -104,7 +104,7 @@ function confirmRemove() {
               <PersonAvatar v-else :person="u.id" :size="36" />
               <span class="who">
                 <strong>{{ u.name }}<span v-if="u.id === currentUser()?.id" class="pill pill-gray">Du</span></strong>
-                <span class="muted"><template v-if="u.device">Gerät, z. B. in der Werkstatt · </template>{{ u.email ?? 'Ohne Mail, ohne Passwort' }}</span>
+                <span class="muted"><template v-if="u.device">Gerät, z. B. in der Werkstatt · </template>{{ u.email ?? 'Ohne Login: nur Gastnutzer-Rechte' }}</span>
               </span>
               <span class="pill" :class="u.role === 'user' ? 'pill-gray' : 'pill-accent-soft'">{{ ROLE_LABELS[u.role] }}</span>
               <AppIcon name="chevronRight" :size="16" class="muted" />
