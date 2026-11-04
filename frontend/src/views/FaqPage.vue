@@ -1,21 +1,16 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { LEVEL_KEYS } from '../utils/levels'
+import AppIcon from '../components/AppIcon.vue'
 import LevelBadge from '../components/LevelBadge.vue'
 import PersonAvatar from '../components/PersonAvatar.vue'
-import { leaders } from '../store'
+import { can, leaders, state } from '../store'
+import type { FaqEntry } from '../types'
+import FaqFormModal from './FaqFormModal.vue'
 
-const FAQ = [
-  { q: 'Wann ist Werkstatt und wie mache ich mit?', a: 'Gearbeitet wird samstags von 9 bis 17 Uhr. Im Zeitplan siehst du, welches Flugzeug gerade dran ist und wer an dem Tag die Werkstattleitung hat. Komm einfach vorbei. Die Werkstattleitung teilt dich vor Ort einer Aufgabe zu.' },
-  { q: 'Welche Aufgaben kann ich als Neuling oder Flugschüler übernehmen?', a: 'Alle Kanban-Karten mit dem grünen Badge „Einsteiger“. Auf dem Board eines Flugzeugs kannst du danach filtern.' },
-  { q: 'Wer zeichnet meine Arbeit ab?', a: 'Die Werkstattleitung des Tages. Sie prüft die Arbeit und zeichnet sie am Tablet ab.' },
-  { q: 'Wo finde ich Waschbenzin, Fett, Pinsel und Co.?', a: 'In der „Inventur“ einfach suchen – dort steht, in welchem Schrank oder Regal es liegt. Das gilt auch für Ersatzteile der Flugzeuge.' },
-  { q: 'Etwas ist leer – was mache ich?', a: 'In der „Inventur“ direkt in der Liste den Bestand auf 0 bzw. „Leer“ oder „Fast leer“ setzen und auf „Auf Bestellliste“ tippen. Dann wird es nachbestellt.' },
-  { q: 'Ich habe einen Schaden entdeckt – was nun?', a: 'Sag der Werkstattleitung Bescheid. Sie erfasst den Befund mit Foto im Reiter „Mängel/Befunde“ des Flugzeugs.' },
-  { q: 'Wo finde ich Wartungshandbücher und Wägeberichte?', a: 'Beim jeweiligen Flugzeug im Reiter „Dokumente“.' },
-  { q: 'Wie trage ich mich ein?', a: 'Beim ersten Öffnen gibst du deinen Vor- und Nachnamen ein – ohne Passwort. Dein Handy merkt sich den Namen, und alles, was du änderst, steht damit im Verlauf.' },
-  { q: 'Soll ich das Tablet oder mein Handy nehmen?', a: 'Am besten dein eigenes Handy. Was du am Werkstatt-Tablet einträgst, steht im Verlauf als „Werkstatt-Tablet“, nicht mit deinem Namen.' },
-  { q: 'Wer braucht ein Passwort?', a: 'Nur die Werkstattleitung, Admins und das Werkstatt-Tablet. Sie zeichnen ab, planen die Werkstatttage und verwalten Konten und Saison.' },
-]
+/** Questions come from `state.faq`; admins edit them here (pencil per entry, "Frage anlegen" at the end). */
+const editing = ref<FaqEntry | 'new' | null>(null)
+
 const LEVEL_TEXT = {
   ein: 'Ohne Vorkenntnisse machbar, z. B. reinigen und polieren.',
   erf: 'Für alle, die schon ein paar Winter dabei sind.',
@@ -31,10 +26,20 @@ const LEVEL_TEXT = {
     </header>
     <div class="layout">
       <section class="faq" aria-label="Fragen und Antworten">
-        <details v-for="(f, i) in FAQ" :key="f.q" class="card item" :open="i === 0">
-          <summary>{{ f.q }}<span class="chev" aria-hidden="true" /></summary>
+        <details v-for="(f, i) in state.faq" :key="f.id" class="card item" :open="i === 0">
+          <summary>
+            <span class="q">{{ f.q }}</span>
+            <button v-if="can('admin')" type="button" class="icon-btn edit" aria-label="Frage bearbeiten" title="Bearbeiten" @click.prevent="editing = f">
+              <AppIcon name="pen" :size="16" />
+            </button>
+            <span class="chev" aria-hidden="true" />
+          </summary>
           <p>{{ f.a }}</p>
         </details>
+        <p v-if="!state.faq.length" class="muted empty">Noch keine Fragen.</p>
+        <button v-if="can('admin')" type="button" class="btn add" @click="editing = 'new'">
+          <AppIcon name="plus" :size="16" :stroke="2.2" />Frage anlegen
+        </button>
       </section>
       <aside class="side">
         <section class="card box" aria-labelledby="levels-h">
@@ -53,6 +58,7 @@ const LEVEL_TEXT = {
         </section>
       </aside>
     </div>
+    <FaqFormModal v-if="editing" :entry="editing === 'new' ? undefined : editing" @close="editing = null" />
   </div>
 </template>
 
@@ -66,7 +72,12 @@ const LEVEL_TEXT = {
 .item summary::-webkit-details-marker { display: none; }
 .chev { width: 9px; height: 9px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); flex-shrink: 0; transition: transform 0.15s; }
 .item[open] .chev { transform: rotate(-135deg); }
-.item p { padding: 0 18px 16px; font-size: 14px; line-height: 1.55; color: var(--text-2); }
+.item p { padding: 0 18px 16px; font-size: 14px; line-height: 1.55; color: var(--text-2); white-space: pre-line; }
+.item .q { flex: 1; }
+.item .edit { flex-shrink: 0; margin: -8px -4px; color: var(--muted); }
+.item .edit:hover { color: var(--text); }
+.add { align-self: flex-start; }
+.empty { padding: 4px 0; }
 .side { display: flex; flex-direction: column; gap: 16px; }
 .box { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .box-title { font-size: 16px; font-weight: 700; }

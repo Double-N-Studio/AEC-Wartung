@@ -38,6 +38,9 @@ function onReset() {
       <RouterLink v-if="currentUser() && !currentUser()!.device" to="/meine-sachen" class="nav-item" active-class="active" @click="emit('navigate')">
         <AppIcon name="user" :size="20" :stroke="1.8" /> Meine Sachen
       </RouterLink>
+      <RouterLink v-if="can('admin')" to="/verwaltung" class="nav-item" active-class="active" @click="emit('navigate')">
+        <AppIcon name="settings" :size="20" :stroke="1.8" /> Verwaltung
+      </RouterLink>
     </div>
 
     <div class="group">
@@ -53,16 +56,13 @@ function onReset() {
 
     <div class="spacer" />
 
-    <div class="group bottom">
-      <RouterLink v-if="can('admin')" to="/verwaltung" class="nav-item" active-class="active" @click="emit('navigate')">
-        <AppIcon name="settings" :size="20" :stroke="1.8" /> Verwaltung
-      </RouterLink>
+    <div class="footer">
       <RouterLink to="/faq" class="nav-item" active-class="active" @click="emit('navigate')">
         <AppIcon name="help" :size="20" :stroke="1.8" /> FAQ
       </RouterLink>
+      <SyncStatus class="sync-line" />
+      <AccountMenu />
     </div>
-    <SyncStatus class="sync-line" />
-    <AccountMenu />
     <div v-if="DEMO" class="demo">
       <button type="button" class="reset" @click="resetting = true"><AppIcon name="refresh" :size="14" /> Demo zurücksetzen</button>
       <button type="button" class="reset" :aria-pressed="sync.simulateOffline" @click="setSimulateOffline(!sync.simulateOffline)">
@@ -102,9 +102,9 @@ function onReset() {
 .nav-plane.active .plane-icon { color: inherit; }
 .nav-empty { padding: 0 12px; font-size: 13px; color: var(--muted); }
 .spacer { flex-grow: 1; }
-.bottom { margin-bottom: -12px; }
-.sync-line { margin: -10px 12px -12px; }
-.demo { margin-top: -12px; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 4px; }
+.footer { display: flex; flex-direction: column; gap: 8px; }
+.sync-line { padding: 0 12px; }
+.demo { margin-top: -14px; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 4px; }
 .reset {
   align-self: center; display: inline-flex; align-items: center; gap: 6px;
   height: 32px; padding: 0 10px; border: 0; background: transparent; font-size: 12px; color: var(--muted);

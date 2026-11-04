@@ -208,6 +208,13 @@ export interface Order {
   history: HistoryEntry[]
 }
 
+/** Question and answer on the FAQ page; admins maintain them. */
+export interface FaqEntry {
+  id: string
+  q: string
+  a: string
+}
+
 export interface AppState {
   users: User[]
   season: Season
@@ -222,6 +229,7 @@ export interface AppState {
   documents: DocumentItem[]
   inventory: InventoryItem[]
   orders: Order[]
+  faq: FaqEntry[]
   /** Last sync with Vereinsflieger; error if it failed */
   vereinsflieger: { lastSync: string; error?: string }
 }

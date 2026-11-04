@@ -53,6 +53,7 @@ const SCHEMAS: Record<string, z.ZodType> = {
     id: str, itemId: opt, name: str, forWhat: str, state: z.enum(['list', 'ordered', 'delivered']),
     reportedBy: str, reportedAt: str, comment: str, price: z.number().optional(), deliveredQty: z.number().optional(), history,
   }),
+  faq: z.looseObject({ id: str, q: str, a: str }),
   schedule: day,
   season: z.looseObject({ label: str, start: str, end: str }),
   vereinsflieger: z.looseObject({ lastSync: str, error: opt }),

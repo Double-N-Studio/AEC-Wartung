@@ -1,5 +1,5 @@
 import { reactive, watch } from 'vue'
-import type { Aircraft, AppState, Defect, DocumentItem, FileRef, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskNote, TaskTemplate, User, UserId } from './types'
+import type { Aircraft, AppState, Defect, DocumentItem, FaqEntry, FileRef, HistoryEntry, InventoryItem, Order, Role, Season, Task, TaskNote, TaskTemplate, User, UserId } from './types'
 import { backend } from './api/backend'
 import { emptyState } from './api/records'
 import { needsPassword, SYSTEM, TABLET } from './mock/people'
@@ -326,6 +326,27 @@ export function updateTemplate(v: TaskTemplate, input: TemplateInput) {
 
 export function deleteTemplate(v: TaskTemplate) {
   remove(state.templates, v)
+}
+
+/* ---------- FAQ ---------- */
+
+export interface FaqInput {
+  q: string
+  a: string
+}
+
+export const faqInput = (f?: FaqEntry): FaqInput => ({ q: f?.q ?? '', a: f?.a ?? '' })
+
+export function createFaq(input: FaqInput) {
+  state.faq.push({ id: newId(), q: input.q.trim(), a: input.a.trim() })
+}
+
+export function updateFaq(f: FaqEntry, input: FaqInput) {
+  Object.assign(f, { q: input.q.trim(), a: input.a.trim() })
+}
+
+export function deleteFaq(f: FaqEntry) {
+  remove(state.faq, f)
 }
 
 /* ---------- Aircraft ---------- */

@@ -10,7 +10,7 @@ The whole state (`AppState` in `src/types.ts`) consists of **records**. After ev
 
 | Collection | Kind | ID |
 |---|---|---|
-| `users`, `aircraft`, `tasks`, `templates`, `archive`, `defects`, `deadlines`, `documents`, `inventory`, `orders` | list | the record's `id` |
+| `users`, `aircraft`, `tasks`, `templates`, `archive`, `defects`, `deadlines`, `documents`, `inventory`, `orders`, `faq` | list | the record's `id` |
 | `schedule` | keyed by date | `YYYY-MM-DD` |
 | `season`, `vereinsflieger` | single value | name of the collection |
 
@@ -78,7 +78,7 @@ The frontend only hides controls (`can()` in `src/store.ts`); the server must ch
 | no session | only `GET /state`, `/events`, `/files/:id`, the session endpoints and `POST /password` |
 | everyone signed in (`edit`) | `tasks` (except signing off); create, edit and delete own findings in `defects` (`source: 'befund'`); for defects from Vereinsflieger only `status`, `owner`, `taskId`, `doneAt`, `doneBy`, `history`; `documents`, `inventory`, `orders`; in `schedule` only `comment` and `history` |
 | workshop leads and admins (`lead`) | additionally set and remove `signedBy`/`signedAt`, delete other people's notes (`tasks[].notes`), and `leader`, `closed`, `reason` in `schedule` |
-| admins (`admin`) | additionally `users`, `season`, `aircraft` (including the workshop period `start`/`end`), `templates`, `archive` |
+| admins (`admin`) | additionally `users`, `season`, `aircraft` (including the workshop period `start`/`end`), `templates`, `archive`, `faq` (questions and answers on the FAQ page) |
 | server only | `deadlines`, `vereinsflieger`, creating and deleting defects from Vereinsflieger, accounts via `POST /session/name` |
 
 Further rules the server should enforce:
@@ -113,4 +113,4 @@ The server syncs periodically and on `POST /vereinsflieger/sync`, writing the de
 
 ## First start
 
-The server needs an initial state: `season` (label, first and last workshop Saturday), `vereinsflieger: { lastSync: '' }`, a first admin account, and empty lists. For the first admin the server prints the set-password link to its log (`APP_URL` from the environment + `/#/passwort?token=…`), since there are no e-mails. The server seeds on start while there are no accounts, from `ADMIN_NAME`, `ADMIN_EMAIL` and optionally `SEASON_LABEL`/`SEASON_START`/`SEASON_END`; on the VPS these live in `/srv/wartung/data/app.env` (see `backend/README.md`). A lost admin password: `node dist/src/cli.js <email>` prints a new link. Everything else (aircraft, templates, accounts) admins maintain in the app. The demo data lives in `src/mock/data.ts` (`initialState()`) in case it's useful to import for trying things out.
+The server needs an initial state: `season` (label, first and last workshop Saturday), `vereinsflieger: { lastSync: '' }`, a first admin account, the default `faq` entries (`backend/src/faq.ts`), and empty lists. For the first admin the server prints the set-password link to its log (`APP_URL` from the environment + `/#/passwort?token=…`), since there are no e-mails. The server seeds on start while there are no accounts, from `ADMIN_NAME`, `ADMIN_EMAIL` and optionally `SEASON_LABEL`/`SEASON_START`/`SEASON_END`; on the VPS these live in `/srv/wartung/data/app.env` (see `backend/README.md`). A lost admin password: `node dist/src/cli.js <email>` prints a new link. Everything else (aircraft, templates, accounts) admins maintain in the app. The demo data lives in `src/mock/data.ts` (`initialState()`) in case it's useful to import for trying things out.

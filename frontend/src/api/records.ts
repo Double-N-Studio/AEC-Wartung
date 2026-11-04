@@ -6,16 +6,16 @@ import type { AppState } from '../types'
  * only whole records travel – created, changed (value) or deleted (value null).
  */
 /** Bump on changes to the data model: demo server, device storage and queue of old revisions are then discarded. */
-export const MODEL_VERSION = 22
+export const MODEL_VERSION = 23
 
-export const LISTS = ['users', 'aircraft', 'tasks', 'templates', 'archive', 'defects', 'deadlines', 'documents', 'inventory', 'orders'] as const
+export const LISTS = ['users', 'aircraft', 'tasks', 'templates', 'archive', 'defects', 'deadlines', 'documents', 'inventory', 'orders', 'faq'] as const
 export const SINGLES = ['season', 'vereinsflieger'] as const
 export type Collection = (typeof LISTS)[number] | 'schedule' | (typeof SINGLES)[number]
 
 /** Empty state until the first load. The server always delivers all keys, season and vereinsflieger filled in. */
 export const emptyState = (): AppState => ({
   users: [], season: { label: '', start: '', end: '' }, aircraft: [], schedule: {}, tasks: [], templates: [], archive: [],
-  defects: [], deadlines: [], documents: [], inventory: [], orders: [], vereinsflieger: { lastSync: '' },
+  defects: [], deadlines: [], documents: [], inventory: [], orders: [], faq: [], vereinsflieger: { lastSync: '' },
 })
 
 export interface Change {

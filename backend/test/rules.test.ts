@@ -15,7 +15,7 @@ const ok = (result: string | null) => assert.equal(result, null)
 const denied = (result: string | null) => assert.equal(typeof result, 'string', 'expected a rejection')
 
 describe('collections by permission', () => {
-  for (const coll of ['users', 'season', 'aircraft', 'templates', 'archive']) {
+  for (const coll of ['users', 'season', 'aircraft', 'templates', 'archive', 'faq']) {
     it(`${coll}: admin only`, () => {
       const value = { id: 'x' }
       denied(check(coll, undefined, value, MEMBER))

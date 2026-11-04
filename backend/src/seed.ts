@@ -1,6 +1,7 @@
 // First start: empty state with a season, the Vereinsflieger record and the first admin.
 // There are no e-mails, so the admin's set-password link goes to the log.
 import { createPasswordToken } from './auth.js'
+import { DEFAULT_FAQ } from './faq.js'
 import type { Db } from './db.js'
 import { meta } from './schema.js'
 import { bumpRev, listRecords, localDate, putRecord } from './state.js'
@@ -57,6 +58,7 @@ export function seed(db: Db, env: SeedEnv, now: Date, log: Pick<Console, 'log' |
     const origin = { clientId: null, userId: null, at: now.toISOString() }
     if (!listRecords(tx, 'season').length) putRecord(tx, 'season', 'season', season, rev, origin)
     if (!listRecords(tx, 'vereinsflieger').length) putRecord(tx, 'vereinsflieger', 'vereinsflieger', { lastSync: '' }, rev, origin)
+    if (!listRecords(tx, 'faq').length) for (const f of DEFAULT_FAQ) putRecord(tx, 'faq', f.id, f, rev, origin)
     putRecord(tx, 'users', admin.id, admin, rev, origin)
   })
   const token = createPasswordToken(db, admin.id, now)

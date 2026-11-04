@@ -15,7 +15,7 @@ describe('GET /state', () => {
     const { rev, state } = await getState(t.app)
     assert.equal(rev, 1)
     assert.deepEqual(Object.keys(state).sort(), [
-      'aircraft', 'archive', 'deadlines', 'defects', 'documents', 'inventory', 'orders', 'schedule', 'season',
+      'aircraft', 'archive', 'deadlines', 'defects', 'documents', 'faq', 'inventory', 'orders', 'schedule', 'season',
       'tasks', 'templates', 'users', 'vereinsflieger',
     ])
     assert.deepEqual(state.season, { label: '', start: '', end: '' })

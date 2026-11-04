@@ -4,7 +4,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import type { Db } from './db.js'
 import { meta, records } from './schema.js'
 
-export const LISTS = ['users', 'aircraft', 'tasks', 'templates', 'archive', 'defects', 'deadlines', 'documents', 'inventory', 'orders'] as const
+export const LISTS = ['users', 'aircraft', 'tasks', 'templates', 'archive', 'defects', 'deadlines', 'documents', 'inventory', 'orders', 'faq'] as const
 export const SINGLES = ['season', 'vereinsflieger'] as const
 export const COLLECTIONS: readonly string[] = [...LISTS, 'schedule', ...SINGLES]
 

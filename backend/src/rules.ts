@@ -70,7 +70,7 @@ export function checkHistory(oldList: unknown, newList: unknown, allowed: Set<st
   return null
 }
 
-const ADMIN_ONLY = ['users', 'season', 'aircraft', 'templates', 'archive']
+const ADMIN_ONLY = ['users', 'season', 'aircraft', 'templates', 'archive', 'faq']
 const SERVER_ONLY = ['deadlines', 'vereinsflieger']
 /** Fields of a defect from Vereinsflieger that may be changed in the app. */
 const VF_FIELDS = ['status', 'owner', 'taskId', 'doneAt', 'doneBy', 'history']
