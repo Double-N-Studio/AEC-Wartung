@@ -6,15 +6,16 @@ import AppIcon from '../../components/AppIcon.vue'
 import DropdownSelect from '../../components/DropdownSelect.vue'
 import LevelBadge from '../../components/LevelBadge.vue'
 import TemplateFormModal from './TemplateFormModal.vue'
+import { LEVEL_KEYS } from '../../utils/levels'
 
 /** Kanban templates: the cards are created from them at season start and for new aircraft. */
 const scope = ref('alle')
 const scopes = computed(() => [{ value: 'alle', label: 'Alle' }, { value: '', label: 'Alle Flugzeuge' }, ...aircraftTypes().map((t) => ({ value: t, label: t }))])
 
-// Filter by one type: the templates for all aircraft plus those that name it. Templates for all aircraft come first.
+// Filter by one type: the templates for all aircraft plus those that name it. Sorted by skill level, then by title.
 const list = computed(() => state.templates
   .filter((v) => scope.value === 'alle' || (scope.value ? templatesFor(scope.value).includes(v) : !v.aircraftTypes.length))
-  .sort((a, b) => Number(!!a.aircraftTypes.length) - Number(!!b.aircraftTypes.length)))
+  .sort((a, b) => LEVEL_KEYS.indexOf(a.level) - LEVEL_KEYS.indexOf(b.level) || a.title.localeCompare(b.title, 'de')))
 const appliesTo = (v: TaskTemplate) => (v.aircraftTypes.length ? `Nur ${v.aircraftTypes.join(', ')}` : 'Alle Flugzeuge')
 
 const editing = ref<TaskTemplate | 'new' | null>(null)
