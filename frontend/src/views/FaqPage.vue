@@ -49,6 +49,10 @@ const LEVEL_TEXT = {
             <span>{{ LEVEL_TEXT[k] }}</span>
           </div>
         </section>
+        <section class="card box note" aria-labelledby="vf-h">
+          <h2 id="vf-h" class="box-title"><AppIcon name="alert" :size="18" />Vereinsflieger</h2>
+          <p class="note-text">Die Anbindung an Vereinsflieger ist noch nicht fertig. Mängel und Fristen aus Vereinsflieger kommen später automatisch in die App – bis dahin bitte weiter wie gewohnt in Vereinsflieger eintragen.</p>
+        </section>
         <section class="card box" aria-labelledby="contact-h">
           <h2 id="contact-h" class="box-title">Werkstattleitung</h2>
           <div v-for="u in leaders()" :key="u.id" class="person">
@@ -80,7 +84,9 @@ const LEVEL_TEXT = {
 .empty { padding: 4px 0; }
 .side { display: flex; flex-direction: column; gap: 16px; }
 .box { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-.box-title { font-size: 16px; font-weight: 700; }
+.box-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.note { background: var(--warn-soft); border-color: var(--warn-soft); color: var(--orange-ink); gap: 8px; }
+.note-text { font-size: 13px; line-height: 1.5; }
 .level { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; font-size: 13px; color: var(--text-2); line-height: 1.45; }
 .person { display: flex; align-items: center; gap: 12px; }
 .person div { display: flex; flex-direction: column; gap: 1px; font-size: 14px; }
