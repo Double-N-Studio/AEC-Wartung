@@ -5,8 +5,6 @@ import { can, state, userName } from '../../store'
 import type { Defect } from '../../types'
 import { fmtDate } from '../../utils/date'
 import AppIcon from '../../components/AppIcon.vue'
-import DropdownSelect from '../../components/DropdownSelect.vue'
-import VereinsfliegerStatus from '../../components/VereinsfliegerStatus.vue'
 import PriorityBadge from '../../components/PriorityBadge.vue'
 import DefectModal from './DefectModal.vue'
 import DefectFormModal from './DefectFormModal.vue'
@@ -15,13 +13,11 @@ const route = useRoute()
 const aircraftId = computed(() => String(route.params.id))
 
 const tab = ref<'open' | 'done'>('open')
-const source = ref('alle')
-const SOURCES = [{ value: 'alle', label: 'Alle' }, { value: 'vf', label: 'Vereinsflieger' }, { value: 'befund', label: 'Befunde' }]
 
 const mine = computed(() => state.defects.filter((d) => d.aircraftId === aircraftId.value))
 const openCount = computed(() => mine.value.filter((d) => d.status === 'open').length)
 const doneCount = computed(() => mine.value.filter((d) => d.status === 'done').length)
-const rows = computed(() => mine.value.filter((d) => d.status === tab.value && (source.value === 'alle' || d.source === source.value)))
+const rows = computed(() => mine.value.filter((d) => d.status === tab.value))
 
 const STATUS_TEXT = { offen: 'Offen', arbeit: 'In Arbeit', erledigt: 'Erledigt' }
 const taskOf = (d: Defect) => (d.taskId ? state.tasks.find((t) => t.id === d.taskId) : undefined)
@@ -42,15 +38,11 @@ const form = ref<Defect | 'new' | null>(null)
 <template>
   <section class="card list" aria-label="Mängel und Befunde">
     <div class="toolbar">
-      <div class="left">
-        <div class="segmented" role="group" aria-label="Status">
-          <button type="button" :aria-pressed="tab === 'open'" @click="tab = 'open'">Offen · {{ openCount }}</button>
-          <button type="button" :aria-pressed="tab === 'done'" @click="tab = 'done'">Erledigt · {{ doneCount }}</button>
-        </div>
-        <VereinsfliegerStatus what="Mängel" />
+      <div class="segmented" role="group" aria-label="Status">
+        <button type="button" :aria-pressed="tab === 'open'" @click="tab = 'open'">Offen · {{ openCount }}</button>
+        <button type="button" :aria-pressed="tab === 'done'" @click="tab = 'done'">Erledigt · {{ doneCount }}</button>
       </div>
       <div class="right">
-        <DropdownSelect v-model="source" label="Quelle" :options="SOURCES" />
         <button v-if="can('edit')" type="button" class="btn btn-primary btn-sm tall" @click="form = 'new'"><AppIcon name="camera" :size="17" :stroke="1.9" />Befund erfassen</button>
       </div>
     </div>
@@ -92,7 +84,7 @@ const form = ref<Defect | 'new' | null>(null)
 <style scoped>
 .list { overflow: hidden; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; flex-wrap: wrap; }
-.left, .right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .tall { height: 40px; }
 .table { border-top: 1px solid var(--border); }
 .row {

@@ -10,7 +10,6 @@ import ConfirmModal from '../components/ConfirmModal.vue'
 import PersonAvatar from '../components/PersonAvatar.vue'
 import AircraftSection from './admin/AircraftSection.vue'
 import SeasonSection from './admin/SeasonSection.vue'
-import VereinsfliegerStatus from '../components/VereinsfliegerStatus.vue'
 
 const ROLES: Role[] = ['admin', 'wl', 'user']
 const ROLE_TEXT: Record<Role, string> = {
@@ -96,8 +95,7 @@ function confirmRemove() {
 
       <section class="card box" aria-labelledby="vf-h">
         <h2 id="vf-h" class="section-title">Vereinsflieger</h2>
-        <p class="muted small">Mängel und Fristen kommen automatisch aus Vereinsflieger. Die Zugangsdaten liegen auf dem Server, nicht in der App. Rückschreiben nach Vereinsflieger folgt später.</p>
-        <VereinsfliegerStatus what="Mängel und Fristen" />
+        <p class="muted small">Die Anbindung an Vereinsflieger ist noch nicht fertig. Mängel und Fristen aus Vereinsflieger kommen später automatisch in die App. Bis dahin bitte weiter wie gewohnt in Vereinsflieger eintragen.</p>
       </section>
 
       <section class="card list" aria-labelledby="users-h">
