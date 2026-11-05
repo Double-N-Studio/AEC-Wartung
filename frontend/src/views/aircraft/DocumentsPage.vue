@@ -51,7 +51,7 @@ async function download(d: DocumentItem) {
 }
 
 /* Adding and editing share one form. */
-const KINDS: DocKind[] = ['Handbuch', 'Anleitung', 'Prüfbericht', 'Sonstiges']
+const KINDS: DocKind[] = ['Flughandbuch', 'Wartungshandbuch', 'Anleitung', 'Prüfbericht', 'Sonstiges']
 const editing = ref<DocumentItem | 'new' | null>(null)
 const form = reactive(docInput())
 function openForm(doc: DocumentItem | 'new') {

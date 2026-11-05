@@ -150,7 +150,7 @@ export interface Deadline {
   startsLeft?: number
 }
 
-export type DocKind = 'Handbuch' | 'Anleitung' | 'Prüfbericht' | 'Sonstiges'
+export type DocKind = 'Flughandbuch' | 'Wartungshandbuch' | 'Anleitung' | 'Prüfbericht' | 'Sonstiges'
 
 /**
  * Document of one aircraft (aircraftId), of all aircraft of a type (aircraftType)

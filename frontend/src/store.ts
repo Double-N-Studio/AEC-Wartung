@@ -681,7 +681,7 @@ export interface DocInput {
 
 export const docInput = (d?: DocumentItem): DocInput => ({
   title: d?.title ?? '',
-  kind: d?.kind ?? 'Handbuch',
+  kind: d?.kind ?? 'Flughandbuch',
   version: d?.version ?? '',
   scope: d ? docScope(d) : 'aircraft',
   file: d?.file ?? null,
@@ -703,7 +703,7 @@ function applyDocInput(d: DocumentItem, aircraftId: string, input: DocInput) {
 }
 
 export function addDocument(aircraftId: string, input: DocInput) {
-  const d: DocumentItem = { id: newId(), title: '', kind: 'Handbuch', version: '', addedAt: today(), addedBy: actor() }
+  const d: DocumentItem = { id: newId(), title: '', kind: 'Flughandbuch', version: '', addedAt: today(), addedBy: actor() }
   applyDocInput(d, aircraftId, input)
   state.documents.push(d)
 }

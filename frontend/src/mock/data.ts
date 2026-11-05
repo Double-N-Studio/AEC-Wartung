@@ -326,8 +326,8 @@ function baseState(): AppState {
     ],
 
     documents: [
-      { id: 'd1', aircraftId: ASG, title: 'Flughandbuch', kind: 'Handbuch', version: 'Ausgabe 01.12.2015', image: 'docs/flughandbuch.png', addedAt: '2026-10-03', addedBy: 'LO' },
-      { id: 'd2', aircraftId: ASG, title: 'Wartungshandbuch', kind: 'Handbuch', version: 'Änderung TM 14 vom 11.04.2023', image: 'docs/wartungshandbuch.png', addedAt: '2026-10-03', addedBy: 'LO' },
+      { id: 'd1', aircraftId: ASG, title: 'Flughandbuch', kind: 'Flughandbuch', version: 'Ausgabe 01.12.2015', image: 'docs/flughandbuch.png', addedAt: '2026-10-03', addedBy: 'LO' },
+      { id: 'd2', aircraftId: ASG, title: 'Wartungshandbuch', kind: 'Wartungshandbuch', version: 'Änderung TM 14 vom 11.04.2023', image: 'docs/wartungshandbuch.png', addedAt: '2026-10-03', addedBy: 'LO' },
       { id: 'd3', aircraftId: ASG, title: 'Aufbauanleitung', kind: 'Anleitung', version: 'Version 1.0 (2016)', image: 'docs/aufbauanleitung.webp', addedAt: '2026-10-03', addedBy: 'LO' },
       { id: 'd4', aircraftId: ASG, title: 'Gewichtsübersicht', kind: 'Prüfbericht', version: 'Wägung vom 04.03.2023', image: 'docs/gewichtsuebersicht.webp', addedAt: '2026-10-03', addedBy: 'LO' },
       // Applies to the whole club
