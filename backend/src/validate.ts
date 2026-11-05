@@ -42,7 +42,7 @@ const SCHEMAS: Record<string, z.ZodType> = {
   }),
   deadlines: z.looseObject({ id: str, aircraftId: str, title: str }),
   documents: z.looseObject({
-    id: str, aircraftId: opt, aircraftType: opt, title: str, kind: str, version: str, file: file.optional(),
+    id: str, aircraftId: opt, aircraftType: opt, title: str, kind: str, version: str, file: file.optional(), preview: file.optional(),
     addedAt: str, addedBy: str,
   }),
   inventory: z.looseObject({

@@ -165,6 +165,8 @@ export interface DocumentItem {
   /** Edition or revision, e.g. "Änderung TM 14 vom 11.04.2023" */
   version: string
   file?: FileRef
+  /** First page of a PDF as an image, rendered on upload (utils/pdfPreview.ts) */
+  preview?: FileRef
   /** Preview image of the first page (sample data only) */
   image?: string
   addedAt: string

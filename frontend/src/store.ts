@@ -677,6 +677,8 @@ export interface DocInput {
   version: string
   scope: DocScope
   file: FileRef | null
+  /** First page of a PDF as an image */
+  preview: FileRef | null
 }
 
 export const docInput = (d?: DocumentItem): DocInput => ({
@@ -685,6 +687,7 @@ export const docInput = (d?: DocumentItem): DocInput => ({
   version: d?.version ?? '',
   scope: d ? docScope(d) : 'aircraft',
   file: d?.file ?? null,
+  preview: d?.preview ?? null,
 })
 
 /** aircraftId: from which aircraft it was created or edited – determines aircraft and type for the scope. */
@@ -697,6 +700,7 @@ function applyDocInput(d: DocumentItem, aircraftId: string, input: DocInput) {
   d.aircraftType = input.scope === 'type' ? type : undefined
   if (input.file?.id !== d.file?.id) {
     d.file = input.file ?? undefined
+    d.preview = input.preview ?? undefined
     // The sample data preview no longer matches the new file.
     delete d.image
   }

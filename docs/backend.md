@@ -103,7 +103,7 @@ Further rules the server should enforce:
 
 ## Files
 
-Photos and PDFs first go into the device's IndexedDB and an outbox (`src/api/files.ts`). Before every batch the device uploads pending files via `PUT /files/:id`, so a record never points to a file the server doesn't have yet. `PUT` with the same ID may overwrite. Frontend limit: 25 MB (`MAX_FILE_SIZE`); photos are downscaled to 1600 px beforehand. nginx on the VPS allows 30 MB (`client_max_body_size`). The `FileRef` in the record (`id`, `name`, `type`, `size`) is enough to serve the file. When a record is deleted, the server can clean up orphaned files later.
+Photos and PDFs first go into the device's IndexedDB and an outbox (`src/api/files.ts`). Before every batch the device uploads pending files via `PUT /files/:id`, so a record never points to a file the server doesn't have yet. `PUT` with the same ID may overwrite. Frontend limit: 25 MB (`MAX_FILE_SIZE`); photos are downscaled to 1600 px beforehand. For PDFs in `documents` the device also uploads the first page as a JPEG (`preview`, a second `FileRef`). nginx on the VPS allows 30 MB (`client_max_body_size`). The `FileRef` in the record (`id`, `name`, `type`, `size`) is enough to serve the file. When a record is deleted, the server can clean up orphaned files later.
 
 ## Vereinsflieger
 

@@ -5,6 +5,7 @@ import { addDocument, aircraftLabel, can, deleteDocument, docInput, docsFor, doc
 import type { DocKind, DocumentItem, FileRef } from '../../types'
 import { downloadFile, fileUrl, fmtSize, uploadFile } from '../../api/files'
 import { fmtDate } from '../../utils/date'
+import { pdfPreview } from '../../utils/pdfPreview'
 import AppIcon from '../../components/AppIcon.vue'
 import AppModal from '../../components/AppModal.vue'
 import ConfirmModal from '../../components/ConfirmModal.vue'
@@ -28,9 +29,27 @@ const isPdf = (f?: FileRef) => f?.type === 'application/pdf'
 // URLs of the uploaded files (preview, display, download)
 const urls = reactive<Record<string, string | null>>({})
 watchEffect(async () => {
-  for (const d of docs.value) if (d.file && !(d.file.id in urls)) urls[d.file.id] = await fileUrl(d.file)
+  for (const d of docs.value) {
+    for (const f of [d.file, d.preview]) if (f && !(f.id in urls)) urls[f.id] = await fileUrl(f)
+  }
 })
-const previewOf = (d: DocumentItem) => d.image ?? (d.file && !isPdf(d.file) ? urls[d.file.id] : null)
+// PDFs uploaded before previews existed: render the first page here (kept per PDF while the app is open).
+const rendered = reactive<Record<string, string | null>>({})
+watchEffect(async () => {
+  for (const d of docs.value) {
+    const f = d.file
+    if (!f || !isPdf(f) || d.preview || d.image || f.id in rendered || !urls[f.id]) continue
+    rendered[f.id] = null
+    try {
+      rendered[f.id] = URL.createObjectURL(await pdfPreview(urls[f.id]!))
+    } catch {
+      // Unreadable PDF: the placeholder stays.
+    }
+  }
+})
+const previewOf = (d: DocumentItem) => d.image
+  ?? (d.preview ? urls[d.preview.id] : null)
+  ?? (d.file && !isPdf(d.file) ? urls[d.file.id] : d.file ? rendered[d.file.id] : null)
 
 // ?dokument=<id> opens a document directly (link from the Kanban card).
 const viewId = ref<string | null>(null)
@@ -71,11 +90,20 @@ async function onFile(e: Event) {
   uploadError.value = ''
   try {
     form.file = await uploadFile(file, file.name)
+    form.preview = file.type === 'application/pdf' ? await previewFor(file) : null
     if (!form.title.trim()) form.title = file.name.replace(/\.\w+$/, '')
   } catch (e) {
     uploadError.value = e instanceof Error && e.message.startsWith('Die Datei') ? e.message : 'Die Datei konnte nicht gespeichert werden.'
   }
   uploading.value = false
+}
+/** First page as an image; without it the grid renders the PDF itself. */
+async function previewFor(file: File) {
+  try {
+    return await uploadFile(await pdfPreview(file), `${file.name.replace(/\.pdf$/i, '')} (Vorschau).jpg`)
+  } catch {
+    return null
+  }
 }
 function submit() {
   if (!form.title.trim()) return

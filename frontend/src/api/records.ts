@@ -6,7 +6,7 @@ import type { AppState } from '../types'
  * only whole records travel – created, changed (value) or deleted (value null).
  */
 /** Bump on changes to the data model: demo server, device storage and queue of old revisions are then discarded. */
-export const MODEL_VERSION = 25
+export const MODEL_VERSION = 26
 
 export const LISTS = ['users', 'aircraft', 'tasks', 'templates', 'archive', 'defects', 'deadlines', 'documents', 'inventory', 'orders', 'faq'] as const
 export const SINGLES = ['season', 'vereinsflieger'] as const
