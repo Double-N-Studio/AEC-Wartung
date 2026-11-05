@@ -101,7 +101,7 @@ function remove() {
       <button v-else type="button" class="btn" @click="emit('close')">Schließen</button>
     </template>
   </AppModal>
-  <TaskFormModal v-if="creatingTask" :aircraft-id="defect.aircraftId" :defect="defect" @close="creatingTask = false" />
+  <TaskFormModal v-if="creatingTask" :aircraft-id="defect.aircraftId" :defect="defect" @close="creatingTask = false" @saved="creatingTask = false" />
 
   <ConfirmModal
     v-if="confirming" title="Befund löschen?" :text="`„${defect.title}“ wird mit Fotos und Verlauf gelöscht. Eine verknüpfte Kanban-Karte bleibt bestehen.`"

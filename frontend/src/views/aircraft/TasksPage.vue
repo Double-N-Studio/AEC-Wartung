@@ -145,7 +145,7 @@ const form = ref<Task | 'new' | null>(null)
   </div>
 
   <TaskModal v-if="openTask && !form" :task="openTask" @close="closeTask" @edit="form = openTask" />
-  <TaskFormModal v-if="form" :aircraft-id="aircraftId" :task="form === 'new' ? undefined : form" @close="form = null" />
+  <TaskFormModal v-if="form" :aircraft-id="aircraftId" :task="form === 'new' ? undefined : form" @close="form = null" @saved="form = null; closeTask()" />
 </template>
 
 <style scoped>

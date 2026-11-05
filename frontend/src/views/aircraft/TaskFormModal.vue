@@ -10,7 +10,7 @@ import LevelBars from '../../components/LevelBars.vue'
 
 /** Create a Kanban card or (with task) edit one; with defect, prefilled from a defect/finding. */
 const props = defineProps<{ aircraftId: string; task?: Task; defect?: Defect }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; saved: [] }>()
 
 const form = reactive(props.defect && !props.task
   ? { ...taskInput(), title: props.defect.title, desc: props.defect.desc === '–' ? '' : props.defect.desc, level: 'erf' as const, defectId: props.defect.id }
@@ -29,7 +29,7 @@ function submit() {
   if (!form.title.trim()) return
   if (props.task) updateTask(props.task, form)
   else createTask(props.aircraftId, form)
-  emit('close')
+  emit('saved')
 }
 </script>
 
