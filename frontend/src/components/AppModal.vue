@@ -11,6 +11,14 @@ import AppIcon from './AppIcon.vue'
 const props = withDefaults(defineProps<{ title: string; icon: string; subtitle?: string; width?: number; priority?: boolean }>(), { width: 640 })
 const emit = defineEmits<{ close: [] }>()
 
+// Only a full click outside closes: press and release both on the overlay. Selecting text inside and
+// releasing outside (or the other way round) keeps the popup open.
+let downOnOverlay = false
+let upOnOverlay = false
+const onDown = (e: PointerEvent) => { downOnOverlay = e.target === e.currentTarget }
+const onUp = (e: PointerEvent) => { upOnOverlay = e.target === e.currentTarget }
+const onOverlayClick = () => { if (downOnOverlay && upOnOverlay) emit('close') }
+
 // Escape closes only the topmost popup, e.g. the confirmation before deleting.
 const token = Symbol('modal')
 const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && openModals[openModals.length - 1] === token) emit('close') }
@@ -36,7 +44,7 @@ const priorityModals = new Set<symbol>()
 
 <template>
   <Teleport to="body">
-    <div class="overlay" :class="{ priority: props.priority }" @click.self="emit('close')">
+    <div class="overlay" :class="{ priority: props.priority }" @pointerdown="onDown" @pointerup="onUp" @click.self="onOverlayClick">
       <div class="modal" role="dialog" aria-modal="true" :aria-label="props.title" :style="{ maxWidth: `${props.width}px` }">
         <header class="modal-head">
           <span class="modal-icon"><AppIcon :name="props.icon" :size="24" :stroke="1.9" /></span>
