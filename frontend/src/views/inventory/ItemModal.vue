@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { addItemToOrders, can, defaultDelivery, countItem, deleteItem, openOrderFor, userName } from '../../store'
+import { computed, reactive, ref, watch } from 'vue'
+import { addItemToOrders, can, defaultDelivery, countItem, deleteItem, openOrderFor, setItemComment, userName } from '../../store'
 import type { InventoryItem } from '../../types'
 import { fmtDate, fmtDay } from '../../utils/date'
 import { stockText, unitOf } from '../../utils/stock'
@@ -25,6 +25,10 @@ const qty = computed({
   set: (v: number) => countItem(props.item, v),
 })
 const history = computed(() => [...(order.value?.history ?? []), ...props.item.history])
+
+// The comment is saved when leaving the field, not on every keystroke.
+const comment = ref(props.item.comment ?? '')
+watch(() => props.item.comment, (c) => { comment.value = c ?? '' })
 
 const confirming = ref(false)
 function remove() {
@@ -60,6 +64,15 @@ function remove() {
       <dt>Passt für</dt><dd>{{ item.fits ?? '–' }}</dd>
     </dl>
 
+    <div v-if="can('lead')" class="field">
+      <label :for="`item-comment-${item.id}`">Kommentar</label>
+      <textarea :id="`item-comment-${item.id}`" v-model="comment" rows="2" class="textarea" placeholder="z. B. Hinweise zur Verwendung oder Bezugsquelle" @change="setItemComment(item, comment)" />
+    </div>
+    <div v-else-if="item.comment" class="comment">
+      <span class="field-label">Kommentar</span>
+      <p>{{ item.comment }}</p>
+    </div>
+
     <OrderSection v-if="order" :order="order" :item="item" :step="step" />
     <p v-else class="muted none">Nicht auf der Bestellliste.</p>
 
@@ -90,5 +103,6 @@ function remove() {
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; font-weight: 600; }
 .none { font-size: 14px; }
+.comment p { margin: 4px 0 0; font-size: 14px; white-space: pre-wrap; }
 .stock-text { font-size: 18px; }
 </style>

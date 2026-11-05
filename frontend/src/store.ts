@@ -786,6 +786,15 @@ export function updateItem(item: InventoryItem, input: ItemInput) {
   if (stockText(item) !== before) logCount(item)
 }
 
+/** Comment on an item, workshop leads and admins only (`can('lead')`). */
+export function setItemComment(item: InventoryItem, comment: string) {
+  const text = comment.trim()
+  if ((item.comment ?? '') === text) return
+  if (text) item.comment = text
+  else delete item.comment
+  log(item.history, text ? 'Kommentar geändert' : 'Kommentar gelöscht')
+}
+
 /** Open orders remain as orders without an item. */
 export function deleteItem(item: InventoryItem) {
   for (const o of state.orders) {

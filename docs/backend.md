@@ -76,8 +76,8 @@ The frontend only hides controls (`can()` in `src/store.ts`); the server must ch
 | Who | May |
 |---|---|
 | no session | only `GET /state`, `/events`, `/files/:id`, the session endpoints and `POST /password` |
-| everyone signed in (`edit`) | `tasks` (except signing off); create, edit and delete own findings in `defects` (`source: 'befund'`); for defects from Vereinsflieger only `status`, `owner`, `taskId`, `doneAt`, `doneBy`, `history`; `documents`, `inventory`, `orders`; in `schedule` only `comment` and `history` |
-| workshop leads and admins (`lead`) | additionally set and remove `signedBy`/`signedAt`, delete other people's notes (`tasks[].notes`), and `leader`, `closed`, `reason` in `schedule` |
+| everyone signed in (`edit`) | `tasks` (except signing off); create, edit and delete own findings in `defects` (`source: 'befund'`); for defects from Vereinsflieger only `status`, `owner`, `taskId`, `doneAt`, `doneBy`, `history`; `documents`, `inventory` (except `comment`), `orders`; in `schedule` only `comment` and `history` |
+| workshop leads and admins (`lead`) | additionally set and remove `signedBy`/`signedAt`, `comment` in `inventory`, delete other people's notes (`tasks[].notes`), and `leader`, `closed`, `reason` in `schedule` |
 | admins (`admin`) | additionally `users`, `season`, `aircraft` (including the workshop period `start`/`end`), `templates`, `archive`, `faq` (questions and answers on the FAQ page) |
 | server only | `deadlines`, `vereinsflieger`, creating and deleting defects from Vereinsflieger, accounts via `POST /session/name` |
 

@@ -57,6 +57,25 @@ describe('history', () => {
   })
 })
 
+describe('inventory comment', () => {
+  const item = (comment?: string, who = LEAD.id) => ({ id: 'i', comment, history: [entry(who)] })
+  const old = { id: 'i', comment: 'Alt', history: [] }
+  it('workshop leads and admins set, change and remove it', () => {
+    ok(check('inventory', undefined, item('Neu'), LEAD))
+    ok(check('inventory', old, item('Neu'), LEAD))
+    ok(check('inventory', old, item(undefined, ADMIN.id), ADMIN))
+  })
+  it('members can\'t set, change or remove it', () => {
+    denied(check('inventory', undefined, item('Neu', MEMBER.id), MEMBER))
+    denied(check('inventory', old, item('Neu', MEMBER.id), MEMBER))
+    denied(check('inventory', old, item(undefined, MEMBER.id), MEMBER))
+  })
+  it('members may still count and delete an item with a comment', () => {
+    ok(check('inventory', old, { ...old, qty: 3, history: [entry(MEMBER.id)] }, MEMBER))
+    ok(check('inventory', old, null, MEMBER))
+  })
+})
+
 describe('tasks', () => {
   const t = task()
   it('member may work on a card', () => {

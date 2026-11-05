@@ -181,6 +181,8 @@ export interface InventoryItem {
   qty: number
   unit: [string, string]
   fits?: string
+  /** Note by the workshop lead (e.g. how to use or where to order); only workshop leads and admins edit it */
+  comment?: string
   history: HistoryEntry[]
 }
 

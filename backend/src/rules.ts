@@ -94,8 +94,12 @@ export function checkChange(change: Change, old: Plain | undefined, ctx: RuleCon
     case 'tasks': return checkTask(old, value, ctx)
     case 'defects': return checkDefect(old, value, ctx)
     case 'schedule': return checkDay(old, value, ctx)
-    case 'documents':
     case 'inventory':
+      if (value && (value.comment ?? '') !== (old?.comment ?? '') && !may(user, 'lead')) {
+        return 'Den Kommentar zum Artikel ändert nur die Werkstattleitung'
+      }
+      return value ? checkHistory(old?.history, value.history, authors(ctx)) : null
+    case 'documents':
     case 'orders':
       return value ? checkHistory(old?.history, value.history, authors(ctx)) : null
   }

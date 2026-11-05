@@ -47,7 +47,7 @@ const SCHEMAS: Record<string, z.ZodType> = {
   }),
   inventory: z.looseObject({
     id: str, kind: z.enum(['vs', 'et']), name: str, location: str, mode: z.enum(['count', 'flag']), qty: z.number(),
-    unit: z.tuple([str, str]), fits: opt, history,
+    unit: z.tuple([str, str]), fits: opt, comment: opt, history,
   }),
   orders: z.looseObject({
     id: str, itemId: opt, name: str, forWhat: str, state: z.enum(['list', 'ordered', 'delivered']),
