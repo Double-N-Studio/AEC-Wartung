@@ -6,7 +6,15 @@ export async function pdfPreview(src: Blob | string, width = 480): Promise<Blob>
   const [pdfjs, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')])
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default
   const data = typeof src === 'string' ? { url: src } : { data: new Uint8Array(await src.arrayBuffer()) }
-  const task = pdfjs.getDocument(data)
+  // Decoders for scanned pages, fonts and character maps (copied to pdfjs/ by vite.config.ts).
+  const assets = (dir: string) => new URL(`pdfjs/${dir}/`, document.baseURI).href
+  const task = pdfjs.getDocument({
+    ...data,
+    wasmUrl: assets('wasm'),
+    standardFontDataUrl: assets('standard_fonts'),
+    cMapUrl: assets('cmaps'),
+    iccUrl: assets('iccs'),
+  })
   try {
     const doc = await task.promise
     const page = await doc.getPage(1)
