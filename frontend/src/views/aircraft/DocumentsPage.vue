@@ -16,10 +16,11 @@ const aircraftId = computed(() => String(route.params.id))
 const type = computed(() => state.aircraft.find((a) => a.id === aircraftId.value)?.type ?? '')
 const docs = computed(() => docsFor(aircraftId.value))
 
+// Shared documents first, the ones of this aircraft only at the end.
 const SCOPES: { key: DocScope; title: () => string }[] = [
-  { key: 'aircraft', title: () => 'Dieses Flugzeug' },
   { key: 'type', title: () => `Alle ${type.value}` },
   { key: 'club', title: () => 'Ganzer Verein' },
+  { key: 'aircraft', title: () => 'Dieses Flugzeug' },
 ]
 const groups = computed(() => SCOPES.map((s) => ({ ...s, list: docs.value.filter((d) => docScope(d) === s.key) })).filter((g) => g.list.length))
 
