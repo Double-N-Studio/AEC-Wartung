@@ -45,8 +45,8 @@ const editing = ref<TaskTemplate | 'new' | null>(null)
           <span class="task-meta">
             <span><AppIcon name="clock" :size="14" />{{ v.duration }}</span>
             <span v-if="v.checklist.length"><AppIcon name="list" :size="14" />{{ v.checklist.length }} Schritte</span>
-            <span class="applies" :class="{ only: v.aircraftTypes.length }">{{ appliesTo(v) }}</span>
           </span>
+          <span class="applies" :class="{ only: v.aircraftTypes.length }">{{ appliesTo(v) }}</span>
         </button>
       </li>
     </ul>
@@ -71,7 +71,7 @@ const editing = ref<TaskTemplate | 'new' | null>(null)
   list-style: none; margin: 0; padding: 16px; display: grid; gap: 12px;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); background: var(--column); border-radius: 0 0 14px 14px;
 }
-.grid li { display: flex; }
+.grid li { display: flex; min-width: 0; }
 .task {
   width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 14px; display: flex; flex-direction: column; gap: 8px; min-height: 104px;
@@ -79,14 +79,15 @@ const editing = ref<TaskTemplate | 'new' | null>(null)
 .task:hover { border-color: var(--border-strong); }
 .task-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .task-tag { flex-shrink: 0; }
-.task-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; min-width: 0; }
+/* Long German compounds (Seitenrudersteuerseile …) are hyphenated instead of running under the badge; short words stay whole. */
+.task-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; min-width: 0; hyphens: auto; hyphenate-limit-chars: 12 5 5; overflow-wrap: anywhere; }
 .task-desc {
   font-size: 12.5px; line-height: 1.4; color: var(--text-2);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .task-meta { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: var(--muted); }
 .task-meta > span { display: inline-flex; align-items: center; gap: 5px; }
-.applies { margin-left: auto; }
+.applies { font-size: 12.5px; color: var(--muted); padding-top: 8px; border-top: 1px solid var(--border); }
 .only { font-weight: 600; color: var(--accent-ink); }
 .empty { padding: 16px; font-size: 14px; }
 </style>

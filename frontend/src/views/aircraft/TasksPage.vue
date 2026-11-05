@@ -189,7 +189,8 @@ const form = ref<Task | 'new' | null>(null)
 .task-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .task-tag, .done-icon { flex-shrink: 0; }
 .done-icon { color: var(--green); }
-.task-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; min-width: 0; }
+/* Long German compounds (Seitenrudersteuerseile …) are hyphenated instead of running under the badge; short words stay whole. */
+.task-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; min-width: 0; hyphens: auto; hyphenate-limit-chars: 12 5 5; overflow-wrap: anywhere; }
 .task-desc {
   font-size: 12.5px; line-height: 1.4; color: var(--text-2);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
