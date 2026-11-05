@@ -23,7 +23,10 @@ const importable = computed(() => {
 const importTemplates = () => { if (aircraft.value) cardsFromTemplates(aircraft.value) }
 
 const level = ref<Level | 'alle'>('alle')
-const filtered = computed(() => state.tasks.filter((t) => t.aircraftId === aircraftId.value && (level.value === 'alle' || t.level === level.value)))
+// Easiest first, then alphabetical (same order as the templates).
+const filtered = computed(() => state.tasks
+  .filter((t) => t.aircraftId === aircraftId.value && (level.value === 'alle' || t.level === level.value))
+  .sort((a, b) => LEVEL_KEYS.indexOf(a.level) - LEVEL_KEYS.indexOf(b.level) || a.title.localeCompare(b.title, 'de')))
 const column = (status: TaskStatus) => filtered.value.filter((t) => t.status === status)
 
 const COLUMNS: { status: TaskStatus; title: string; dot: string }[] = [
