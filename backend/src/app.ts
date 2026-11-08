@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { Hono, type Context } from 'hono'
 import { z } from 'zod'
 import {
-  checkPassword, clientIp, createPasswordToken, endSession, rateLimit, readSession, startSession, usePasswordToken,
+  checkPassword, clientIp, createPasswordToken, endSession, passwordStatus, rateLimit, readSession, startSession, usePasswordToken,
 } from './auth.js'
 import { applyBatch, batchSchema, serverChange } from './changes.js'
 import type { Db } from './db.js'
@@ -102,6 +102,14 @@ export function createApp({ db, dataDir, now = () => new Date(), events = create
   })
 
   /* ---------- Passwords ---------- */
+
+  /** Per special account: password set, link open or expired (accounts without an entry: no link yet). */
+  app.get('/users/password-status', (c) => {
+    const s = session(c)
+    if (!s) return c.json({ error: 'Nicht angemeldet' }, 401)
+    if (s.user.role !== 'admin' || s.auth !== 'password') return c.json({ error: 'Nur für Admins' }, 403)
+    return c.json(passwordStatus(db, now()))
+  })
 
   app.post('/users/:id/password-link', (c) => {
     const s = session(c)

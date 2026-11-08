@@ -1,5 +1,5 @@
 import type { User } from '../types'
-import type { Backend, PushResult, SessionInfo, Snapshot } from './backend'
+import type { Backend, PasswordStatus, PushResult, SessionInfo, Snapshot } from './backend'
 
 /** Real backend under base (e.g. /api). Endpoints and responses: docs/backend.md. */
 export function httpBackend(base: string): Backend {
@@ -74,6 +74,12 @@ export function httpBackend(base: string): Backend {
     async setPassword(token, password) {
       const { status } = await call('POST', '/password', { token, password })
       return status < 300
+    },
+
+    async passwordStatus() {
+      const { status, data } = await call('GET', '/users/password-status')
+      if (status !== 200) throw new Error(message(data, 'Status konnte nicht geladen werden'))
+      return data as Record<string, PasswordStatus>
     },
 
     async putFile(ref, blob) {

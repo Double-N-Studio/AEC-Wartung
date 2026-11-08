@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref } from 'vue'
-import { can, createUser, currentUser, needsPassword, passwordLink, removeUser, state, updateUser } from '../store'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { can, createUser, currentUser, needsPassword, passwordLink, passwordStatus, removeUser, state, updateUser } from '../store'
+import type { PasswordStatus } from '../api/backend'
+import { fmtDay, toIso } from '../utils/date'
 import { notify } from '../notify'
 import type { Role, User } from '../types'
 import { ROLE_LABELS } from '../mock/people'
@@ -21,6 +23,29 @@ const ROLE_TEXT: Record<Role, string> = {
 
 const accounts = computed(() => state.users.filter((u) => !u.removed))
 
+/* ---------- Password status: has the person used the link? Only the server knows, so it is fetched. ---------- */
+const statuses = ref<Record<string, PasswordStatus> | null>(null)
+async function loadStatuses() {
+  if (!can('admin')) return
+  try {
+    statuses.value = await passwordStatus()
+  } catch {
+    // Offline or not signed in with a password: the list simply shows no status.
+  }
+}
+onMounted(loadStatuses)
+// The server sends UTC times, the demo local ones.
+const day = (at: string) => fmtDay(at.endsWith('Z') ? toIso(new Date(at)) : at.slice(0, 10))
+function statusText(u: User): string | null {
+  if (!statuses.value || !needsPassword(u)) return null
+  const s = statuses.value[u.id]
+  // A set password is the normal case and needs no note.
+  if (s?.state === 'set') return null
+  if (s?.state === 'open') return `Link verschickt, noch nicht benutzt · gilt bis ${day(s.at!)}`
+  if (s?.state === 'expired') return 'Link abgelaufen, kein Passwort gesetzt'
+  return 'Noch kein Link erstellt'
+}
+
 /* ---------- Create / edit account ---------- */
 const editing = ref<User | 'new' | null>(null)
 const form = reactive({ name: '', role: 'user' as Role, email: '' })
@@ -28,6 +53,7 @@ function openUser(u: User | 'new') {
   Object.assign(form, u === 'new' ? { name: '', role: 'user', email: '' } : { name: u.name, role: u.role, email: u.email ?? '' })
   editing.value = u
   link.value = null
+  if (u !== 'new') void loadStatuses()
 }
 // Workshop leads, admins and devices log in with e-mail and password.
 const withLogin = computed(() => form.role !== 'user' || (editing.value !== 'new' && !!editing.value?.device))
@@ -54,6 +80,7 @@ async function makeLink(u: User) {
   linkBusy.value = true
   try {
     link.value = { userId: u.id, url: await passwordLink(u) }
+    void loadStatuses()
     await nextTick()
     linkInput.value?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   } catch {
@@ -105,6 +132,7 @@ function confirmRemove() {
               <span class="who">
                 <strong>{{ u.name }}<span v-if="u.id === currentUser()?.id" class="pill pill-gray">Du</span></strong>
                 <span class="muted"><template v-if="u.device">Gerät, z. B. in der Werkstatt · </template>{{ u.email ?? 'Ohne Login: nur Gastnutzer-Rechte' }}</span>
+                <span v-if="statusText(u)" class="pw" :class="statuses?.[u.id]?.state ?? 'none'">{{ statusText(u) }}</span>
               </span>
               <span class="pill" :class="u.role === 'user' ? 'pill-gray' : 'pill-accent-soft'">{{ ROLE_LABELS[u.role] }}</span>
               <AppIcon name="chevronRight" :size="16" class="muted" />
@@ -151,6 +179,9 @@ function confirmRemove() {
           <input id="uf-email" v-model="form.email" type="email" class="input" required placeholder="name@example.org">
           <span class="muted small">Nur der Anmeldename – die App verschickt keine E-Mails. Den Link zum Passwort-Setzen gibst du {{ form.name.trim() || 'der Person' }} selbst weiter.</span>
         </div>
+        <p v-if="editing !== 'new' && !(link && link.userId === editing.id) && statusText(editing)" class="pw" :class="statuses?.[editing.id]?.state ?? 'none'">
+          {{ statusText(editing) }}
+        </p>
         <div v-if="link && editing !== 'new' && link.userId === editing.id" class="field">
           <label for="uf-link">Link zum Passwort-Setzen</label>
           <div class="link-row">
@@ -213,6 +244,9 @@ function confirmRemove() {
 .role > span { display: flex; flex-direction: column; gap: 2px; }
 .role .muted { font-size: 12.5px; line-height: 1.4; }
 .small { font-size: 12.5px; }
+.pw { margin: 0; font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+.pw::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
+.pw.open::before { background: var(--accent); }
 .link-row { display: flex; gap: 8px; align-items: center; }
 .link-row .input { flex: 1; min-width: 0; font-size: 13px; }
 .link-row .btn { height: 44px; flex-shrink: 0; }

@@ -104,6 +104,27 @@ export function usePasswordToken(db: Db, token: string, password: string, now: D
   })
 }
 
+/**
+ * Whether a special account has set its password, for the admin's account list (no secrets):
+ * open – an unused link is still valid (until `at`) · set – password exists (`at`: when, if known)
+ * expired – link ran out unused · none – no link yet.
+ */
+export type PasswordStatus = { state: 'open' | 'set' | 'expired' | 'none'; at: string | null }
+
+export function passwordStatus(db: Db, now: Date): Record<string, PasswordStatus> {
+  const result: Record<string, PasswordStatus> = {}
+  const tokens = new Map(db.select().from(passwordTokens).all().map((t) => [t.userId, t]))
+  const withPassword = new Set(db.select({ userId: passwords.userId }).from(passwords).all().map((p) => p.userId))
+  for (const userId of new Set([...tokens.keys(), ...withPassword])) {
+    const token = tokens.get(userId)
+    const open = token && !token.usedAt && Date.parse(token.expiresAt) > now.getTime()
+    if (open) result[userId] = { state: 'open', at: token.expiresAt }
+    else if (withPassword.has(userId)) result[userId] = { state: 'set', at: token?.usedAt ?? null }
+    else if (token) result[userId] = { state: 'expired', at: token.expiresAt }
+  }
+  return result
+}
+
 /* ---------- Rate limit ---------- */
 
 /** Failed attempts per key (IP) in a sliding window; in memory, so a restart resets it. */

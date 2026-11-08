@@ -37,6 +37,11 @@ export interface SessionInfo {
   auth: 'name' | 'password' | null
 }
 
+export interface PasswordStatus {
+  state: 'open' | 'set' | 'expired' | 'none'
+  at: string | null
+}
+
 export interface Backend {
   load(): Promise<Snapshot>
   push(batch: Batch): Promise<PushResult>
@@ -55,6 +60,11 @@ export interface Backend {
   passwordToken(userId: UserId): Promise<string>
   /** Set the password via the link from the admin (#/passwort?token=…); false if the link has expired or was used. */
   setPassword(token: string, password: string): Promise<boolean>
+  /**
+   * Admin: per special account whether the password is set or the link is still open/expired (`at`: ISO time –
+   * open/expired: link end, set: when, if known). Accounts without an entry have had no link yet.
+   */
+  passwordStatus(): Promise<Record<UserId, PasswordStatus>>
 
   putFile(ref: FileRef, blob: Blob): Promise<void>
   /** Address of the file on the server; null if there is none there (demo). */

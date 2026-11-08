@@ -168,6 +168,32 @@ describe('password links', () => {
     assert.equal((await setPassword(token)).status, 204)
   })
 
+  it('status: none → open → set; expired; open again after a new link', async () => {
+    const admin = login(t.db, ADMIN)
+    const status = async () => (await (await t.app.request('/api/users/password-status', { headers: admin })).json()) as Record<string, { state: string; at: string | null }>
+    assert.equal((await status())[LEAD.id], undefined)
+    const token = await tokenOf(await link(LEAD.id, admin))
+    assert.equal((await status())[LEAD.id]?.state, 'open')
+    await tokenOf(await link(TABLET.id, admin))
+    await setPassword(token)
+    const set = (await status())[LEAD.id]
+    assert.equal(set?.state, 'set')
+    assert.equal(set?.at, t.clock.now.toISOString())
+    await link(LEAD.id, admin)
+    assert.equal((await status())[LEAD.id]?.state, 'open')
+    t.clock.now = new Date(t.clock.now.getTime() + 8 * 24 * 60 * 60 * 1000)
+    const later = await status()
+    assert.equal(later[TABLET.id]?.state, 'expired')
+    assert.deepEqual(later[LEAD.id], { state: 'set', at: null })
+  })
+
+  it('status only for admins signed in with a password', async () => {
+    const get = (headers: Record<string, string>) => t.app.request('/api/users/password-status', { headers })
+    assert.equal((await get({})).status, 401)
+    assert.equal((await get(login(t.db, LEAD))).status, 403)
+    assert.equal((await get(login(t.db, ADMIN, 'name'))).status, 403)
+  })
+
   it('setting a password keeps existing sessions', async () => {
     const cookie = login(t.db, LEAD)
     const token = await tokenOf(await link(LEAD.id, login(t.db, ADMIN)))

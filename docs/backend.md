@@ -37,6 +37,7 @@ All under `VITE_API_URL`, JSON, session via cookie (`credentials: 'include'`). O
 | `POST /session/login` | `{ email, password }` | `200 { user }` · `401` · `429` too many failed attempts |
 | `DELETE /session` | – | `204` |
 | `POST /users/:id/password-link` | – | `200 { token }` – new token for the set-password link · `403` not an admin signed in with password · `404` account unknown · `422` member (no password) |
+| `GET /users/password-status` | – | `200 { [userId]: { state, at } }` per special account: `open` (unused link valid until `at`), `set` (password exists, `at` when if known), `expired` (link ran out unused); no entry = no link yet · `403` not an admin signed in with password |
 | `POST /password` | `{ token, password }` | `204` · `400` link expired or already used, or password shorter than 8 characters · `429` |
 | `PUT /files/:id` | raw body, `Content-Type`, `X-File-Name` (URL-encoded) | `204` · `413` too large · `401` not signed in · `400` id not `[A-Za-z0-9_-]{1,64}` |
 | `GET /files/:id` | – | the file |

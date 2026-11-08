@@ -118,6 +118,12 @@ export async function passwordLink(user: User) {
   return `${location.origin}${location.pathname}#/passwort?token=${encodeURIComponent(token)}`
 }
 
+/** Admin: password status of the special accounts (set, link open/expired). Throws without a connection. */
+export async function passwordStatus() {
+  requireOnline()
+  return backend.passwordStatus()
+}
+
 /** Set the password via the link from the admin. false: link expired or already used. Throws without a connection. */
 export async function setPassword(token: string, password: string) {
   requireOnline()

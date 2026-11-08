@@ -1,9 +1,9 @@
-import type { AppState, User } from '../types'
+import type { AppState, User, UserId } from '../types'
 import { initialState } from '../mock/data'
 import { needsPassword } from '../mock/people'
-import { now } from '../utils/date'
+import { addDays, now, today } from '../utils/date'
 import { newId } from '../utils/id'
-import type { Backend, Batch, PushResult, SessionInfo } from './backend'
+import type { Backend, Batch, PasswordStatus, PushResult, SessionInfo } from './backend'
 import { applyChanges, MODEL_VERSION } from './records'
 
 /**
@@ -22,6 +22,9 @@ interface Server {
   meta: Record<string, { rev: number; clientId: string }>
   /** Most recently accepted batches, so repeats do not count twice */
   seen: string[]
+  /** Set-password links (token → account) and their status; sample accounts count as set. */
+  links?: Record<string, UserId>
+  passwords?: Record<UserId, PasswordStatus>
 }
 
 const fresh = (rev = 0): Server => ({ rev, state: initialState(), meta: {}, seen: [] })
@@ -155,14 +158,36 @@ export function mockBackend(): Backend {
       writeSession({ userId: null, auth: null })
     },
 
-    // The demo knows no passwords: every token works.
-    async passwordToken() {
+    // The demo knows no passwords: every token works, it only tracks the status for the admin page (demo clock).
+    async passwordToken(userId) {
       await latency()
-      return newId()
+      const token = newId()
+      const server = read()
+      server.links = { ...server.links, [token]: userId }
+      server.passwords = { ...server.passwords, [userId]: { state: 'open', at: `${addDays(today(), 7)}${now().slice(10)}` } }
+      write(server)
+      return token
     },
-    async setPassword() {
+    async setPassword(token) {
       await latency()
+      const server = read()
+      const userId = server.links?.[token]
+      if (userId) {
+        server.passwords = { ...server.passwords, [userId]: { state: 'set', at: now() } }
+        write(server)
+      }
       return true
+    },
+    async passwordStatus() {
+      await latency()
+      const server = read()
+      const result: Record<UserId, PasswordStatus> = {}
+      for (const u of server.state.users) {
+        if (!needsPassword(u)) continue
+        const s = server.passwords?.[u.id] ?? { state: 'set', at: null }
+        result[u.id] = s.state === 'open' && s.at && s.at <= now() ? { state: 'expired', at: s.at } : s
+      }
+      return result
     },
 
     // In the demo, files live only in this browser's IndexedDB (see files.ts).
