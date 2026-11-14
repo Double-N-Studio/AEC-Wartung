@@ -86,17 +86,17 @@ function remove() {
         <button type="button" class="btn btn-primary" @click="startTask(task); emit('close')">Arbeit starten</button>
       </template>
       <template v-else-if="editable && task.status === 'arbeit'">
-        <button type="button" class="btn btn-ghost" @click="resetTaskToOpen(task)">Zurück auf Offen</button>
+        <button type="button" class="btn btn-ghost" @click="resetTaskToOpen(task); emit('close')">Zurück auf Offen</button>
         <button type="button" class="btn btn-primary" @click="finishTask(task); emit('close')"><AppIcon name="check" :size="16" :stroke="2.6" />Als erledigt melden</button>
       </template>
       <template v-else-if="editable">
-        <button type="button" class="btn btn-ghost" @click="reopenTask(task)">Wieder in Arbeit</button>
-        <button v-if="can('lead')" type="button" class="btn btn-primary" @click="signTask(task)">
+        <button type="button" class="btn btn-ghost" @click="reopenTask(task); emit('close')">Wieder in Arbeit</button>
+        <button v-if="can('lead')" type="button" class="btn btn-primary" @click="signTask(task); emit('close')">
           <AppIcon name="shield" :size="16" />Abzeichnen als {{ userName(signer()) }}
         </button>
       </template>
       <template v-else>
-        <button v-if="task.signedBy && can('lead')" type="button" class="btn btn-ghost" @click="unsignTask(task)">Abzeichnung zurücknehmen</button>
+        <button v-if="task.signedBy && can('lead')" type="button" class="btn btn-ghost" @click="unsignTask(task); emit('close')">Abzeichnung zurücknehmen</button>
         <button type="button" class="btn" @click="emit('close')">Schließen</button>
       </template>
     </template>
