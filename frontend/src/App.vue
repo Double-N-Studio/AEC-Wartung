@@ -21,14 +21,6 @@ watch(() => sync.ready, (ready) => {
   if (ready && !session.chosen && !route.path.startsWith('/passwort')) authDialog.value = 'name'
 }, { immediate: true })
 
-// Fullscreen for the workshop tablet: hides the browser bars, which take a lot of room there.
-const canFullscreen = document.fullscreenEnabled
-const fullscreen = ref(!!document.fullscreenElement)
-document.addEventListener('fullscreenchange', () => { fullscreen.value = !!document.fullscreenElement })
-function toggleFullscreen() {
-  if (document.fullscreenElement) void document.exitFullscreen()
-  else document.documentElement.requestFullscreen().catch(() => {})
-}
 </script>
 
 <template>
@@ -65,7 +57,6 @@ function toggleFullscreen() {
       </p>
       <p v-else-if="currentUser()!.device" class="guest-note tablet-note">
         <AppIcon name="tablet" :size="16" /><span>Am Tablet wird alles als „{{ currentUser()!.name }}“ gespeichert. Mit deinem eigenen Handy steht dein Name dabei.</span>
-        <button v-if="canFullscreen" type="button" class="link-btn fullscreen-btn" @click="toggleFullscreen">{{ fullscreen ? 'Vollbild beenden' : 'Vollbild' }}</button>
       </p>
       <RouterView />
     </main>
@@ -89,7 +80,6 @@ function toggleFullscreen() {
   background: var(--gray-soft); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--text-2);
 }
 .guest-note .link-btn { font-size: 13px; white-space: nowrap; }
-.fullscreen-btn { margin-left: auto; }
 .offline-note { background: var(--warn-soft); border-bottom-color: var(--warn-soft); color: var(--orange-ink); }
 .tablet-note { background: var(--accent-tint); border-bottom-color: var(--accent-soft); color: var(--accent-ink); }
 

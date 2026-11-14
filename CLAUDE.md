@@ -110,7 +110,7 @@ The club's shared device in the workshop is an Amazon Fire HD 10 (Fire OS 8, And
 - The workshop WLAN must be saved in the tablet's **main profile**. A network saved only in a second profile is gone after a reboot, and Fully then waits for a connection.
 - Fully is not updated automatically (not from the Amazon store); the app itself is (see `update.ts` below).
 - Passwords (admin, tablet account, WLAN) are typed by the owner on the tablet, not by Claude; Claude prepares everything up to that point.
-- In the app the tablet signs in with an account of the kind "Werkstatt-Tablet" (`device: true`, role `wl`), which admins pick in the account form. The blue tablet note at the top has a "Vollbild" button (Fullscreen API) for browsers that show their bars, e.g. Silk; in Fully it is not needed.
+- In the app the tablet signs in with an account of the kind "Werkstatt-Tablet" (`device: true`, role `wl`), which admins pick in the account form. The app has no fullscreen button of its own; fullscreen comes from Fully.
 
 ## Product decisions from feedback
 
