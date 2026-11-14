@@ -35,7 +35,7 @@ npm run db:generate            # new migration after changes to src/schema.ts
 Migrations from `drizzle/` run on every start. After changing the schema always run `db:generate`
 and commit the generated file. The Docker build runs `npm test`, so a failing test stops the deploy.
 
-Local first start: put `ADMIN_NAME`, `ADMIN_EMAIL` and `APP_URL=http://localhost:5173` into `backend/.env`
+Local first start: put `ADMIN_NAME` and `APP_URL=http://localhost:5173` into `backend/.env`
 (gitignored), start the server and open the set-password link from the log. For the frontend set
 `VITE_API_URL=/api` in `frontend/.env.local`; Vite proxies `/api` to port 3000.
 
@@ -48,7 +48,7 @@ Local first start: put `ADMIN_NAME`, `ADMIN_EMAIL` and `APP_URL=http://localhost
 | `WEB_DIR` | – (`/app/web` in the image) | built frontend; without it only the API runs |
 | `NODE_ENV` | (`production` in the image) | `production` marks the session cookie `Secure` |
 | `APP_URL` | – | public address, for the set-password links in the log, e.g. `https://wartung.aecbn.de` |
-| `ADMIN_NAME`, `ADMIN_EMAIL` | – | first admin, created on the first start (see below) |
+| `ADMIN_NAME` | – | first admin, created on the first start (see below) |
 | `SEASON_LABEL`, `SEASON_START`, `SEASON_END` | this winter | first season; default first Saturday of November to last Saturday of March |
 
 On the VPS these go into **`/srv/wartung/data/app.env`**, which `docker-compose.yml` loads if it exists
@@ -59,7 +59,6 @@ as `root` (the `deploy` user only accepts the key from the GitHub secret) and ha
 ssh root@178.105.54.205 'cat > /srv/wartung/data/app.env <<EOF
 APP_URL=https://wartung.aecbn.de
 ADMIN_NAME=Vorname Nachname
-ADMIN_EMAIL=admin@example.org
 NODE_ENV=production
 EOF
 chown deploy:deploy /srv/wartung/data/app.env && chmod 600 /srv/wartung/data/app.env
@@ -71,13 +70,13 @@ cd /srv/wartung && docker compose up -d --force-recreate && sleep 3 && docker co
 ## First start
 
 When there is no account yet, the server creates the season, `vereinsflieger: { lastSync: '' }` and the admin
-from `ADMIN_NAME`/`ADMIN_EMAIL`, and prints the set-password link (valid 7 days) to the log:
+from `ADMIN_NAME`, and prints the set-password link (valid 7 days) to the log:
 
 ```bash
 docker compose logs app | grep passwort
 ```
 
-Without `ADMIN_NAME`/`ADMIN_EMAIL` it only logs a warning and keeps running; the seed happens on the next start
+Without `ADMIN_NAME` it only logs a warning and keeps running; the seed happens on the next start
 once they are set. Everything else (aircraft, templates, accounts) the admin maintains in the app.
 
 ## Password link from the command line
@@ -86,8 +85,8 @@ There are no e-mails and no "forgot password"; admins create links for other spe
 admin lost their own password:
 
 ```bash
-docker compose exec app node dist/src/cli.js admin@example.org   # on the VPS
-npm run password-link -- admin@example.org                       # locally
+docker compose exec app node dist/src/cli.js "Vorname Nachname"   # on the VPS
+npm run password-link -- "Vorname Nachname"                       # locally
 ```
 
 Older links of the account stop working.

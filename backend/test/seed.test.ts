@@ -12,7 +12,7 @@ const quiet = { log() {}, warn() {} }
 describe('seed', () => {
   it('creates the first admin with the default faq', () => {
     const t = setup()
-    const link = seed(t.db, { ADMIN_NAME: 'Anna', ADMIN_EMAIL: 'anna@example.org', APP_URL: 'http://x' }, t.clock.now, quiet)
+    const link = seed(t.db, { ADMIN_NAME: 'Anna', APP_URL: 'http://x' }, t.clock.now, quiet)
     assert.match(link ?? '', /^http:\/\/x\/#\/passwort\?token=/)
     assert.deepEqual(listRecords(t.db, 'faq'), DEFAULT_FAQ)
   })

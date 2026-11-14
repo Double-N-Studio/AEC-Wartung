@@ -13,15 +13,12 @@ export const ROLE_LABELS: Record<Role, string> = {
   user: 'Mitglied',
 }
 
-const user = (id: string, name: string, role: Role): User => ({
-  id, name, role,
-  ...(role === 'user' ? {} : { email: `${name.toLowerCase().replace(/ /g, '.')}@example.org` }),
-})
+const user = (id: string, name: string, role: Role): User => ({ id, name, role })
 
-/** Test accounts of the mockup. Special accounts sign in with vorname.nachname@example.org and any password. */
+/** Test accounts of the mockup. Special accounts are picked in the login popup and sign in with any password. */
 export function initialUsers(): User[] {
   return [
-    { ...user(TABLET, 'Werkstatt-Tablet', 'wl'), email: 'werkstatt@example.org', device: true },
+    { ...user(TABLET, 'Werkstatt-Tablet', 'wl'), device: true },
     user('MA', 'Matthias Greiner', 'admin'),
     user('HE', 'Heinrich Hoop', 'wl'),
     user('LO', 'Lorenz Dierschke', 'wl'),

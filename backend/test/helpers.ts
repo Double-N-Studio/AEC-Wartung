@@ -9,12 +9,12 @@ import { createEvents } from '../src/events.js'
 import { sessions } from '../src/schema.js'
 import { bumpRev, putRecord, type User } from '../src/state.js'
 
-export const ADMIN: User = { id: 'admin', name: 'Anna Admin', role: 'admin', email: 'anna@example.org' }
-export const LEAD: User = { id: 'lead', name: 'Werner Leiter', role: 'wl', email: 'werner@example.org' }
-export const LEAD2: User = { id: 'lead2', name: 'Wanda Leiterin', role: 'wl', email: 'wanda@example.org' }
+export const ADMIN: User = { id: 'admin', name: 'Anna Admin', role: 'admin' }
+export const LEAD: User = { id: 'lead', name: 'Werner Leiter', role: 'wl' }
+export const LEAD2: User = { id: 'lead2', name: 'Wanda Leiterin', role: 'wl' }
 export const MEMBER: User = { id: 'member', name: 'Max Mitglied', role: 'user' }
 export const MEMBER2: User = { id: 'member2', name: 'Mia Mitglied', role: 'user' }
-export const TABLET: User = { id: 'tablet', name: 'Werkstatt-Tablet', role: 'wl', email: 'werkstatt@example.org', device: true }
+export const TABLET: User = { id: 'tablet', name: 'Werkstatt-Tablet', role: 'wl', device: true }
 
 export function setup(start = '2026-11-07T10:00:00Z') {
   const db = openDb(':memory:')

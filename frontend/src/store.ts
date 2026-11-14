@@ -90,9 +90,9 @@ export async function enterName(first: string, last: string): Promise<'ok' | 'lo
 }
 
 /** Sign-in for special accounts. Throws without a connection. */
-export async function login(email: string, password: string) {
+export async function login(userId: UserId, password: string) {
   requireOnline()
-  const result = await backend.login(email.trim(), password)
+  const result = await backend.login(userId, password)
   if (!result.ok) return false
   Object.assign(session, { userId: result.user.id, auth: 'password', chosen: true })
   return true
@@ -107,7 +107,7 @@ export function logout() {
 }
 
 /**
- * Admin creates the link with which a special account sets its password, to pass on (no e-mails);
+ * Admin creates the link with which a special account sets its password, to pass on;
  * earlier links of the account stop working. Throws without a connection.
  */
 export async function passwordLink(user: User) {
@@ -412,24 +412,20 @@ export function deleteAircraft(a: Aircraft) {
 /* ---------- Accounts ---------- */
 
 /**
- * email: sign-in name of the special accounts; members do not need one.
  * device: a shared device such as the workshop tablet – always with the rights of a workshop lead.
  */
-export function createUser(name: string, role: Role, email = '', device = false): User {
+export function createUser(name: string, role: Role, device = false): User {
   const user: User = { id: newId(), name: name.trim(), role: device ? 'wl' : role }
   if (device) user.device = true
-  if (needsPassword(user)) user.email = email.trim()
   state.users.push(user)
   return user
 }
 
-export function updateUser(user: User, name: string, role: Role, email = '', device = false) {
+export function updateUser(user: User, name: string, role: Role, device = false) {
   user.name = name.trim()
   user.role = device ? 'wl' : role
   if (device) user.device = true
   else delete user.device
-  if (needsPassword(user)) user.email = email.trim()
-  else delete user.email
 }
 
 /** Removed accounts stay stored so that names in the history are preserved. */

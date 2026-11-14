@@ -73,7 +73,7 @@ export function createApp({ db, dataDir, now = () => new Date(), events = create
     const name = input?.name.trim().replace(/\s+/g, ' ')
     if (!name) return c.json({ error: 'Bitte Vor- und Nachnamen eingeben' }, 400)
     let user = users(db).find((u) => !u.removed && u.name.toLowerCase() === name.toLowerCase())
-    if (user && needsPassword(user)) return c.json({ error: 'Dieses Konto meldet sich mit E-Mail und Passwort an' }, 409)
+    if (user && needsPassword(user)) return c.json({ error: 'Dieses Konto meldet sich mit Passwort an' }, 409)
     if (!user) {
       user = { id: crypto.randomUUID(), name, role: 'user' }
       events.publish(serverChange(db, 'users', user.id, user, now()))
@@ -85,12 +85,11 @@ export function createApp({ db, dataDir, now = () => new Date(), events = create
   app.post('/session/login', async (c) => {
     const blocked = tooMany(c)
     if (blocked) return blocked
-    const input = await body(c, z.object({ email: z.string(), password: z.string() }))
-    const email = input?.email.trim().toLowerCase()
-    const user = email ? users(db).find((u) => !u.removed && needsPassword(u) && u.email?.trim().toLowerCase() === email) : undefined
+    const input = await body(c, z.object({ userId: z.string(), password: z.string() }))
+    const user = input ? users(db).find((u) => !u.removed && needsPassword(u) && u.id === input.userId) : undefined
     if (!user || !checkPassword(db, user.id, input!.password)) {
       failed(c)
-      return c.json({ error: 'E-Mail oder Passwort stimmt nicht' }, 401)
+      return c.json({ error: 'Passwort stimmt nicht' }, 401)
     }
     startSession(c, db, user, 'password', now())
     return c.json({ user })

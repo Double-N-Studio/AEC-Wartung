@@ -1,5 +1,5 @@
 // First start: empty state with a season, the Vereinsflieger record and the first admin.
-// There are no e-mails, so the admin's set-password link goes to the log.
+// The admin's set-password link goes to the log.
 import { eq } from 'drizzle-orm'
 import { createPasswordToken } from './auth.js'
 import { DEFAULT_FAQ } from './faq.js'
@@ -9,7 +9,6 @@ import { bumpRev, listRecords, localDate, putRecord } from './state.js'
 
 export interface SeedEnv {
   ADMIN_NAME?: string
-  ADMIN_EMAIL?: string
   APP_URL?: string
   SEASON_LABEL?: string
   SEASON_START?: string
@@ -35,7 +34,7 @@ export function defaultSeason(now: Date) {
 }
 
 /**
- * Seeds once there are no accounts yet. Without ADMIN_NAME/ADMIN_EMAIL it only warns and tries again on the next start.
+ * Seeds once there are no accounts yet. Without ADMIN_NAME it only warns and tries again on the next start.
  * Returns the admin's set-password link, if one was created.
  */
 export function seed(db: Db, env: SeedEnv, now: Date, log: Pick<Console, 'log' | 'warn'> = console): string | null {
@@ -43,9 +42,8 @@ export function seed(db: Db, env: SeedEnv, now: Date, log: Pick<Console, 'log' |
   seedFaq(db, now)
   if (listRecords(db, 'users').length) return null
   const name = env.ADMIN_NAME?.trim()
-  const email = env.ADMIN_EMAIL?.trim()
-  if (!name || !email) {
-    log.warn('Kein Konto vorhanden: ADMIN_NAME und ADMIN_EMAIL setzen (data/app.env) und neu starten, dann steht der Link für den ersten Admin im Log.')
+  if (!name) {
+    log.warn('Kein Konto vorhanden: ADMIN_NAME setzen (data/app.env) und neu starten, dann steht der Link für den ersten Admin im Log.')
     return null
   }
   const fallback = defaultSeason(now)
@@ -54,7 +52,7 @@ export function seed(db: Db, env: SeedEnv, now: Date, log: Pick<Console, 'log' |
     start: env.SEASON_START || fallback.start,
     end: env.SEASON_END || fallback.end,
   }
-  const admin = { id: crypto.randomUUID(), name, role: 'admin', email }
+  const admin = { id: crypto.randomUUID(), name, role: 'admin' }
   db.transaction((tx) => {
     const rev = bumpRev(tx)
     const origin = { clientId: null, userId: null, at: now.toISOString() }
@@ -64,7 +62,7 @@ export function seed(db: Db, env: SeedEnv, now: Date, log: Pick<Console, 'log' |
   })
   const token = createPasswordToken(db, admin.id, now)
   const link = `${(env.APP_URL ?? '').replace(/\/$/, '')}/#/passwort?token=${encodeURIComponent(token)}`
-  log.log(`Erster Admin ${name} <${email}> angelegt. Passwort setzen (7 Tage gültig): ${link}`)
+  log.log(`Erster Admin ${name} angelegt. Passwort setzen (7 Tage gültig): ${link}`)
   return link
 }
 

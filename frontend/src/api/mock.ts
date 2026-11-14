@@ -144,10 +144,9 @@ export function mockBackend(): Backend {
       return { ok: true, user }
     },
 
-    async login(email, password) {
+    async login(userId, password) {
       await latency()
-      const mail = email.trim().toLowerCase()
-      const user = read().state.users.find((u) => !u.removed && needsPassword(u) && u.email?.toLowerCase() === mail)
+      const user = read().state.users.find((u) => !u.removed && needsPassword(u) && u.id === userId)
       // The demo does not check a password.
       if (!user || !password) return { ok: false }
       writeSession({ userId: user.id, auth: 'password' })

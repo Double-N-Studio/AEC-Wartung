@@ -8,8 +8,6 @@ export interface User {
   id: UserId
   name: string
   role: Role
-  /** Sign-in name of the special accounts (workshop lead, admin, tablet); members only enter their name. */
-  email?: string
   /** Shared device such as the workshop tablet, not a person. */
   device?: boolean
   /** Removed accounts are kept for the history but no longer appear in any selection. */

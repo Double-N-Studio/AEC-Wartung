@@ -218,7 +218,7 @@ describe('users', () => {
   })
   it('a device is a workshop lead and never the admin\'s own account', () => {
     ok(check('users', LEAD as unknown as Plain, { ...LEAD, device: true }, ADMIN))
-    ok(check('users', undefined, { id: 'tab', name: 'Werkstatt-Tablet', role: 'wl', email: 'tab@example.org', device: true }, ADMIN))
+    ok(check('users', undefined, { id: 'tab', name: 'Werkstatt-Tablet', role: 'wl', device: true }, ADMIN))
     denied(check('users', undefined, { id: 'tab', name: 'Werkstatt-Tablet', role: 'user', device: true }, ADMIN))
     denied(check('users', ADMIN as unknown as Plain, { ...ADMIN, device: true }, ADMIN))
   })

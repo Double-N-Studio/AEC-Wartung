@@ -111,9 +111,8 @@ describe('POST /changes', () => {
       { coll: 'season', id: 'x', value: { label: '', start: '', end: '' } },
       { coll: 'season', id: 'season', value: null },
       { coll: 'users', id: MEMBER.id, value: null },
-      { coll: 'users', id: 'new', value: { id: 'new', name: 'Neu', role: 'wl', email: 'WERNER@example.org ' } },
-      { coll: 'users', id: 'new', value: { id: 'new', name: 'Neu', role: 'wl' } },
-      { coll: 'users', id: 'new', value: { id: 'new', name: 'Neu', role: 'user', email: 'neu@example.org' } },
+      { coll: 'users', id: 'new', value: { id: 'new', name: ' werner  LEITER', role: 'wl' } },
+      { coll: 'users', id: 'new', value: { id: 'new', name: MEMBER.name, role: 'admin' } },
       { coll: 'templates', id: 'v1', value: { id: 'v1', aircraftType: 'ASK21', level: 'ein', title: 'Putzen', desc: '', duration: '~1 h', checklist: [] } },
       { coll: 'templates', id: 'v1', value: { id: 'v1', aircraftTypes: [''], level: 'ein', title: 'Putzen', desc: '', duration: '~1 h', checklist: [] } },
     ]
@@ -124,10 +123,11 @@ describe('POST /changes', () => {
     }
   })
 
-  it('the e-mail of a removed account can be reused', async () => {
+  it('the name of a removed account can be reused, and members may share a name', async () => {
     const admin = login(t.db, ADMIN)
     assert.equal((await push(t.app, admin, [{ coll: 'users', id: LEAD.id, value: { ...LEAD, removed: true } }])).status, 200)
-    assert.equal((await push(t.app, admin, [{ coll: 'users', id: 'n', value: { id: 'n', name: 'Neu', role: 'wl', email: LEAD.email } }])).status, 200)
+    assert.equal((await push(t.app, admin, [{ coll: 'users', id: 'n', value: { id: 'n', name: LEAD.name, role: 'wl' } }])).status, 200)
+    assert.equal((await push(t.app, admin, [{ coll: 'users', id: 'm', value: { id: 'm', name: MEMBER.name, role: 'user' } }])).status, 200)
   })
 
   it('deleting an aircraft deletes its defects and deadlines as rev + 2', async () => {

@@ -73,7 +73,7 @@ export function applyBatch(db: Db, batch: Batch, session: Session | null, now: D
 
 const key = (c: Change) => `${c.coll}\u0000${c.id}`
 
-/** Accounts as they will be after the batch, for the unique e-mail check. */
+/** Accounts as they will be after the batch, for the unique name check. */
 function accountsAfter(users: User[], changes: Change[]): User[] {
   const byId = new Map(users.map((u) => [u.id, u]))
   for (const c of changes) if (c.coll === 'users' && c.value) byId.set(c.id, c.value as unknown as User)

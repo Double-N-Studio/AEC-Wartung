@@ -52,33 +52,37 @@ function statusText(u: User): string | null {
 
 /* ---------- Create / edit account ---------- */
 const editing = ref<User | 'new' | null>(null)
-const form = reactive({ name: '', kind: 'user' as Kind, email: '' })
+const form = reactive({ name: '', kind: 'user' as Kind })
 function openUser(u: User | 'new') {
-  Object.assign(form, u === 'new' ? { name: '', kind: 'user', email: '' } : { name: u.name, kind: u.device ? 'tablet' : u.role, email: u.email ?? '' })
+  Object.assign(form, u === 'new' ? { name: '', kind: 'user' } : { name: u.name, kind: u.device ? 'tablet' : u.role })
   editing.value = u
   link.value = null
   if (u !== 'new') void loadStatuses()
 }
-// Workshop leads, admins and devices log in with e-mail and password.
-const withLogin = computed(() => form.kind !== 'user')
+// Workshop leads, admins and devices pick their account by name on sign-in, so that name must be unique (the server checks it too).
+const nameTaken = computed(() => {
+  const name = form.name.trim().replace(/\s+/g, ' ').toLowerCase()
+  const self = editing.value === 'new' ? null : editing.value?.id
+  return form.kind !== 'user' && !!name && state.users.some((u) => !u.removed && u.id !== self && u.name.trim().toLowerCase() === name)
+})
 function saveUser() {
-  if (!form.name.trim() || (withLogin.value && !form.email.trim())) return
+  if (!form.name.trim() || nameTaken.value) return
   const device = form.kind === 'tablet'
   const role: Role = form.kind === 'tablet' ? 'wl' : form.kind
   if (editing.value === 'new') {
-    const user = createUser(form.name, role, form.email, device)
+    const user = createUser(form.name, role, device)
     // Special accounts need a password: the popup stays open with the link to pass on.
     if (needsPassword(user)) {
       openUser(user)
       void makeLink(user)
       return
     }
-  } else if (editing.value) updateUser(editing.value, form.name, role, form.email, device)
+  } else if (editing.value) updateUser(editing.value, form.name, role, device)
   editing.value = null
 }
 const editingSelf = computed(() => editing.value !== 'new' && editing.value?.id === currentUser()?.id)
 
-/* ---------- Password link: the app sends no e-mails, the admin passes the link on ---------- */
+/* ---------- Password link: the admin passes it on ---------- */
 const link = ref<{ userId: string; url: string } | null>(null)
 const linkBusy = ref(false)
 const linkInput = ref<HTMLInputElement | null>(null)
@@ -137,7 +141,7 @@ function confirmRemove() {
               <PersonAvatar v-else :person="u.id" :size="36" />
               <span class="who">
                 <strong>{{ u.name }}<span v-if="u.id === currentUser()?.id" class="pill pill-gray">Du</span></strong>
-                <span class="muted"><template v-if="u.device">Gerät, z. B. in der Werkstatt · </template>{{ u.email ?? 'Ohne Login: nur Gastnutzer-Rechte' }}</span>
+                <span class="muted"><template v-if="u.device">Gerät, z. B. in der Werkstatt · </template>{{ needsPassword(u) ? 'Meldet sich mit Passwort an' : 'Ohne Login: nur Gastnutzer-Rechte' }}</span>
                 <span v-if="statusText(u)" class="pw" :class="statuses?.[u.id]?.state ?? 'none'">{{ statusText(u) }}</span>
               </span>
               <span class="pill" :class="u.role === 'user' ? 'pill-gray' : 'pill-accent-soft'">{{ ROLE_LABELS[u.role] }}</span>
@@ -168,7 +172,8 @@ function confirmRemove() {
       <form id="user-form" class="form" @submit.prevent="saveUser">
         <div class="field">
           <label for="uf-name">Name</label>
-          <input id="uf-name" v-model="form.name" class="input" required placeholder="z. B. Max">
+          <input id="uf-name" v-model="form.name" class="input" required placeholder="z. B. Max Mustermann">
+          <span v-if="nameTaken" class="name-taken">Diesen Namen gibt es schon bei einem anderen Konto.</span>
         </div>
         <div class="field">
           <span class="field-label">Rolle</span>
@@ -180,11 +185,7 @@ function confirmRemove() {
           </div>
           <span v-if="editingSelf" class="muted small">Die eigene Rolle kann nur ein anderer Admin ändern.</span>
         </div>
-        <div v-if="withLogin" class="field">
-          <label for="uf-email">E-Mail für die Anmeldung</label>
-          <input id="uf-email" v-model="form.email" type="email" class="input" required placeholder="name@example.org">
-          <span class="muted small">Nur der Anmeldename – die App verschickt keine E-Mails. Den Link zum Passwort-Setzen gibst du {{ form.name.trim() || 'der Person' }} selbst weiter.</span>
-        </div>
+        <p v-if="editing === 'new' && form.kind !== 'user'" class="muted small">Nach dem Anlegen bekommst du einen Link zum Passwort-Setzen, den du {{ form.name.trim() || 'der Person' }} selbst weitergibst. Angemeldet wird mit Name und Passwort.</p>
         <p v-if="editing !== 'new' && !(link && link.userId === editing.id) && statusText(editing)" class="pw" :class="statuses?.[editing.id]?.state ?? 'none'">
           {{ statusText(editing) }}
         </p>
@@ -197,7 +198,7 @@ function confirmRemove() {
           <span class="muted small">Schick ihn {{ editing.name }}, z. B. per Messenger. Er gilt einmal und 7 Tage lang; ein neuer Link ersetzt ihn.</span>
         </div>
       </form>
-      <template v-if="editing !== 'new' && needsPassword(editing) && editing.email" #meta>
+      <template v-if="editing !== 'new' && needsPassword(editing)" #meta>
         <button type="button" class="link-btn" :disabled="linkBusy" @click="makeLink(editing)">
           <AppIcon name="shield" :size="15" />{{ linkBusy ? 'Erstellt …' : link?.userId === editing.id ? 'Neuen Link erstellen' : 'Link zum Passwort-Setzen erstellen' }}
         </button>
@@ -250,6 +251,7 @@ function confirmRemove() {
 .role > span { display: flex; flex-direction: column; gap: 2px; }
 .role .muted { font-size: 12.5px; line-height: 1.4; }
 .small { font-size: 12.5px; }
+.name-taken { font-size: 13px; font-weight: 600; color: var(--red-ink); }
 .pw { margin: 0; font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
 .pw::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; }
 .pw.open::before { background: var(--accent); }

@@ -14,7 +14,6 @@ export interface User {
   id: string
   name: string
   role: 'admin' | 'wl' | 'user'
-  email?: string
   device?: boolean
   removed?: boolean
 }

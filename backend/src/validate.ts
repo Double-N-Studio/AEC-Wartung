@@ -24,7 +24,7 @@ const task = z.looseObject({
 const SCHEMAS: Record<string, z.ZodType> = {
   users: z.looseObject({
     id: str, name: z.string().trim().min(1), role: z.enum(['admin', 'wl', 'user']),
-    email: opt, device: z.boolean().optional(), removed: z.boolean().optional(),
+    device: z.boolean().optional(), removed: z.boolean().optional(),
   }),
   aircraft: z.looseObject({ id: str, type: str, reg: str, start: str, end: str }),
   tasks: task,
@@ -63,7 +63,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
  * German error text if the change is malformed, otherwise null.
- * users: all accounts as they will be after the batch (for the unique e-mail).
+ * users: all accounts as they will be after the batch (for the unique name of special accounts).
  */
 export function validateChange(change: Change, users: User[]): string | null {
   const { coll, id, value } = change
@@ -86,10 +86,12 @@ export function validateChange(change: Change, users: User[]): string | null {
   return null
 }
 
+const sameName = (name: string) => name.trim().replace(/\s+/g, ' ').toLowerCase()
+
 function checkAccount(user: User, users: User[]): string | null {
-  if (!needsPassword(user)) return user.email ? 'Mitglieder haben keine E-Mail-Adresse' : null
-  const email = user.email?.trim().toLowerCase()
-  if (!email) return 'Konten mit Passwort brauchen eine E-Mail-Adresse'
-  const taken = users.some((u) => u.id !== user.id && !u.removed && u.email?.trim().toLowerCase() === email)
-  return taken && !user.removed ? 'Diese E-Mail-Adresse wird schon verwendet' : null
+  // A special account is picked by name on sign-in, and a member's name must not lead to it.
+  if (!needsPassword(user) || user.removed) return null
+  const name = sameName(user.name)
+  const taken = users.some((u) => u.id !== user.id && !u.removed && sameName(u.name) === name)
+  return taken ? 'Diesen Namen gibt es schon bei einem anderen Konto' : null
 }

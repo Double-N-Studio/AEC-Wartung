@@ -65,33 +65,33 @@ describe('POST /session/login', () => {
     t.db.insert(passwords).values({ userId: LEAD.id, hash: hashPassword('richtig-geheim') }).run()
   })
 
-  it('signs in with the right password, e-mail case-insensitive', async () => {
-    const res = await t.app.request('/api/session/login', json({ email: ' Werner@Example.org', password: 'richtig-geheim' }))
+  it('signs in with the right password', async () => {
+    const res = await t.app.request('/api/session/login', json({ userId: LEAD.id, password: 'richtig-geheim' }))
     assert.equal(res.status, 200)
     assert.equal(((await res.json()) as { user: { id: string } }).user.id, LEAD.id)
     assert.deepEqual(await sessionOf(cookieOf(res)), { userId: LEAD.id, auth: 'password' })
   })
 
-  it('401 for a wrong password, an unknown e-mail or an account without password', async () => {
-    assert.equal((await t.app.request('/api/session/login', json({ email: LEAD.email, password: 'falsch' }))).status, 401)
-    assert.equal((await t.app.request('/api/session/login', json({ email: 'wer@example.org', password: 'x' }))).status, 401)
-    assert.equal((await t.app.request('/api/session/login', json({ email: ADMIN.email, password: 'x' }))).status, 401)
+  it('401 for a wrong password, an unknown account or an account without password', async () => {
+    assert.equal((await t.app.request('/api/session/login', json({ userId: LEAD.id, password: 'falsch' }))).status, 401)
+    assert.equal((await t.app.request('/api/session/login', json({ userId: 'nobody', password: 'x' }))).status, 401)
+    assert.equal((await t.app.request('/api/session/login', json({ userId: ADMIN.id, password: 'x' }))).status, 401)
   })
 
   it('401 for removed accounts', async () => {
     put(t.db, 'users', [{ ...LEAD, removed: true }])
-    assert.equal((await t.app.request('/api/session/login', json({ email: LEAD.email, password: 'richtig-geheim' }))).status, 401)
+    assert.equal((await t.app.request('/api/session/login', json({ userId: LEAD.id, password: 'richtig-geheim' }))).status, 401)
   })
 
   it('rate limit after 20 failed attempts', async () => {
     const from = { 'X-Forwarded-For': '203.0.113.9' }
-    for (let i = 0; i < 20; i++) await t.app.request('/api/session/login', json({ email: LEAD.email, password: 'falsch' }, from))
-    const res = await t.app.request('/api/session/login', json({ email: LEAD.email, password: 'richtig-geheim' }, from))
+    for (let i = 0; i < 20; i++) await t.app.request('/api/session/login', json({ userId: LEAD.id, password: 'falsch' }, from))
+    const res = await t.app.request('/api/session/login', json({ userId: LEAD.id, password: 'richtig-geheim' }, from))
     assert.equal(res.status, 429)
     // Other addresses are not affected, and the window expires.
-    assert.equal((await t.app.request('/api/session/login', json({ email: LEAD.email, password: 'richtig-geheim' }))).status, 200)
+    assert.equal((await t.app.request('/api/session/login', json({ userId: LEAD.id, password: 'richtig-geheim' }))).status, 200)
     t.clock.now = new Date(t.clock.now.getTime() + 16 * 60 * 1000)
-    assert.equal((await t.app.request('/api/session/login', json({ email: LEAD.email, password: 'richtig-geheim' }, from))).status, 200)
+    assert.equal((await t.app.request('/api/session/login', json({ userId: LEAD.id, password: 'richtig-geheim' }, from))).status, 200)
   })
 })
 
@@ -136,7 +136,7 @@ describe('password links', () => {
     const token = await tokenOf(await link(LEAD.id, login(t.db, ADMIN)))
     assert.equal((await setPassword(token)).status, 204)
     assert.equal((await setPassword(token, 'noch-ein-passwort')).status, 400)
-    const res = await t.app.request('/api/session/login', json({ email: LEAD.email, password: 'neues-passwort' }))
+    const res = await t.app.request('/api/session/login', json({ userId: LEAD.id, password: 'neues-passwort' }))
     assert.equal(res.status, 200)
   })
 

@@ -51,11 +51,11 @@ export interface Backend {
   session(): Promise<SessionInfo>
   /** Member by first and last name; the server creates the account if the name does not exist yet. */
   enterName(name: string): Promise<{ ok: true; user: User } | { ok: false; reason: 'login' }>
-  login(email: string, password: string): Promise<{ ok: true; user: User } | { ok: false }>
+  login(userId: string, password: string): Promise<{ ok: true; user: User } | { ok: false }>
   logout(): Promise<void>
   /**
    * New token for the set-password link of a special account (admin); earlier tokens of the account stop working.
-   * The app sends no e-mails, the admin passes the link on. Passwords are never part of the state.
+   * The admin passes the link on. Passwords are never part of the state.
    */
   passwordToken(userId: UserId): Promise<string>
   /** Set the password via the link from the admin (#/passwort?token=…); false if the link has expired or was used. */

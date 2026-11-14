@@ -55,8 +55,8 @@ export function httpBackend(base: string): Backend {
       return { ok: true, user: (data as { user: User }).user }
     },
 
-    async login(email, password) {
-      const { status, data } = await call('POST', '/session/login', { email, password })
+    async login(userId, password) {
+      const { status, data } = await call('POST', '/session/login', { userId, password })
       if (status !== 200) return { ok: false }
       return { ok: true, user: (data as { user: User }).user }
     },
