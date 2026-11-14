@@ -43,6 +43,10 @@ const tabs = computed(() => {
 
 <style scoped>
 .aircraft { gap: 16px; }
+/* Kanban with columns side by side: the page is exactly as tall as the window, the columns scroll inside. */
+@media (min-width: 1101px) {
+  .aircraft:has(> .board) { flex: 1 1 0; min-height: 480px; }
+}
 .titles { display: flex; flex-direction: column; gap: 6px; }
 .name { display: flex; align-items: baseline; gap: 12px; }
 .reg { font-size: 20px; color: var(--muted); font-weight: 500; }

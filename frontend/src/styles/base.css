@@ -81,7 +81,8 @@ h1, h2, h3, p { margin: 0; }
 
 /* ---------- Cards / Layout ---------- */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
-.page { display: flex; flex-direction: column; gap: 18px; padding: 24px 32px; min-height: 100%; }
+/* Fills the rest of the content column below the notes (App.vue) – min-height: 100% would add their height as scroll. */
+.page { display: flex; flex-direction: column; gap: 18px; padding: 24px 32px; flex: 1 0 auto; }
 .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
 .page-sub { font-size: 14px; color: var(--muted); }
 .section-title { font-size: 17px; font-weight: 700; }

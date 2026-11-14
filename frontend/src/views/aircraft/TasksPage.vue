@@ -172,7 +172,15 @@ const form = ref<Task | 'new' | null>(null)
   background: var(--surface); color: var(--accent-ink); display: inline-flex; align-items: center; justify-content: center;
 }
 .col-scroll { position: relative; }
-.col-list { position: relative; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 340px); min-height: 120px; overflow-y: auto; padding-right: 2px; }
+.col-list { position: relative; display: flex; flex-direction: column; gap: 10px; min-height: 120px; overflow-y: auto; padding-right: 2px; }
+/* Side by side the columns reach down to the bottom of the window and scroll inside (the page gets the window's
+   height in AircraftLayout); a short column stays as tall as its cards. */
+@media (min-width: 1101px) {
+  .board { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+  .column { max-height: 100%; min-height: 0; }
+  .col-scroll { display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; }
+  .col-list { flex: 0 1 auto; }
+}
 .col-fade {
   position: absolute; left: 0; right: 0; bottom: 0; height: 64px; pointer-events: none;
   background: linear-gradient(to bottom, transparent, var(--column));
@@ -217,6 +225,5 @@ const form = ref<Task | 'new' | null>(null)
 
 @media (max-width: 1100px) {
   .board { grid-template-columns: 1fr; }
-  .col-list { max-height: none; }
 }
 </style>

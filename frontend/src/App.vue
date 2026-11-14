@@ -74,9 +74,9 @@ watch(() => sync.ready, (ready) => {
 .shell { display: flex; height: 100%; }
 .topbar { display: none; }
 .sidebar-wrap { height: 100%; }
-.content { flex: 1; min-width: 0; height: 100%; overflow-y: auto; }
+.content { flex: 1; min-width: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
 .guest-note {
-  display: flex; align-items: center; gap: 8px; padding: 10px 32px;
+  display: flex; align-items: center; gap: 8px; padding: 10px 32px; flex-shrink: 0;
   background: var(--gray-soft); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--text-2);
 }
 .guest-note .link-btn { font-size: 13px; white-space: nowrap; }
