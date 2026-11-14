@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Werkstatt-Aushang: Winterwartung-App</title>
+<!--
+  A4 notice for the workshop: how to open the app on your own phone.
+  Rebuild the PDF after changes (from the repo root):
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --no-pdf-header-footer \
+    --print-to-pdf=docs/werkstatt-aushang.pdf docs/werkstatt-aushang.html
+-->
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --text: #17202B; --text-2: #3A4452; --muted: #5B6675; --accent: #1D64C8; --accent-ink: #1D4F99; --accent-soft: #E6F0FB; --border: #C9D3DF; --green-ink: #17643F; --green-soft: #DFF1E7; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { width: 210mm; height: 297mm; padding: 12mm 18mm 10mm; display: flex; flex-direction: column; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--text); }
+
+  .top { display: flex; align-items: center; justify-content: space-between; padding-bottom: 5mm; border-bottom: 0.6mm solid var(--accent); }
+  .top img { height: 15mm; }
+  .top span { font-size: 12pt; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  h1 { margin-top: 6mm; font-size: 30pt; line-height: 1.1; font-weight: 800; letter-spacing: -0.01em; }
+  .lead { margin-top: 3mm; font-size: 12.5pt; line-height: 1.45; color: var(--text-2); }
+
+  .scan { margin-top: 6mm; display: flex; align-items: center; gap: 11mm; padding: 6mm; background: var(--accent-soft); border-radius: 5mm; }
+  .scan .qr { width: 55mm; height: 55mm; padding: 7mm; background: #fff; border-radius: 3mm; flex-shrink: 0; }
+  .scan h2 { font-size: 20pt; line-height: 1.2; font-weight: 800; color: var(--accent-ink); }
+  .scan p { margin-top: 3mm; font-size: 12.5pt; line-height: 1.45; color: var(--text-2); }
+  .scan .url { margin-top: 5mm; display: inline-block; padding: 2.5mm 5mm; background: #fff; border: 0.4mm solid var(--accent); border-radius: 2.5mm; font-size: 17pt; font-weight: 700; color: var(--accent-ink); }
+
+  .steps { margin-top: 6mm; list-style: none; display: flex; flex-direction: column; gap: 3.2mm; }
+  .steps li { display: flex; gap: 5mm; align-items: flex-start; }
+  .steps .n { width: 10mm; height: 10mm; border-radius: 50%; background: var(--accent); color: #fff; font-size: 14pt; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .steps strong { display: block; font-size: 14pt; line-height: 1.25; }
+  .steps span { display: block; margin-top: 0.8mm; font-size: 11.5pt; line-height: 1.4; color: var(--text-2); }
+
+  .tips { margin-top: auto; flex-shrink: 0; padding: 4.5mm 6mm; border: 0.4mm solid var(--border); border-radius: 4mm; }
+  .tips h2 { font-size: 13pt; font-weight: 800; }
+  .tips ul { margin-top: 3mm; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm 8mm; }
+  .tips li { font-size: 10.5pt; line-height: 1.4; color: var(--text-2); }
+  .tips b { display: block; color: var(--text); }
+  .badge { display: inline-block; padding: 0.3mm 2mm; border-radius: 1.5mm; background: var(--green-soft); color: var(--green-ink); font-weight: 700; }
+
+  .foot { margin-top: 4mm; font-size: 10pt; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <img src="../frontend/src/assets/aec-logo.png" alt="Aero-Club Bad Nauheim">
+    <span>Winterwartung</span>
+  </div>
+
+  <h1>Die Wartungs-App<br>auf deinem Handy</h1>
+  <p class="lead">Hier siehst du, was an welchem Flugzeug zu tun ist, und hakst ab, was du erledigt hast.</p>
+
+  <section class="scan">
+    <img class="qr" src="../frontend/src/assets/qr-app.svg" alt="QR-Code zu wartung.aecbn.de">
+    <div>
+      <h2>Code mit der Handykamera scannen</h2>
+      <p>Oder die Adresse im Browser eingeben:</p>
+      <div class="url">wartung.aecbn.de</div>
+    </div>
+  </section>
+
+  <ol class="steps">
+    <li><div class="n">1</div><div><strong>Namen eingeben</strong><span>Vor- und Nachname reichen, ohne Passwort. Dein Handy merkt sich den Namen.</span></div></li>
+    <li><div class="n">2</div><div><strong>Flugzeug auswählen</strong><span>Im Zeitplan steht, welches Flugzeug heute dran ist und wer die Werkstattleitung hat.</span></div></li>
+    <li><div class="n">3</div><div><strong>Kanban-Karte öffnen und Checkliste abhaken</strong><span>Der erste Haken setzt die Karte auf „In Arbeit“, der letzte auf „Erledigt“.</span></div></li>
+    <li><div class="n">4</div><div><strong>Werkstattleitung Bescheid sagen</strong><span>Sie prüft deine Arbeit und zeichnet die Karte ab.</span></div></li>
+  </ol>
+
+  <section class="tips">
+    <h2>Gut zu wissen</h2>
+    <ul>
+      <li><b>Neu dabei?</b>Nimm Karten mit dem Badge <span class="badge">Einsteiger</span></li>
+      <li><b>Etwas ist leer?</b>In der „Inventur“ auf „Leer“ setzen und „Auf Bestellliste“ tippen.</li>
+      <li><b>Material gesucht?</b>In der „Inventur“ steht, in welchem Schrank oder Regal es liegt.</li>
+      <li><b>Schaden entdeckt?</b>Der Werkstattleitung zeigen, sie erfasst den Befund.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Lieber das eigene Handy als das Werkstatt-Tablet nehmen: Nur so steht dein Name bei deiner Arbeit. Mehr unter „Häufige Fragen“ in der App.</p>
+</body>
+</html>
