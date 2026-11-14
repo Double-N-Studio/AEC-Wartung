@@ -48,6 +48,7 @@ frontend/                       Vue app (own package.json, Vite config, .env)
     store.ts                    shared state + all actions, sign-in, startup (boot)
     sync.ts                     sync with the server: detect changes, queue, reload, conflicts
     notify.ts                   short messages (AppToasts), e.g. rejected changes
+    update.ts                   new builds reach open pages: compares version.json with the own build id, reloads when idle
     types.ts                    data model
     mock/data.ts                initial data (initialState)
     mock/people.ts              test accounts (people + workshop tablet), role labels

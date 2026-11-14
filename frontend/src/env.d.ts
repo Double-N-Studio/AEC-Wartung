@@ -12,3 +12,6 @@ declare module '*.vue' {
   const component: DefineComponent<object, object, unknown>
   export default component
 }
+
+/** Id of this build, set by vite.config.ts (buildVersion). */
+declare const __BUILD_ID__: string
