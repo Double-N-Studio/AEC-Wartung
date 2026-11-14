@@ -87,7 +87,7 @@ function remove() {
       </template>
       <template v-else-if="editable && task.status === 'arbeit'">
         <button type="button" class="btn btn-ghost" @click="resetTaskToOpen(task)">Zurück auf Offen</button>
-        <button type="button" class="btn btn-primary" @click="finishTask(task)"><AppIcon name="check" :size="16" :stroke="2.6" />Als erledigt melden</button>
+        <button type="button" class="btn btn-primary" @click="finishTask(task); emit('close')"><AppIcon name="check" :size="16" :stroke="2.6" />Als erledigt melden</button>
       </template>
       <template v-else-if="editable">
         <button type="button" class="btn btn-ghost" @click="reopenTask(task)">Wieder in Arbeit</button>
