@@ -1,6 +1,6 @@
 // Questions and answers for the FAQ page on the first start (same as the demo data); admins edit them in the app.
 export const DEFAULT_FAQ = [
-  { id: 'faq1', q: 'Wann ist Werkstatt und wie mache ich mit?', a: 'Gearbeitet wird samstags von 9 bis 17 Uhr. Im Zeitplan siehst du, welches Flugzeug gerade dran ist und wer an dem Tag die Werkstattleitung hat. Komm einfach vorbei. Die Werkstattleitung teilt dich vor Ort einer Aufgabe zu.' },
+  { id: 'faq1', q: 'Wann ist Werkstatt und wie mache ich mit?', a: 'Gearbeitet wird samstags von 12 bis 18 Uhr. Im Zeitplan siehst du, welches Flugzeug gerade dran ist und wer an dem Tag die Werkstattleitung hat. Komm einfach vorbei. Die Werkstattleitung teilt dich vor Ort einer Aufgabe zu.' },
   { id: 'faq2', q: 'Welche Aufgaben kann ich als Neuling oder Flugschüler übernehmen?', a: 'Alle Kanban-Karten mit dem grünen Badge „Einsteiger“. Auf dem Board eines Flugzeugs kannst du danach filtern.' },
   { id: 'faq3', q: 'Wer zeichnet meine Arbeit ab?', a: 'Die Werkstattleitung des Tages. Sie prüft die Arbeit und zeichnet sie am Tablet ab.' },
   { id: 'faq4', q: 'Wo finde ich Waschbenzin, Fett, Pinsel und Co.?', a: 'In der „Inventur“ einfach suchen, dort steht, in welchem Schrank oder Regal es liegt. Das gilt auch für Ersatzteile der Flugzeuge.' },

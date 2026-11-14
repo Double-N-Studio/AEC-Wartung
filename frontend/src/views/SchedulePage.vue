@@ -355,7 +355,7 @@ function closeDay() {
       </div>
     </Teleport>
 
-    <AppModal v-if="openDay" :title="fmtLong(openDay)" icon="calendar" subtitle="Werkstatttag · 9–17 Uhr" :width="500" @close="closeDay">
+    <AppModal v-if="openDay" :title="fmtLong(openDay)" icon="calendar" subtitle="Werkstatttag · 12–18 Uhr" :width="500" @close="closeDay">
       <template v-if="dayInfo(openDay).closed" #status>
         <span class="pill pill-gray">Geschlossen</span>
       </template>

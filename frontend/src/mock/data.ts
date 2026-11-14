@@ -138,32 +138,32 @@ const tick = (t: Task, n: number) => t.checklist.slice(0, n).forEach((c) => { c.
 function applyAsg(t: Task) {
   const day1 = '2027-01-09'
   const doneDay1: Record<string, [string, string]> = {
-    an1: ['LE', '10:05'], fl1: ['JO', '11:50'], ru1: ['LE', '12:40'], hl1: ['LE', '13:05'],
-    fl2: ['JO', '14:20'], ru2: ['JO', '15:35'], hl2: ['JO', '16:10'],
+    an1: ['LE', '12:15'], fl1: ['JO', '13:10'], ru1: ['LE', '13:50'], hl1: ['LE', '14:30'],
+    fl2: ['JO', '15:40'], ru2: ['JO', '16:50'], hl2: ['JO', '17:30'],
   }
   if (doneDay1[t.id]) finishAt(t, doneDay1[t.id][0], `${day1}T${doneDay1[t.id][1]}`, 'HE')
-  else if (t.id === 'an2') finishAt(t, 'LE', `${today()}T09:20`, 'MA')
+  else if (t.id === 'an2') finishAt(t, 'LE', `${today()}T12:20`, 'MA')
   else if (t.id === 'ru3') { startAt(t, 'HE', day1); tick(t, 1) }
   else if (t.id === 'ru4') {
     startAt(t, 'JO', day1)
     tick(t, 1)
-    t.notes = [{ id: 'n1', text: 'Linkes Radlager hat deutlich Spiel, daher das Klackern. Ersatzlager muss bestellt werden.', photos: demoPhotos('n1', 2), who: 'JO', at: `${day1}T15:20` }]
+    t.notes = [{ id: 'n1', text: 'Linkes Radlager hat deutlich Spiel, daher das Klackern. Ersatzlager muss bestellt werden.', photos: demoPhotos('n1', 2), who: 'JO', at: `${day1}T16:20` }]
   }
   else if (t.id === 'ru8') { startAt(t, 'JO', day1); tick(t, 1) }
-  else if (t.id === 'hl3') startAt(t, 'LE', `${today()}T09:40`)
-  else if (t.id === 'fl3') { startAt(t, 'LO', `${today()}T09:50`); tick(t, 1) }
+  else if (t.id === 'hl3') startAt(t, 'LE', `${today()}T12:40`)
+  else if (t.id === 'fl3') { startAt(t, 'LO', `${today()}T12:50`); tick(t, 1) }
 }
 
 /** LS8: the first workshop day is today. */
 function applyLs8(t: Task) {
   const id = t.id.replace('ls8-', '')
   resetTask(t)
-  if (id === 'an1') finishAt(t, 'LE', `${today()}T10:10`, 'MA')
-  else if (id === 'hl1') finishAt(t, 'LO', `${today()}T10:55`)
-  else if (id === 'ru1') { startAt(t, 'LE', `${today()}T10:30`); tick(t, 2) }
-  else if (id === 'fl1') startAt(t, 'JO', `${today()}T10:40`)
-  else if (id === 'an4') startAt(t, 'LE', `${today()}T11:05`)
-  else if (id === 'fl2') startAt(t, 'JO', `${today()}T11:20`)
+  if (id === 'an1') finishAt(t, 'LE', `${today()}T13:10`, 'MA')
+  else if (id === 'hl1') finishAt(t, 'LO', `${today()}T13:55`)
+  else if (id === 'ru1') { startAt(t, 'LE', `${today()}T13:30`); tick(t, 2) }
+  else if (id === 'fl1') startAt(t, 'JO', `${today()}T13:40`)
+  else if (id === 'an4') startAt(t, 'LE', `${today()}T14:05`)
+  else if (id === 'fl2') startAt(t, 'JO', `${today()}T14:20`)
 }
 
 function baseState(): AppState {
@@ -206,7 +206,7 @@ function baseState(): AppState {
     templates: [],
     archive: [],
     faq: [
-      { id: 'faq1', q: 'Wann ist Werkstatt und wie mache ich mit?', a: 'Gearbeitet wird samstags von 9 bis 17 Uhr. Im Zeitplan siehst du, welches Flugzeug gerade dran ist und wer an dem Tag die Werkstattleitung hat. Komm einfach vorbei. Die Werkstattleitung teilt dich vor Ort einer Aufgabe zu.' },
+      { id: 'faq1', q: 'Wann ist Werkstatt und wie mache ich mit?', a: 'Gearbeitet wird samstags von 12 bis 18 Uhr. Im Zeitplan siehst du, welches Flugzeug gerade dran ist und wer an dem Tag die Werkstattleitung hat. Komm einfach vorbei. Die Werkstattleitung teilt dich vor Ort einer Aufgabe zu.' },
       { id: 'faq2', q: 'Welche Aufgaben kann ich als Neuling oder Flugschüler übernehmen?', a: 'Alle Kanban-Karten mit dem grünen Badge „Einsteiger“. Auf dem Board eines Flugzeugs kannst du danach filtern.' },
       { id: 'faq3', q: 'Wer zeichnet meine Arbeit ab?', a: 'Die Werkstattleitung des Tages. Sie prüft die Arbeit und zeichnet sie am Tablet ab.' },
       { id: 'faq4', q: 'Wo finde ich Waschbenzin, Fett, Pinsel und Co.?', a: 'In der „Inventur“ einfach suchen, dort steht, in welchem Schrank oder Regal es liegt. Das gilt auch für Ersatzteile der Flugzeuge.' },
