@@ -411,17 +411,23 @@ export function deleteAircraft(a: Aircraft) {
 
 /* ---------- Accounts ---------- */
 
-/** email: sign-in name of the special accounts; members do not need one. */
-export function createUser(name: string, role: Role, email = ''): User {
-  const user: User = { id: newId(), name: name.trim(), role }
-  if (role !== 'user') user.email = email.trim()
+/**
+ * email: sign-in name of the special accounts; members do not need one.
+ * device: a shared device such as the workshop tablet – always with the rights of a workshop lead.
+ */
+export function createUser(name: string, role: Role, email = '', device = false): User {
+  const user: User = { id: newId(), name: name.trim(), role: device ? 'wl' : role }
+  if (device) user.device = true
+  if (needsPassword(user)) user.email = email.trim()
   state.users.push(user)
   return user
 }
 
-export function updateUser(user: User, name: string, role: Role, email = '') {
+export function updateUser(user: User, name: string, role: Role, email = '', device = false) {
   user.name = name.trim()
-  user.role = role
+  user.role = device ? 'wl' : role
+  if (device) user.device = true
+  else delete user.device
   if (needsPassword(user)) user.email = email.trim()
   else delete user.email
 }

@@ -14,10 +14,14 @@ import AircraftSection from './admin/AircraftSection.vue'
 import SeasonSection from './admin/SeasonSection.vue'
 import TemplatesSection from './admin/TemplatesSection.vue'
 
-const ROLES: Role[] = ['admin', 'wl', 'user']
-const ROLE_TEXT: Record<Role, string> = {
+/** What the form offers: the roles, plus the workshop tablet (a device with the rights of a workshop lead). */
+type Kind = Role | 'tablet'
+const KINDS: Kind[] = ['admin', 'wl', 'tablet', 'user']
+const KIND_LABELS: Record<Kind, string> = { ...ROLE_LABELS, tablet: 'Werkstatt-Tablet' }
+const KIND_TEXT: Record<Kind, string> = {
   admin: 'Alles wie Werkstattleiter, dazu die Verwaltung: Konten, Saison, Flugzeuge, Kanban-Vorlagen und Werkstattzeiträume. Meldet sich mit Passwort an.',
   wl: 'Abzeichnen und Werkstatttage planen; auf den Flugzeugseiten dieselben Rechte wie Admins. Keine Verwaltung. Meldet sich mit Passwort an.',
+  tablet: 'Gemeinsames Gerät in der Werkstatt, keine Person. Rechte wie ein Werkstattleiter; abgezeichnet wird als Werkstattleiter des Tages. Meldet sich mit Passwort an.',
   user: 'Karten bearbeiten, Mängel erfassen, zählen und bestellen. Gibt nur den Namen ein, kein Passwort.',
 }
 
@@ -48,26 +52,28 @@ function statusText(u: User): string | null {
 
 /* ---------- Create / edit account ---------- */
 const editing = ref<User | 'new' | null>(null)
-const form = reactive({ name: '', role: 'user' as Role, email: '' })
+const form = reactive({ name: '', kind: 'user' as Kind, email: '' })
 function openUser(u: User | 'new') {
-  Object.assign(form, u === 'new' ? { name: '', role: 'user', email: '' } : { name: u.name, role: u.role, email: u.email ?? '' })
+  Object.assign(form, u === 'new' ? { name: '', kind: 'user', email: '' } : { name: u.name, kind: u.device ? 'tablet' : u.role, email: u.email ?? '' })
   editing.value = u
   link.value = null
   if (u !== 'new') void loadStatuses()
 }
 // Workshop leads, admins and devices log in with e-mail and password.
-const withLogin = computed(() => form.role !== 'user' || (editing.value !== 'new' && !!editing.value?.device))
+const withLogin = computed(() => form.kind !== 'user')
 function saveUser() {
   if (!form.name.trim() || (withLogin.value && !form.email.trim())) return
+  const device = form.kind === 'tablet'
+  const role: Role = form.kind === 'tablet' ? 'wl' : form.kind
   if (editing.value === 'new') {
-    const user = createUser(form.name, form.role, form.email)
+    const user = createUser(form.name, role, form.email, device)
     // Special accounts need a password: the popup stays open with the link to pass on.
     if (needsPassword(user)) {
       openUser(user)
       void makeLink(user)
       return
     }
-  } else if (editing.value) updateUser(editing.value, form.name, form.role, form.email)
+  } else if (editing.value) updateUser(editing.value, form.name, role, form.email, device)
   editing.value = null
 }
 const editingSelf = computed(() => editing.value !== 'new' && editing.value?.id === currentUser()?.id)
@@ -167,9 +173,9 @@ function confirmRemove() {
         <div class="field">
           <span class="field-label">Rolle</span>
           <div class="roles" role="radiogroup" aria-label="Rolle">
-            <label v-for="r in ROLES" :key="r" class="role" :class="{ active: form.role === r }">
-              <input v-model="form.role" type="radio" name="role" :value="r" :disabled="editingSelf">
-              <span><strong>{{ ROLE_LABELS[r] }}</strong><span class="muted">{{ ROLE_TEXT[r] }}</span></span>
+            <label v-for="k in KINDS" :key="k" class="role" :class="{ active: form.kind === k }">
+              <input v-model="form.kind" type="radio" name="role" :value="k" :disabled="editingSelf">
+              <span><strong>{{ KIND_LABELS[k] }}</strong><span class="muted">{{ KIND_TEXT[k] }}</span></span>
             </label>
           </div>
           <span v-if="editingSelf" class="muted small">Die eigene Rolle kann nur ein anderer Admin ändern.</span>

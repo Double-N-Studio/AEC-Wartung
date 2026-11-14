@@ -86,7 +86,9 @@ export function checkChange(change: Change, old: Plain | undefined, ctx: RuleCon
     if (coll === 'users' && change.id === user.id && value) {
       if (value.role !== old?.role) return 'Die eigene Rolle kann nicht geändert werden'
       if (value.removed) return 'Das eigene Konto kann nicht entfernt werden'
+      if (value.device) return 'Das eigene Konto kann kein Gerät werden'
     }
+    if (coll === 'users' && value?.device && value.role !== 'wl') return 'Ein Gerät hat die Rolle Werkstattleiter'
     return null
   }
   if (!may(user, 'edit')) return 'Keine Berechtigung'
