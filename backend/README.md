@@ -47,7 +47,7 @@ Local first start: put `ADMIN_NAME`, `ADMIN_EMAIL` and `APP_URL=http://localhost
 | `DATA_DIR` | `data` (`/data` in the image) | SQLite file `wartung.db` and uploads `files/` |
 | `WEB_DIR` | – (`/app/web` in the image) | built frontend; without it only the API runs |
 | `NODE_ENV` | (`production` in the image) | `production` marks the session cookie `Secure` |
-| `APP_URL` | – | public address, for the set-password links in the log, e.g. `https://wartung.nuno-ferreira.de` |
+| `APP_URL` | – | public address, for the set-password links in the log, e.g. `https://wartung.aecbn.de` |
 | `ADMIN_NAME`, `ADMIN_EMAIL` | – | first admin, created on the first start (see below) |
 | `SEASON_LABEL`, `SEASON_START`, `SEASON_END` | this winter | first season; default first Saturday of November to last Saturday of March |
 
@@ -57,7 +57,7 @@ as `root` (the `deploy` user only accepts the key from the GitHub secret) and ha
 
 ```bash
 ssh root@178.105.54.205 'cat > /srv/wartung/data/app.env <<EOF
-APP_URL=https://wartung.nuno-ferreira.de
+APP_URL=https://wartung.aecbn.de
 ADMIN_NAME=Vorname Nachname
 ADMIN_EMAIL=admin@example.org
 NODE_ENV=production
@@ -98,7 +98,7 @@ Hetzner CX23 "nuno-vps" (178.105.54.205), shared with other projects (camper, Gi
 
 | What | Where |
 |---|---|
-| Hostname | `wartung.nuno-ferreira.de` (temporary), later `wartung.aecbn.de` |
+| Hostname | `wartung.aecbn.de` (A record at the club's DNS); the old `wartung.nuno-ferreira.de` redirects to it |
 | TLS | Let's Encrypt via certbot, renews automatically |
 | Reverse proxy | nginx, `/etc/nginx/sites-available/wartung` → `127.0.0.1:8081`, uploads up to 30 MB |
 | Compose project | `/srv/wartung` (copy of `backend/`), user `deploy` |
@@ -113,10 +113,3 @@ when the server or the frontend changed, and checks `/api/health` and the start 
 
 One-time setup on the VPS (as root): `bash backend/setup/deploy-user.sh "<public key>"`;
 the private key goes into the repo as the secret `DEPLOY_SSH_KEY`.
-
-## Switching the domain to wartung.aecbn.de
-
-1. The club admin creates an A record `wartung.aecbn.de → 178.105.54.205` (and AAAA to the IPv6 if wanted).
-2. On the VPS: `certbot certonly --nginx -d wartung.aecbn.de`
-3. Put the new `server_name` and certificate paths into `/etc/nginx/sites-available/wartung`, `nginx -t && systemctl reload nginx`.
-4. Keep the old hostname as a redirect or remove it.

@@ -72,5 +72,5 @@ jobs:
       - name: Health check
         run: |
           sleep 3
-          curl --fail --silent https://wartung.nuno-ferreira.de/api/health
-          curl --fail --silent https://wartung.nuno-ferreira.de/ | grep -q '<div id="app">'
+          curl --fail --silent https://wartung.aecbn.de/api/health
+          curl --fail --silent https://wartung.aecbn.de/ | grep -q '<div id="app">'
