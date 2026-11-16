@@ -130,7 +130,7 @@ function remove() {
 .origin-label { font-size: 12px; font-weight: 600; color: var(--muted); }
 .links { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; }
 .links a { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; }
-.checklist { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.checklist { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex-shrink: 0; }
 .check {
   display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 14px;
   border-bottom: 1px solid var(--border-soft); font-size: 14px; cursor: pointer;
