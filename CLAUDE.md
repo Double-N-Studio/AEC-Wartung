@@ -79,6 +79,7 @@ backend/                        server, Docker image, VPS notes (README.md: conf
     schema.ts, db.ts            tables, openDb(path)
   test/                         node:test suites: rules, changes, auth, files
 docs/backend.md                 contract with the server: endpoints, records, conflicts, permissions
+docs/eigener-server.md          setup guide for other clubs (German), linked from the README
 docs/screenshots/               screenshots for the README (demo, 1440×900 @2x)
 docs/werkstatt-aushang.pdf      printed workshop notice of Aero-Club Bad Nauheim (print of /aushang.html)
 ```
@@ -86,7 +87,7 @@ docs/werkstatt-aushang.pdf      printed workshop notice of Aero-Club Bad Nauheim
 ## Conventions
 
 - **Club-specific things** (club name, logo, address, QR code, server host) never go into code: use `club` / `clubLogo()` / `clubHost()` / `clubQr()` from `club.ts` in the app, repository variables in the deploy workflow (see `backend/README.md`). localStorage keys keep their old `aec-` prefix on purpose, renaming them would drop pending changes on devices.
-- **Language:** the UI is German (it's a German club app) – all user-facing text, labels, messages and history entries stay German. Identifiers, comments, docs and commit messages are English. Commit messages are lowercase. Only `README.md` stays German.
+- **Language:** the UI is German (it's a German club app) – all user-facing text, labels, messages and history entries stay German. Identifiers, comments, docs and commit messages are English. Commit messages are lowercase. Only `README.md` and `docs/eigener-server.md` (setup guide for other clubs) stay German.
 - **Change state only through the store.** New actions belong in `store.ts`, not in components – no `v-model` directly on store objects either. Actions are synchronous and only change `state`; `sync.ts` works out what changed. New records get their ID from `newId()`. Changes to kanban cards, defects, orders, items and workshop days write an entry to `history`; free text (comments) is saved on leaving the field, not per keystroke.
 - **Roles:** admin, workshop lead, member, not registered (view only). Members only enter first and last name (`enterName`, no password; same name = same account); special accounts (admin, workshop lead, workshop tablet, see `needsPassword`) pick their account in the login popup and sign in with a password (`login`). `currentUser()` returns a special account only after sign-in. Check permissions only via `can('edit' | 'lead' | 'admin')` from the store, never via the role directly. `edit` = everyone signed in, `lead` = sign off and plan workshop days (workshop leads and admins, same on the aircraft pages), `admin` = administration (accounts, season, aircraft, templates) and workshop periods, admins only. Without permission a control is hidden or shown as text, not just disabled.
 - **People are account IDs** (`UserId`) in all fields (`who`, `doneBy`, `owner` …); displayed via `userName()`. Removed accounts are kept with `removed` so history stays readable. `SYSTEM` stands for entries from Vereinsflieger.

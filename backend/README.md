@@ -56,7 +56,7 @@ Local first start: put `ADMIN_NAME` and `APP_URL=http://localhost:5173` into `ba
 The app shows the club's name, app name, logo and a QR code to its address. They are not compiled in: the app loads
 `club/club.json` and the logo next to `index.html` at startup (`frontend/src/club.ts`). The build ships the files of
 Aero-Club Bad Nauheim (`frontend/public/club/`, also used by the demo); the server serves `DATA_DIR/club/*` in their
-place when present (`src/index.ts`), so every club runs the same image. The format is in the root `README.md`.
+place when present (`src/index.ts`), so every club runs the same image. The format is in `docs/eigener-server.md`.
 Devices keep the last config, so name and logo also show offline.
 
 ## Server env file
