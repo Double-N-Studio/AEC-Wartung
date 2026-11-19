@@ -47,11 +47,21 @@ Local first start: put `ADMIN_NAME` and `APP_URL=http://localhost:5173` into `ba
 | `DATA_DIR` | `data` (`/data` in the image) | SQLite file `wartung.db` and uploads `files/` |
 | `WEB_DIR` | – (`/app/web` in the image) | built frontend; without it only the API runs |
 | `NODE_ENV` | (`production` in the image) | `production` marks the session cookie `Secure` |
-| `APP_URL` | – | public address, for the set-password links in the log, e.g. `https://wartung.aecbn.de` |
+| `APP_URL` | – | public address, for the set-password links in the log, e.g. `https://wartung.example.org` |
 | `ADMIN_NAME` | – | first admin, created on the first start (see below) |
 | `SEASON_LABEL`, `SEASON_START`, `SEASON_END` | this winter | first season; default first Saturday of November to last Saturday of March |
 
-On the VPS these go into **`/srv/wartung/data/app.env`**, which `docker-compose.yml` loads if it exists
+## Club name and logo
+
+The app shows the club's name, app name, logo and a QR code to its address. They are not compiled in: the app loads
+`club/club.json` and the logo next to `index.html` at startup (`frontend/src/club.ts`). The build ships the files of
+Aero-Club Bad Nauheim (`frontend/public/club/`, also used by the demo); the server serves `DATA_DIR/club/*` in their
+place when present (`src/index.ts`), so every club runs the same image. The format is in the root `README.md`.
+Devices keep the last config, so name and logo also show offline.
+
+## Server env file
+
+On the VPS the variables go into **`/srv/wartung/data/app.env`**, which `docker-compose.yml` loads if it exists
 (`data/` is excluded from the deploy rsync, so the file survives deploys). The operator creates it once
 as `root` (the `deploy` user only accepts the key from the GitHub secret) and hands it to `deploy`:
 
@@ -91,7 +101,7 @@ npm run password-link -- "Vorname Nachname"                       # locally
 
 Older links of the account stop working.
 
-## Where things run
+## Our instance (Aero-Club Bad Nauheim)
 
 Hetzner CX23 "nuno-vps" (178.105.54.205), shared with other projects (camper, GitLab runner).
 
@@ -106,9 +116,21 @@ Hetzner CX23 "nuno-vps" (178.105.54.205), shared with other projects (camper, Gi
 
 ## Deployment
 
-`.github/workflows/deploy-server.yml` builds the image (context: repo root, `backend/Dockerfile`) to `ghcr.io/double-n-studio/aec-wartung-server`,
-copies `backend/` via rsync to `/srv/wartung` and runs `docker compose up -d`. Runs on push to `main`
+`.github/workflows/deploy-server.yml` builds the image (context: repo root, `backend/Dockerfile`) and pushes it to GHCR,
+copies `backend/` via rsync to `/srv/wartung` and runs `docker compose up -d` with that image. Runs on push to `main`
 when the server or the frontend changed, and checks `/api/health` and the start page at the end.
 
-One-time setup on the VPS (as root): `bash backend/setup/deploy-user.sh "<public key>"`;
-the private key goes into the repo as the secret `DEPLOY_SSH_KEY`.
+Everything server-specific lives in repository variables (Settings → Secrets and variables → Actions), so a fork deploys
+to its own server without code changes:
+
+| Variable | What |
+|---|---|
+| `IMAGE` | image name; default `ghcr.io/<owner>/<repo>-server`. Ours: `ghcr.io/double-n-studio/aec-wartung-server` (public, other clubs can pull it) |
+| `DEPLOY_HOST` | server address; without it the workflow only builds the image |
+| `DEPLOY_HOST_KEY` | `known_hosts` line of the server (`ssh-keyscan -t ed25519 <host>`) |
+| `APP_URL` | public address for the health check; without it the check is skipped |
+
+Secret `DEPLOY_SSH_KEY`: private key of the `deploy` user. One-time setup on the server (as root):
+`bash backend/setup/deploy-user.sh "<public key>"`.
+
+`docker-compose.yml` takes the image from `APP_IMAGE` (set by the workflow), otherwise the published image of this project.

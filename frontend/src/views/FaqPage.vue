@@ -5,8 +5,8 @@ import AppIcon from '../components/AppIcon.vue'
 import LevelBadge from '../components/LevelBadge.vue'
 import PersonAvatar from '../components/PersonAvatar.vue'
 import { can, currentUser, leaders, state } from '../store'
-// QR code of https://wartung.aecbn.de, shown on the workshop tablet so people can open the app on their own phone.
-import qrApp from '../assets/qr-app.svg'
+// QR code of the club's app address (club.json), shown on the workshop tablet so people open the app on their own phone.
+import { clubHost, clubQr } from '../club'
 import type { FaqEntry } from '../types'
 import FaqFormModal from './FaqFormModal.vue'
 
@@ -26,13 +26,16 @@ const LEVEL_TEXT = {
       <h1 class="page-title">Häufige Fragen</h1>
       <p class="page-sub">Alles Wichtige zur Winterwartung, besonders für Neue und Flugschüler.</p>
     </header>
-    <section v-if="currentUser()?.device" class="card phone" aria-labelledby="phone-h">
-      <img :src="qrApp" alt="QR-Code zu wartung.aecbn.de" class="qr">
+    <section v-if="currentUser()?.device && clubQr()" class="card phone" aria-labelledby="phone-h">
+      <img :src="clubQr()" :alt="`QR-Code zu ${clubHost()}`" class="qr">
       <div>
         <h2 id="phone-h" class="box-title">Auf dem eigenen Handy öffnen</h2>
-        <p>Scanne den Code mit der Handykamera oder gib <strong>wartung.aecbn.de</strong> im Browser ein. Dann steht dein Name bei dem, was du erledigst.</p>
+        <p>Scanne den Code mit der Handykamera oder gib <strong>{{ clubHost() }}</strong> im Browser ein. Dann steht dein Name bei dem, was du erledigst.</p>
       </div>
     </section>
+    <p v-if="can('admin') && clubQr()" class="print-note muted">
+      <a href="aushang.html" target="_blank" rel="noopener">Aushang für die Werkstatt drucken</a> – A4-Seite mit QR-Code zur App.
+    </p>
     <div class="layout">
       <section class="faq" aria-label="Fragen und Antworten">
         <details v-for="(f, i) in state.faq" :key="f.id" class="card item" :open="i === 0">
@@ -77,6 +80,8 @@ const LEVEL_TEXT = {
 .phone .qr { width: 132px; height: 132px; padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 10px; flex-shrink: 0; }
 .phone div { display: flex; flex-direction: column; gap: 6px; }
 .phone p { font-size: 14px; line-height: 1.55; color: var(--text-2); }
+.print-note { font-size: 13px; }
+.print-note a { color: var(--accent); font-weight: 600; }
 .faq { display: flex; flex-direction: column; gap: 10px; }
 .item summary {
   list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;

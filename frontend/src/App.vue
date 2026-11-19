@@ -10,7 +10,7 @@ import { currentUser, session } from './store'
 import SyncStatus from './components/SyncStatus.vue'
 import AppToasts from './components/AppToasts.vue'
 import { isOffline, refresh, sync } from './sync'
-import logoUrl from './assets/aec-logo.png'
+import { club, clubLogo } from './club'
 
 const drawerOpen = ref(false)
 const route = useRoute()
@@ -25,7 +25,7 @@ watch(() => sync.ready, (ready) => {
 
 <template>
   <div v-if="!sync.ready" class="boot">
-    <img :src="logoUrl" alt="Aero-Club Bad Nauheim" class="boot-logo">
+    <img :src="clubLogo()" :alt="club.name" class="boot-logo">
     <template v-if="sync.loadError">
       <p class="boot-text">Der Server ist gerade nicht erreichbar ({{ sync.loadError }}).</p>
       <button type="button" class="btn btn-primary" @click="refresh()">Erneut versuchen</button>
@@ -37,8 +37,8 @@ watch(() => sync.ready, (ready) => {
       <button type="button" class="icon-btn" aria-label="Menü öffnen" :aria-expanded="drawerOpen" @click="drawerOpen = true">
         <AppIcon name="menu" />
       </button>
-      <img :src="logoUrl" alt="Aero-Club Bad Nauheim" class="topbar-logo">
-      <span class="topbar-title">Winterwartung</span>
+      <img :src="clubLogo()" :alt="club.name" class="topbar-logo">
+      <span class="topbar-title">{{ club.app }}</span>
       <SyncStatus class="topbar-sync" />
     </header>
 

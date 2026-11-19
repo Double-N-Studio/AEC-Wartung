@@ -3,18 +3,17 @@
 <head>
 <meta charset="utf-8">
 <title>Werkstatt-Aushang: Winterwartung-App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!--
-  A4 notice for the workshop: how to open the app on your own phone.
-  Rebuild the PDF after changes (from the repo root):
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --no-pdf-header-footer \
-    --print-to-pdf=docs/werkstatt-aushang.pdf docs/werkstatt-aushang.html
+  A4 notice for the workshop: how to open the app on your own phone. Served by the app as aushang.html;
+  name, logo, address and QR code come from club/club.json (src/aushang.ts). Print from the browser (A4, no margins).
 -->
 <style>
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root { --text: #17202B; --text-2: #3A4452; --muted: #5B6675; --accent: #1D64C8; --accent-ink: #1D4F99; --accent-soft: #E6F0FB; --border: #C9D3DF; --green-ink: #17643F; --green-soft: #DFF1E7; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { width: 210mm; height: 297mm; padding: 12mm 18mm 10mm; display: flex; flex-direction: column; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--text); }
+  body { width: 210mm; height: 297mm; padding: 12mm 18mm 10mm; display: flex; flex-direction: column; background: #fff; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; color: var(--text); }
 
   .top { display: flex; align-items: center; justify-content: space-between; padding-bottom: 5mm; border-bottom: 0.6mm solid var(--accent); }
   .top img { height: 15mm; }
@@ -47,19 +46,19 @@
 </head>
 <body>
   <div class="top">
-    <img src="../frontend/src/assets/aec-logo.png" alt="Aero-Club Bad Nauheim">
-    <span>Winterwartung</span>
+    <img id="logo" src="./club/logo.png" alt="">
+    <span id="app">Winterwartung</span>
   </div>
 
   <h1>Die Wartungs-App<br>auf deinem Handy</h1>
   <p class="lead">Hier siehst du, was an welchem Flugzeug zu tun ist, und hakst ab, was du erledigt hast.</p>
 
   <section class="scan">
-    <img class="qr" src="../frontend/src/assets/qr-app.svg" alt="QR-Code zu wartung.aecbn.de">
+    <img id="qr" class="qr" alt="">
     <div>
       <h2>Code mit der Handykamera scannen</h2>
       <p>Oder die Adresse im Browser eingeben:</p>
-      <div class="url">wartung.aecbn.de</div>
+      <div id="url" class="url"></div>
     </div>
   </section>
 
@@ -81,5 +80,6 @@
   </section>
 
   <p class="foot">Lieber das eigene Handy als das Werkstatt-Tablet nehmen: Nur so steht dein Name bei deiner Arbeit. Mehr unter „Häufige Fragen“ in der App.</p>
+  <script type="module" src="/src/aushang.ts"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# Builds the app image (backend + frontend); GitHub Actions pushes it to ghcr.io/double-n-studio/aec-wartung-server.
+# Builds the app image (backend + frontend); GitHub Actions pushes it to GHCR (deploy-server.yml).
 # Build context is the repo root: docker build -f backend/Dockerfile .
 
 # Frontend against the backend on the same origin. .env (demo date) is not copied, so the real date applies.
@@ -6,7 +6,7 @@ FROM node:24-slim AS web
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
-COPY frontend/index.html frontend/vite.config.ts frontend/tsconfig.json ./
+COPY frontend/index.html frontend/aushang.html frontend/vite.config.ts frontend/tsconfig.json ./
 COPY frontend/public ./public
 COPY frontend/src ./src
 ENV VITE_API_URL=/api

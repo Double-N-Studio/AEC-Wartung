@@ -4,7 +4,7 @@ Notes for working on this repo.
 
 ## What this is
 
-Web app for the winter maintenance of the club gliders of Aero-Club Bad Nauheim.
+Web app for the winter maintenance of a gliding club's aircraft (repo `vereins-wartung`). Built for Aero-Club Bad Nauheim, usable by any club on its own server: the club's name, app name, address and logo are runtime config (`club/club.json` + logo, see `frontend/src/club.ts`), never hard-coded. The repo ships Aero-Club Bad Nauheim's files in `frontend/public/club/` (demo and default); a server serves `DATA_DIR/club/` in their place.
 Frontend in `frontend/`, server in `backend/` (Hono + SQLite), contract between them in `docs/backend.md`. Without `VITE_API_URL` the frontend runs as a **demo** against a fake server in the browser – that's what's on GitHub Pages as a clickable preview for the board. The real app (built with `VITE_API_URL=/api`) is served by the server on the Hetzner VPS, which stores the records, checks permissions, holds sessions and files and pushes new revisions via SSE.
 In the demo all data is sample data; "today" is fixed to **2027-01-16** (`VITE_DEMO_DATE` in `frontend/.env`). Without that entry the real date applies. In code always use `today()` / `now()` from `frontend/src/utils/date.ts`, never `new Date()` directly.
 
@@ -48,6 +48,8 @@ frontend/                       Vue app (own package.json, Vite config, .env)
     store.ts                    shared state + all actions, sign-in, startup (boot)
     sync.ts                     sync with the server: detect changes, queue, reload, conflicts
     notify.ts                   short messages (AppToasts), e.g. rejected changes
+    club.ts                     club config (name, app name, url, logo) from club/club.json, cached on the device; QR code
+    aushang.ts                  printable A4 workshop notice (second Vite page, frontend/aushang.html)
     update.ts                   new builds reach open pages: compares version.json with the own build id, reloads when idle
     types.ts                    data model
     mock/data.ts                initial data (initialState)
@@ -61,6 +63,7 @@ frontend/                       Vue app (own package.json, Vite config, .env)
     views/                      pages: schedule, inventory, my stuff, admin (accounts, season), FAQ
     views/aircraft/             aircraft tabs: kanban, documents, deadlines, defects/findings, material
     views/inventory/            popups of the inventory
+  public/club/                  club.json + logo of Aero-Club Bad Nauheim (default, replaced per server)
   public/docs/                  preview images of the documents
 backend/                        server, Docker image, VPS notes (README.md: config, first start, operations)
   src/
@@ -76,10 +79,13 @@ backend/                        server, Docker image, VPS notes (README.md: conf
     schema.ts, db.ts            tables, openDb(path)
   test/                         node:test suites: rules, changes, auth, files
 docs/backend.md                 contract with the server: endpoints, records, conflicts, permissions
+docs/screenshots/               screenshots for the README (demo, 1440×900 @2x)
+docs/werkstatt-aushang.pdf      printed workshop notice of Aero-Club Bad Nauheim (print of /aushang.html)
 ```
 
 ## Conventions
 
+- **Club-specific things** (club name, logo, address, QR code, server host) never go into code: use `club` / `clubLogo()` / `clubHost()` / `clubQr()` from `club.ts` in the app, repository variables in the deploy workflow (see `backend/README.md`). localStorage keys keep their old `aec-` prefix on purpose, renaming them would drop pending changes on devices.
 - **Language:** the UI is German (it's a German club app) – all user-facing text, labels, messages and history entries stay German. Identifiers, comments, docs and commit messages are English. Commit messages are lowercase. Only `README.md` stays German.
 - **Change state only through the store.** New actions belong in `store.ts`, not in components – no `v-model` directly on store objects either. Actions are synchronous and only change `state`; `sync.ts` works out what changed. New records get their ID from `newId()`. Changes to kanban cards, defects, orders, items and workshop days write an entry to `history`; free text (comments) is saved on leaving the field, not per keystroke.
 - **Roles:** admin, workshop lead, member, not registered (view only). Members only enter first and last name (`enterName`, no password; same name = same account); special accounts (admin, workshop lead, workshop tablet, see `needsPassword`) pick their account in the login popup and sign in with a password (`login`). `currentUser()` returns a special account only after sign-in. Check permissions only via `can('edit' | 'lead' | 'admin')` from the store, never via the role directly. `edit` = everyone signed in, `lead` = sign off and plan workshop days (workshop leads and admins, same on the aircraft pages), `admin` = administration (accounts, season, aircraft, templates) and workshop periods, admins only. Without permission a control is hidden or shown as text, not just disabled.

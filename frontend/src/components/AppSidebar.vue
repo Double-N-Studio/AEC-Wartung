@@ -8,7 +8,7 @@ import { setSimulateOffline, sync } from '../sync'
 import { DEMO } from '../api/backend'
 import AppIcon from './AppIcon.vue'
 import ConfirmModal from './ConfirmModal.vue'
-import logoUrl from '../assets/aec-logo.png'
+import { club, clubLogo } from '../club'
 
 const emit = defineEmits<{ navigate: [] }>()
 const route = useRoute()
@@ -24,8 +24,8 @@ function onReset() {
 <template>
   <nav class="sidebar" aria-label="Hauptnavigation">
     <div class="brand">
-      <img :src="logoUrl" alt="Aero-Club Bad Nauheim" class="logo">
-      <span class="brand-sub">Winterwartung · Saison {{ state.season.label }}</span>
+      <img :src="clubLogo()" :alt="club.name" class="logo">
+      <span class="brand-sub">{{ club.app }} · Saison {{ state.season.label }}</span>
     </div>
 
     <div class="group">

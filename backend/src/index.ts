@@ -1,4 +1,4 @@
-// Entry point: API under /api and the built frontend. nginx on the VPS forwards https://wartung.… to this process.
+// Entry point: API under /api and the built frontend. A reverse proxy (nginx) forwards the public address to this process.
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { serve } from '@hono/node-server'
@@ -31,9 +31,16 @@ if (webDir) {
       c.header('Cache-Control', path.includes('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache')
     },
   })
+  // The club's own name, address and logo (club.json, logo) from DATA_DIR/club/ replace the ones in the build,
+  // so every club runs the same image. Missing files fall through to the build.
+  const clubFiles = serveStatic({
+    root: dataDir,
+    onFound: (_path, c) => { c.header('Cache-Control', 'no-cache') },
+  })
+  app.use('/club/*', (c, next) => clubFiles(c, next))
   app.use('*', (c, next) => (c.req.path.startsWith('/api/') ? next() : files(c, next)))
 } else {
-  app.get('/', (c) => c.text(`Winterwartung Aero-Club Bad Nauheim – Backend ${version}\n`))
+  app.get('/', (c) => c.text(`Winterwartung – Backend ${version}\n`))
 }
 
 app.notFound((c) => c.json({ error: 'Nicht gefunden' }, 404))

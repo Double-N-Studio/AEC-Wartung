@@ -6,7 +6,7 @@ set -euo pipefail
 
 PUBKEY="${1:?public SSH key missing}"
 
-id deploy >/dev/null 2>&1 || adduser --disabled-password --gecos 'Deploy aec-wartung' deploy
+id deploy >/dev/null 2>&1 || adduser --disabled-password --gecos 'Deploy wartung' deploy
 usermod -aG docker deploy
 
 install -d -m 700 -o deploy -g deploy /home/deploy/.ssh

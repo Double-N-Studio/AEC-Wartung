@@ -47,6 +47,8 @@ function buildVersion(): Plugin {
 export default defineConfig({
   base: './',
   plugins: [vue(), pdfjsAssets(), buildVersion()],
+  // Second page: the printable workshop notice (aushang.html, src/aushang.ts).
+  build: { rollupOptions: { input: { main: resolve('index.html'), aushang: resolve('aushang.html') } } },
   // With VITE_API_URL=/api in .env.local the dev server talks to the local backend (backend/, port 3000).
   server: { proxy: { '/api': 'http://localhost:3000' } },
 })

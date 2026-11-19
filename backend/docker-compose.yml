@@ -1,20 +1,21 @@
-# Runs on the VPS under /srv/wartung (see backend/README.md).
-# nginx forwards https://wartung.aecbn.de to 127.0.0.1:8081.
-# The image is built by .github/workflows/deploy-server.yml on every push to main.
+# Runs on the server under /srv/wartung (see backend/README.md).
+# A reverse proxy (nginx) forwards the public https address to 127.0.0.1:8081.
+# The image is built by .github/workflows/deploy-server.yml on every push to main; the workflow sets APP_IMAGE
+# to its own image, without it the published image of the project is used.
 services:
   app:
-    image: ghcr.io/double-n-studio/aec-wartung-server:latest
+    image: ${APP_IMAGE:-ghcr.io/double-n-studio/aec-wartung-server:latest}
     restart: unless-stopped
     # APP_URL, ADMIN_NAME, NODE_ENV=production – data/ is not touched by the deploy rsync,
     # so the file survives deploys. Optional, so the container still starts without it.
+    # data/club/ holds the club's own club.json and logo (see the README).
     env_file:
       - path: ./data/app.env
         required: false
     ports:
       - '127.0.0.1:8081:3000'
     volumes:
-      # SQLite file and uploads – deliberately on the root disk,
-      # because Hetzner backups don't cover volumes.
+      # SQLite file, uploads and club/ – on the root disk, so server backups cover them.
       - ./data:/data
     logging:
       driver: json-file
